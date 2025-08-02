@@ -23,8 +23,8 @@ This project is forked from [nett-media/opnsense-config-generator](https://githu
 
 ```bash
 # Clone the repository
-git clone <your-repo-url> network-config-generator
-cd network-config-generator
+git clone https://github.com/EvilBit-Labs/OPNsense-config-faker.git
+cd OPNsense-config-faker
 
 # Set up virtual environment and dependencies
 ./setup.sh
