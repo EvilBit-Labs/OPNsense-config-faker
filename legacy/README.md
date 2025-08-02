@@ -14,11 +14,13 @@ The `opnsense/` directory contains the complete original OPNsense config generat
 
 ## Using the Original OPNsense Generator
 
-If you need the original OPNsense functionality:
+If you need the original OPNsense functionality, it's recommended to use the upstream version directly from [nett-media/opnsense-config-generator](https://github.com/nett-media/opnsense-config-generator).
 
-1. Navigate to the `legacy/opnsense/` directory
-2. Use the original scripts as documented in `README-ENHANCED.md`
-3. The original workflow remains intact and functional
+The upstream project will have the latest updates and support directly from the original authors.
+
+### Note:
+
+This fork focuses on data generation rather than OPNsense-specific XML, preserving legacy functionality only for historical reference.
 
 ## Migration Notes
 

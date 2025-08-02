@@ -66,15 +66,25 @@ case $choice in
         eval $cmd
         ;;
     4)
-        echo -e "${YELLOW}Using legacy OPNsense generator...${NC}"
-        if [ -f "legacy/opnsense/generateXMLConfig.py" ]; then
-            cd legacy/opnsense
-            python generateXMLConfig.py
-            cd ../..
-            echo -e "${GREEN}Generated XML files in legacy/opnsense/export/ directory${NC}"
+        echo -e "${YELLOW}Legacy OPNsense generator...${NC}"
+        echo -e "${YELLOW}For OPNsense XML generation, we recommend using the upstream project:${NC}"
+        echo -e "${GREEN}https://github.com/nett-media/opnsense-config-generator${NC}"
+        echo
+        echo -e "${YELLOW}This ensures you get the latest updates and support from the original authors.${NC}"
+        echo
+        read -p "Do you still want to use the legacy version? (y/N): " use_legacy
+        if [[ $use_legacy =~ ^[Yy]$ ]]; then
+            if [ -f "legacy/opnsense/generateXMLConfig.py" ]; then
+                cd legacy/opnsense
+                python generateXMLConfig.py
+                cd ../..
+                echo -e "${GREEN}Generated XML files in legacy/opnsense/export/ directory${NC}"
+            else
+                echo -e "${RED}Legacy OPNsense generator not found${NC}"
+                exit 1
+            fi
         else
-            echo -e "${RED}Legacy OPNsense generator not found${NC}"
-            exit 1
+            echo -e "${GREEN}Consider cloning the upstream project for OPNsense functionality.${NC}"
         fi
         ;;
     *)
