@@ -18,7 +18,7 @@ If you need the original OPNsense functionality, it's recommended to use the ups
 
 The upstream project will have the latest updates and support directly from the original authors.
 
-### Note:
+### Note
 
 This fork focuses on data generation rather than OPNsense-specific XML, preserving legacy functionality only for historical reference.
 
@@ -32,6 +32,7 @@ This fork focuses on data generation rather than OPNsense-specific XML, preservi
 ## Original Project Attribution
 
 This functionality originated from:
+
 - **Repository**: [nett-media/opnsense-config-generator](https://github.com/nett-media/opnsense-config-generator)
 - **Purpose**: Batch creation of VLANs, Interfaces, DHCP Server, CARP IP, NAT, Firewall Rules and Radius User configurations for OPNsense
 - **License**: Original project license applies to this legacy code
