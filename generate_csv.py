@@ -3,6 +3,7 @@ import csv
 import ipaddress
 import argparse
 import sys
+import os
 
 fake = Faker()
 
@@ -85,11 +86,10 @@ def main():
     )
 
     parser.add_argument(
-        "-o",
-        "--output",
+        "-o", "--output",
         type=str,
-        default="test-config.csv",
-        help="Output CSV filename (default: test-config.csv)",
+        default="output/test-config.csv",
+        help="Output CSV filename (default: output/test-config.csv)"
     )
 
     args = parser.parse_args()
@@ -103,6 +103,11 @@ def main():
         print(
             "Warning: Requested count exceeds practical VLAN limit, may have duplicate issues"
         )
+
+    # Ensure output directory exists
+    output_dir = os.path.dirname(args.output)
+    if output_dir and not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
     print(f"Generating {args.count} VLAN configurations...")
     print(f"Output file: {args.output}")

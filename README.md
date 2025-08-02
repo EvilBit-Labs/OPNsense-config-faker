@@ -61,7 +61,7 @@ pip install -r requirements.txt
 ### Command Line Interface
 
 ```bash
-# Basic usage - generates 10 VLANs to test-config.csv
+# Basic usage - generates 10 VLANs to output/test-config.csv
 python generate_csv.py
 
 # Specify number of VLANs

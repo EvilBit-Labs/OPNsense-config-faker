@@ -27,8 +27,8 @@ fi
 python_version=$(python --version | cut -d' ' -f2)
 echo "Using Python $python_version"
 
-# Create export directory if it doesn't exist
-mkdir -p export
+# Create output directory if it doesn't exist
+mkdir -p output
 
 echo -e "${GREEN}Available commands:${NC}"
 echo "1. Generate network configuration data (CSV)"
