@@ -3,3 +3,4 @@ config.csv
 config-firewall1.xml
 config-firewall2.xml
 export/*.xml
+venv/
