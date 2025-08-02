@@ -9,8 +9,8 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}OPNsense Config Generator${NC}"
-echo "=========================="
+echo -e "${GREEN}Network Configuration Data Generator${NC}"
+echo "===================================="
 
 # Check if virtual environment exists
 if [ ! -d "venv" ]; then
@@ -31,38 +31,51 @@ echo "Using Python $python_version"
 mkdir -p export
 
 echo -e "${GREEN}Available commands:${NC}"
-echo "1. Generate new test CSV file"
-echo "2. Run XML config generator"
-echo "3. Both (generate CSV then XML)"
+echo "1. Generate network configuration data (CSV)"
+echo "2. Generate with custom count"
+echo "3. Generate with custom filename"
+echo "4. Legacy: Use original OPNsense generator"
 
-read -p "Choose an option (1-3): " choice
+read -p "Choose an option (1-4): " choice
 
 case $choice in
     1)
-        echo -e "${YELLOW}Generating new test CSV file...${NC}"
-        read -p "How many VLANs to generate? (default: 10): " vlan_count
-        if [ -z "$vlan_count" ]; then
-            python generate_csv.py
-        else
-            python generate_csv.py --count "$vlan_count"
-        fi
+        echo -e "${YELLOW}Generating network configuration data...${NC}"
+        python generate_csv.py
         ;;
     2)
-        echo -e "${YELLOW}Running XML config generator...${NC}"
-        python generateXMLConfig.py
-        echo -e "${GREEN}Generated XML files in export/ directory${NC}"
-        ;;
-    3)
-        echo -e "${YELLOW}Generating new test CSV file...${NC}"
-        read -p "How many VLANs to generate? (default: 10): " vlan_count
+        read -p "How many VLAN configurations to generate? (default: 10): " vlan_count
+        echo -e "${YELLOW}Generating $vlan_count VLAN configurations...${NC}"
         if [ -z "$vlan_count" ]; then
             python generate_csv.py
         else
             python generate_csv.py --count "$vlan_count"
         fi
-        echo -e "${YELLOW}Running XML config generator...${NC}"
-        python generateXMLConfig.py
-        echo -e "${GREEN}Generated XML files in export/ directory${NC}"
+        ;;
+    3)
+        read -p "Output filename (default: test-config.csv): " filename
+        read -p "How many VLAN configurations? (default: 10): " vlan_count
+        echo -e "${YELLOW}Generating network configuration data...${NC}"
+        cmd="python generate_csv.py"
+        if [ ! -z "$vlan_count" ]; then
+            cmd="$cmd --count $vlan_count"
+        fi
+        if [ ! -z "$filename" ]; then
+            cmd="$cmd --output $filename"
+        fi
+        eval $cmd
+        ;;
+    4)
+        echo -e "${YELLOW}Using legacy OPNsense generator...${NC}"
+        if [ -f "legacy/opnsense/generateXMLConfig.py" ]; then
+            cd legacy/opnsense
+            python generateXMLConfig.py
+            cd ../..
+            echo -e "${GREEN}Generated XML files in legacy/opnsense/export/ directory${NC}"
+        else
+            echo -e "${RED}Legacy OPNsense generator not found${NC}"
+            exit 1
+        fi
         ;;
     *)
         echo -e "${RED}Invalid option${NC}"
@@ -71,4 +84,3 @@ case $choice in
 esac
 
 echo -e "${GREEN}Done!${NC}"
-echo "Generated files are in the export/ directory"
