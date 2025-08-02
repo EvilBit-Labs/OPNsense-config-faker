@@ -179,8 +179,18 @@ If you're coming from the original OPNsense config generator:
 
 ## Roadmap
 
-- [ ] JSON output format support
-- [ ] Additional network device configuration formats
-- [ ] Web API for data generation
-- [ ] Docker container for easy deployment
-- [ ] Plugin system for custom data generators
+- [ ] Additional network configuration elements:
+  - [ ] Firewall rules with realistic rule patterns
+  - [ ] DHCP server configurations with realistic scopes
+  - [ ] Interface configurations with realistic naming
+  - [ ] NAT rules with port mappings
+  - [ ] CARP virtual IP configurations
+  - [ ] Radius user accounts with authentication details
+- [ ] Enhanced data relationships:
+  - [ ] Cross-reference VLANs with appropriate interfaces
+  - [ ] Link DHCP scopes to corresponding VLAN networks
+  - [ ] Generate consistent firewall rules based on network topology
+- [ ] Configuration validation:
+  - [ ] Ensure generated configurations are internally consistent
+  - [ ] Validate IP address assignments don't conflict
+  - [ ] Check VLAN ID uniqueness across all components
