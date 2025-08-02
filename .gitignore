@@ -6,3 +6,7 @@ export/*.xml
 venv/
 output/*
 !output/README.md
+
+# Keep cursor rules but ignore other cursor files
+.cursor/*
+!.cursor/rules/
