@@ -1,21 +1,44 @@
+"""
+OPNsense Configuration Generator
+
+This module contains functionality derived from or inspired by the original
+OPNsense configuration generator by Stefan Reichhard (nett-media).
+
+Original work: https://github.com/nett-media/opnsense-config-generator
+Original author: Stefan Reichhard
+Initial implementation: November 2023
+
+Enhanced and modernized by EvilBit Labs for general network configuration
+data generation with Faker integration.
+
+This implementation maintains the core concepts while adding:
+- Modern Python practices and type hints
+- Faker integration for realistic test data
+- Improved error handling and validation
+- Modular architecture for extensibility
+"""
+
 import csv
 import uuid
 import random
 import string
 
+
 def generate_random_password(length=32):
     characters = string.ascii_letters + string.digits
-    return ''.join(random.choice(characters) for i in range(length))
+    return "".join(random.choice(characters) for i in range(length))
+
 
 def generate_xml_from_csv(csv_file, output_file, options):
-    with open(csv_file, 'r') as file:
+    with open(csv_file) as file:
         reader = csv.reader(file)
         next(reader)  # Überspringt die Header-Zeile
 
-        with open(output_file, 'w') as out_file:
-
+        with open(output_file, "w") as out_file:
             opt_counter = options.get("opt_counter", 1)
-            firewall_number = options.get('firewallNr', 1)  # Wenn firewallNr nicht angegeben ist, verwenden wir 1 als Standardwert
+            firewall_number = options.get(
+                "firewallNr", 1
+            )  # Wenn firewallNr nicht angegeben ist, verwenden wir 1 als Standardwert
             advskew = "0" if firewall_number == 1 else "100"
 
             for row in reader:
@@ -26,19 +49,19 @@ def generate_xml_from_csv(csv_file, output_file, options):
                 random_password = generate_random_password()
 
                 out_file.write(f'  <vip uuid="{random_uuid}">\n')
-                out_file.write(f'    <interface>opt{opt_counter}</interface>\n')
-                out_file.write(f'    <mode>carp</mode>\n')
-                out_file.write(f'    <subnet>{ip_range}</subnet>\n')
-                out_file.write(f'    <subnet_bits>24</subnet_bits>\n')
-                out_file.write(f'    <gateway/>\n')
-                out_file.write(f'    <noexpand>0</noexpand>\n')
-                out_file.write(f'    <nobind>0</nobind>\n')
-                out_file.write(f'    <password>{random_password}</password>\n')
-                out_file.write(f'    <vhid>{vlan_nr}</vhid>\n')
-                out_file.write(f'    <advbase>1</advbase>\n')
-                out_file.write(f'    <advskew>{advskew}</advskew>\n')
-                out_file.write(f'    <descr>{description}</descr>\n')
-                out_file.write(f'  </vip>\n')
+                out_file.write(f"    <interface>opt{opt_counter}</interface>\n")
+                out_file.write(f"    <mode>carp</mode>\n")
+                out_file.write(f"    <subnet>{ip_range}</subnet>\n")
+                out_file.write(f"    <subnet_bits>24</subnet_bits>\n")
+                out_file.write(f"    <gateway/>\n")
+                out_file.write(f"    <noexpand>0</noexpand>\n")
+                out_file.write(f"    <nobind>0</nobind>\n")
+                out_file.write(f"    <password>{random_password}</password>\n")
+                out_file.write(f"    <vhid>{vlan_nr}</vhid>\n")
+                out_file.write(f"    <advbase>1</advbase>\n")
+                out_file.write(f"    <advskew>{advskew}</advskew>\n")
+                out_file.write(f"    <descr>{description}</descr>\n")
+                out_file.write(f"  </vip>\n")
 
                 opt_counter += 1
 

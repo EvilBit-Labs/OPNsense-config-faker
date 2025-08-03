@@ -1,24 +1,54 @@
-# OPNsense Config Faker - Development Tasks
+# 🔧 justfile — OPNsense Config Faker Developer Tasks
+set shell := ["bash", "-cu"]
+set dotenv-load := true
+set ignore-comments := true
 
 # Default recipe - shows available commands
 default:
-    @just --list
+    just --summary
 
-# Install dependencies
+# Show help
+help:
+    just --summary
+
+# -----------------------------
+# 🔧 Setup & Installation  
+# -----------------------------
+
+# Install dependencies and setup pre-commit hooks
 install:
+    cd {{justfile_dir()}}
+    # 🚀 Set up dev env & pre-commit hooks
     uv sync --no-install-project --extra dev
+    uv run pre-commit install
+    uv run pre-commit install --hook-type commit-msg
+    uv run pre-commit install --hook-type pre-push
 
-# Run the CSV generator with default settings
-run count="10":
-    uv run python generate_csv.py --count {{count}}
+# Install additional optional dependencies
+install-rich:
+    uv sync --no-install-project --extra rich
 
-# Run the CSV generator with custom output file
-run-output count="10" output="test-config.csv":
-    uv run python generate_csv.py --count {{count}} --output {{output}}
+# Install all extras
+install-all:
+    uv sync --no-install-project --all-extras
+
+# Update uv dependencies
+update-deps:
+    cd {{justfile_dir()}}
+    uv sync --no-install-project --extra dev -U
+
+# -----------------------------
+# 🧹 Linting, Typing & Formatting
+# -----------------------------
 
 # Format code with ruff
 format:
+    cd {{justfile_dir()}}
     uv run ruff format .
+
+# Check code formatting using ruff
+format-check:
+    uv run ruff format --check .
 
 # Lint code with ruff
 lint:
@@ -37,18 +67,94 @@ type-check:
 type-check-watch:
     uv run basedpyright --watch
 
-# Run all checks (lint + format check + type check) - for local development
-check:
-    @echo "Running linting checks..."
-    uv run ruff check .
-    @echo "Running format checks..."
-    uv run ruff format --check .
-    @echo "Running type checks..."
-    uv run basedpyright
-    @echo "All checks passed!"
+# Run all linting and type checks
+check-all:
+    cd {{justfile_dir()}}
+    just format-check
+    just pre-commit-run
+    just type-check
+
+# -----------------------------
+# 🧪 Testing & Coverage
+# -----------------------------
+
+# Run tests (when test suite is created)
+test:
+    TERM=dumb uv run pytest
+
+# Run tests with coverage
+test-cov:
+    TERM=dumb uv run pytest --cov=. --cov-report=term-missing --cov-report=html
+
+# Run all tests with maxfail=1 and disable warnings
+test-fast:
+    TERM=dumb uv run pytest --maxfail=1 --disable-warnings -v tests/
+
+# Run coverage report
+coverage:
+    uv run coverage report
+
+# Clean up and run tests
+clean-test: clean
+    @echo "✅ Cleaned. Running tests..."
+    just test
+
+# -----------------------------
+# 📦 CSV Generation & Usage
+# -----------------------------
+
+# Run the CSV generator with default settings
+run count="10":
+    cd {{justfile_dir()}}
+    uv run python generate_csv.py --count {{count}}
+
+# Run the CSV generator with custom output file
+run-output count="10" output="test-config.csv":
+    cd {{justfile_dir()}}
+    uv run python generate_csv.py --count {{count}} --output {{output}}
+
+# Generate sample data for testing
+generate-sample:
+    cd {{justfile_dir()}}
+    @echo "🔧 Generating sample configurations..."
+    just run 5
+    @echo "✅ Sample data generated! Check the output files."
+
+# -----------------------------
+# 🧹 Build & Clean
+# -----------------------------
+
+# Clean up generated files and caches
+clean:
+    cd {{justfile_dir()}}
+    @echo "🧹 Cleaning .pyc files, __pycache__, and .pytest_cache..."
+    find . -type d -name "__pycache__" -exec rm -rf "{}" +
+    find . -type f -name "*.pyc" -delete
+    find . -type f -name "*.pyo" -delete
+    rm -rf .pytest_cache/
+    rm -rf htmlcov/
+    rm -rf .coverage
+    rm -rf build/
+    rm -rf dist/
+    rm -rf *.egg-info/
+
+# Build the project
+build:
+    uvx --from build pyproject-build --installer uv
+
+# Clean up and build the project
+clean-build:
+    just ci-check
+    just clean
+    just build
+
+# -----------------------------
+# 🤖 CI Workflow
+# -----------------------------
 
 # CI-friendly check that runs all validation (no formatting, strict checking)
 ci-check:
+    cd {{justfile_dir()}}
     @echo "=== CI Validation ==="
     @echo "Checking Python version compatibility..."
     uv run python --version
@@ -59,66 +165,60 @@ ci-check:
     @echo "\nRunning type checking..."
     uv run basedpyright
     @echo "\nRunning tests (when available)..."
-    -uv run pytest --tb=short -v || echo "No tests found or pytest not configured"
+    -TERM=dumb uv run pytest --tb=short -v || echo "No tests found or pytest not configured"
     @echo "\nValidating project structure..."
     @test -f pyproject.toml || (echo "ERROR: pyproject.toml missing" && exit 1)
     @test -f generate_csv.py || (echo "ERROR: generate_csv.py missing" && exit 1)
     @test -f justfile || (echo "ERROR: justfile missing" && exit 1)
     @echo "\n✅ All CI checks passed!"
 
-# Run tests (when test suite is created)
-test:
-    uv run pytest
+# Setup CI checks and dependencies for CI workflow
+ci-setup:
+    cd {{justfile_dir()}}
+    uv sync --no-install-project --extra dev || @echo "Make sure uv is installed manually"
+    uv run pre-commit install --hook-type commit-msg || @echo "Make sure pre-commit is installed manually"
 
-# Run tests with coverage
-test-cov:
-    uv run pytest --cov=. --cov-report=term-missing --cov-report=html
-
-# Clean up generated files and caches
-clean:
-    rm -rf .pytest_cache/
-    rm -rf htmlcov/
-    rm -rf __pycache__/
-    rm -rf .coverage
-    rm -rf build/
-    rm -rf dist/
-    rm -rf *.egg-info/
-    find . -name "*.pyc" -delete
-    find . -name "*.pyo" -delete
+# -----------------------------
+# 🚀 Development Environment
+# -----------------------------
 
 # Development setup (install + generate sample)
 dev-setup:
-    @echo "Setting up OPNsense Config Faker development environment..."
+    cd {{justfile_dir()}}
+    @echo "🚀 Setting up OPNsense Config Faker development environment..."
     just install
-    @echo "\nInstalling pre-commit hooks..."
-    just pre-commit-install
-    @echo "\nGenerating sample configuration (5 records)..."
+    @echo "\n📦 Generating sample configuration (5 records)..."
     just run 5
-    @echo "\nSetup complete! Try: just run 25"
+    @echo "\n✅ Setup complete! Try: just run 25"
 
-# Pre-commit setup and management
-pre-commit-install:
-    uv run pre-commit install
-    uv run pre-commit install --hook-type commit-msg
-    uv run pre-commit install --hook-type pre-push
+# Development workflow: clean, check, and generate sample
+dev:
+    cd {{justfile_dir()}}
+    just clean
+    just check-all
+    just generate-sample
 
+# -----------------------------
+# 🔧 Pre-commit Management
+# -----------------------------
+
+# Run pre-commit on all files
 pre-commit-run:
     uv run pre-commit run --all-files
 
+# Update pre-commit hooks
 pre-commit-update:
     uv run pre-commit autoupdate
 
-# Install additional optional dependencies
-install-rich:
-    uv sync --no-install-project --extra rich
-
-install-all:
-    uv sync --no-install-project --all-extras
+# -----------------------------
+# 📊 Project Information
+# -----------------------------
 
 # Show project info
 info:
-    @echo "OPNsense Config Faker"
-    @echo "====================="
+    cd {{justfile_dir()}}
+    @echo "🔧 OPNsense Config Faker"
+    @echo "========================"
     @echo "Python version: $(uv run python --version)"
     @echo "UV version: $(uv --version)"
     @echo "Project dependencies:"
