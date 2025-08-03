@@ -10,11 +10,13 @@
 ## 2. Network Configuration Standards
 
 ### VLAN IDs
+
 - Valid range: 10-4094 (IEEE 802.1Q standard)
 - Ensure uniqueness within each generated dataset
 - Use realistic distribution, not purely random
 
 ### IP Addresses
+
 - Use only RFC 1918 private address spaces:
   - 10.0.0.0/8 (Class A: 10.0.0.0 - 10.255.255.255)
   - 172.16.0.0/12 (Class B: 172.16.0.0 - 172.31.255.255)
@@ -23,6 +25,7 @@
 - Ensure no duplicate networks in single generation
 
 ### Department/Organizational Naming
+
 - Use realistic department names:
   - Technical: IT, Engineering, DevOps, Security
   - Business: Sales, Marketing, Finance, HR
@@ -31,6 +34,7 @@
 - Combine department with VLAN ID for descriptions
 
 ### WAN Assignments
+
 - Use values 1-3 to represent different WAN connections
 - Distribute assignments realistically across VLANs
 
@@ -44,12 +48,14 @@
 ## 4. Output Formats
 
 ### CSV Structure
+
 - Header: `VLAN,IP Range,Beschreibung,WAN`
 - Use German "Beschreibung" for description (legacy compatibility)
 - No trailing whitespace or extra delimiters
 - Consistent field ordering
 
 ### File Organization
+
 - Default output to `output/` directory
 - Create directories automatically if needed
 - Use descriptive filenames with timestamps when appropriate

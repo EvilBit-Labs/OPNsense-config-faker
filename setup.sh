@@ -37,6 +37,7 @@ $PYTHON_CMD -m venv venv
 
 # Activate virtual environment
 echo "Activating virtual environment..."
+# shellcheck source=/dev/null
 source venv/bin/activate
 
 # Upgrade pip

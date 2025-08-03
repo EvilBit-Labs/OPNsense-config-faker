@@ -6,8 +6,8 @@ A flexible tool for generating realistic network configuration test data, partic
 
 This project is forked from [nett-media/opnsense-config-generator](https://github.com/nett-media/opnsense-config-generator), originally designed for generating OPNsense firewall configurations. We've transformed it into a general-purpose network configuration data generator while preserving the original git history and respecting the source project.
 
-**Original Project**: OPNsense Config Generation by nett-media  
-**Fork Purpose**: General network configuration test data generation  
+**Original Project**: OPNsense Config Generation by nett-media\
+**Fork Purpose**: General network configuration test data generation\
 **License**: Preserves original project licensing
 
 ## Features
@@ -39,10 +39,12 @@ python generate_csv.py --count 50 --output my-network-config.csv
 ## Installation
 
 ### Prerequisites
+
 - Python 3.10+ (Python 3.13 recommended)
 - Git
 
 ### Setup
+
 ```bash
 # Create virtual environment
 python3.13 -m venv venv
@@ -89,14 +91,15 @@ This provides an interactive menu for common operations.
 
 The tool generates CSV files with the following columns:
 
-| Column | Description | Example |
-|--------|-------------|---------|
-| VLAN | VLAN ID (10-4094) | 1234 |
-| IP Range | Private IP network | 10.123.45.x |
-| Beschreibung | Department + VLAN ID | IT1234 |
-| WAN | WAN assignment (1-3) | 2 |
+| Column       | Description          | Example     |
+| ------------ | -------------------- | ----------- |
+| VLAN         | VLAN ID (10-4094)    | 1234        |
+| IP Range     | Private IP network   | 10.123.45.x |
+| Beschreibung | Department + VLAN ID | IT1234      |
+| WAN          | WAN assignment (1-3) | 2           |
 
 ### Sample Output
+
 ```csv
 VLAN,IP Range,Beschreibung,WAN
 1234,10.123.45.x,IT1234,2
@@ -109,7 +112,7 @@ VLAN,IP Range,Beschreibung,WAN
 - **Unique VLAN IDs**: No duplicates, valid range (10-4094)
 - **RFC 1918 Compliant**: All IP ranges use private address spaces
   - 10.0.0.0/8 (Class A)
-  - 172.16.0.0/12 (Class B) 
+  - 172.16.0.0/12 (Class B)
   - 192.168.0.0/16 (Class C)
 - **Realistic Descriptions**: Department-based naming
 - **Varied Data**: Uses Faker for natural distribution
@@ -119,6 +122,7 @@ VLAN,IP Range,Beschreibung,WAN
 ### Modify Data Generation
 
 Edit `generate_csv.py` to customize:
+
 - VLAN ID ranges
 - IP address patterns
 - Department names
@@ -129,11 +133,25 @@ Edit `generate_csv.py` to customize:
 
 ```python
 # Add new department types
-department = fake.random_element(elements=(
-    'Sales', 'IT', 'HR', 'Finance', 'Marketing', 'Operations', 
-    'Engineering', 'Support', 'Admin', 'Guest', 'Lab', 'Test',
-    'Security', 'DevOps', 'QA'  # Add your departments here
-))
+department = fake.random_element(
+    elements=(
+        "Sales",
+        "IT",
+        "HR",
+        "Finance",
+        "Marketing",
+        "Operations",
+        "Engineering",
+        "Support",
+        "Admin",
+        "Guest",
+        "Lab",
+        "Test",
+        "Security",
+        "DevOps",
+        "QA",  # Add your departments here
+    )
+)
 ```
 
 ## Use Cases
@@ -158,15 +176,37 @@ department = fake.random_element(elements=(
 4. Add tests if applicable
 5. Submit a pull request
 
+## Attribution and Acknowledgments
+
+### Original Project Credit
+
+This project builds upon and was inspired by the foundational work of:
+
+- **Stefan Reichhard** and the **nett-media team**
+- **Original Repository**: [nett-media/opnsense-config-generator](https://github.com/nett-media/opnsense-config-generator)
+- **Original Purpose**: Batch creation of VLANs, Interfaces, DHCP Server, CARP IP, NAT, Firewall Rules and Radius User configurations for OPNsense
+- **Initial Release**: November 2023
+
+### Our Contributions
+
+While respecting and crediting the original work, this fork has evolved into a distinct project with:
+
+- **General Purpose**: Expanded from OPNsense-specific to general network configuration data generation
+- **Modern Architecture**: Rebuilt with Pydantic models, type safety, and modern Python practices
+- **Faker Integration**: Realistic test data generation using the Faker library
+- **Enhanced Tooling**: Modern development workflow with `uv`, `ruff`, and comprehensive testing
+- **Multiple Formats**: Support for CSV, JSON, and XML output formats
+- **Extensible Design**: Plugin architecture for adding new configuration types
+
+### Additional Acknowledgments
+
+- **The Faker Library maintainers** - For excellent test data generation capabilities
+- **The Python Community** - For the robust ecosystem enabling projects like this
+- **Pydantic developers** - For outstanding data validation and serialization tools
+
 ## License
 
-This project maintains the same license as the original [nett-media/opnsense-config-generator](https://github.com/nett-media/opnsense-config-generator) project.
-
-## Acknowledgments
-
-- **Original Authors**: nett-media team for the foundational OPNsense config generator
-- **Faker Library**: For providing excellent test data generation capabilities
-- **Python Community**: For the robust ecosystem that makes projects like this possible
+This project is licensed under the MIT License. While the original project did not specify a license, we've chosen MIT to ensure maximum compatibility and usability. See [CONTRIBUTORS.md](CONTRIBUTORS.md) for detailed attribution information.
 
 ## Migration from Original Project
 

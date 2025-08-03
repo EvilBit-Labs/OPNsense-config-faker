@@ -16,10 +16,12 @@ echo "===================================="
 if [ ! -d "venv" ]; then
     echo -e "${YELLOW}Virtual environment not found. Creating...${NC}"
     /opt/homebrew/bin/python3.13 -m venv venv
+    # shellcheck source=/dev/null
     source venv/bin/activate
     pip install -r requirements.txt
 else
     echo -e "${GREEN}Activating virtual environment...${NC}"
+    # shellcheck source=/dev/null
     source venv/bin/activate
 fi
 
@@ -36,7 +38,7 @@ echo "2. Generate with custom count"
 echo "3. Generate with custom filename"
 echo "4. Legacy: Use original OPNsense generator"
 
-read -p "Choose an option (1-4): " choice
+read -r -p "Choose an option (1-4): " choice
 
 case $choice in
     1)
@@ -44,7 +46,7 @@ case $choice in
         python generate_csv.py
         ;;
     2)
-        read -p "How many VLAN configurations to generate? (default: 10): " vlan_count
+        read -r -p "How many VLAN configurations to generate? (default: 10): " vlan_count
         echo -e "${YELLOW}Generating $vlan_count VLAN configurations...${NC}"
         if [ -z "$vlan_count" ]; then
             python generate_csv.py
@@ -53,17 +55,17 @@ case $choice in
         fi
         ;;
     3)
-        read -p "Output filename (default: test-config.csv): " filename
-        read -p "How many VLAN configurations? (default: 10): " vlan_count
+        read -r -p "Output filename (default: test-config.csv): " filename
+        read -r -p "How many VLAN configurations? (default: 10): " vlan_count
         echo -e "${YELLOW}Generating network configuration data...${NC}"
         cmd="python generate_csv.py"
-        if [ ! -z "$vlan_count" ]; then
+        if [ -n "$vlan_count" ]; then
             cmd="$cmd --count $vlan_count"
         fi
-        if [ ! -z "$filename" ]; then
+        if [ -n "$filename" ]; then
             cmd="$cmd --output $filename"
         fi
-        eval $cmd
+        eval "$cmd"
         ;;
     4)
         echo -e "${YELLOW}Legacy OPNsense generator...${NC}"
@@ -72,7 +74,7 @@ case $choice in
         echo
         echo -e "${YELLOW}This ensures you get the latest updates and support from the original authors.${NC}"
         echo
-        read -p "Do you still want to use the legacy version? (y/N): " use_legacy
+        read -r -p "Do you still want to use the legacy version? (y/N): " use_legacy
         if [[ $use_legacy =~ ^[Yy]$ ]]; then
             if [ -f "legacy/opnsense/generateXMLConfig.py" ]; then
                 cd legacy/opnsense
