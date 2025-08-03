@@ -10,20 +10,18 @@ Despite the generated parts from the config.csv file, there is also the possibil
 
 The `generateXMLConfig` script generates all parts and then inject them into a backup config file from the firewall.
 
+## Steps
 
-## Steps:
+- put OPNsense backup config.xml into root folder (aka here)
+- create/modify config.csv (see config-example for reference)
+- create/modify init parts (in `init` folder)
+- generate config.xmv by running `generateXMLConfig.py` script
+- generated config.xml will be inside `export` folder along with all generated parts
 
-* put OPNsense backup config.xml into root folder (aka here)
-* create/modify config.csv (see config-example for reference) 
-* create/modify init parts (in `init` folder)
-* generate config.xmv by running `generateXMLConfig.py` script
-* generated config.xml will be inside `export` folder along with all generated parts
+## Example
 
-
-## Example:
-
-```
-$ python generateXMLConfig.py                                                                                       ✔ 
+```shell
+$ python generateXMLConfig.py                                                                                       ✔
 generating export/part1_Interface.xml..
 generating export/part2_DHCP.xml..
 generating export/part3_NAT.xml..

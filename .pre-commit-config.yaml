@@ -1,0 +1,112 @@
+# .pre-commit-config.yaml
+
+repos:
+    # 🧼 Standard Python code cleanup hooks
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v5.0.0
+      hooks:
+          - id: check-added-large-files
+            args: ["--maxkb=1024"]
+          - id: check-ast
+          - id: check-case-conflict
+          - id: check-merge-conflict
+          - id: check-illegal-windows-names
+          - id: check-json
+          - id: check-toml
+          - id: check-yaml
+            args: [--unsafe]
+          - id: check-xml
+            exclude: ^legacy/
+          - id: mixed-line-ending
+            args: [--fix=auto]
+          - id: check-docstring-first
+          - id: check-vcs-permalinks
+
+    # 🧹 Ruff linting + formatting
+    - repo: https://github.com/astral-sh/ruff-pre-commit
+      rev: v0.12.7
+      hooks:
+          - id: ruff-check
+            args: [--fix]
+          - id: ruff-format
+
+    # 🧪 basedpyright for static type checks
+    - repo: https://github.com/DetachHead/basedpyright-pre-commit-mirror
+      rev: 1.31.0
+      hooks:
+          - id: basedpyright
+
+    # 📦 Deptry for unused/undeclared deps
+    - repo: https://github.com/fpgmaas/deptry
+      rev: 0.23.0
+      hooks:
+          - id: deptry
+            exclude: ^legacy/
+
+    - repo: https://github.com/asottile/pyupgrade
+      rev: v3.20.0
+      hooks:
+          - id: pyupgrade
+            args: ["--py311-plus"]
+            exclude: ^legacy/
+
+    - repo: https://github.com/rhysd/actionlint
+      rev: v1.7.7
+      hooks:
+          - id: actionlint
+            files: ".github/workflows/"
+
+    - repo: https://github.com/koalaman/shellcheck-precommit
+      rev: v0.10.0
+      hooks:
+          - id: shellcheck
+            exclude: ^legacy/
+
+    # 📝 Commit message linting via commitlint
+    # - repo: local
+    #   hooks:
+    #       - id: commitlint
+    #         name: commitlint
+    #         entry: npx --no-install commitlint --edit
+    #         language: node
+    #         stages: [commit-msg]
+
+    - repo: https://github.com/commitizen-tools/commitizen
+      rev: v4.8.3
+      hooks:
+          - id: commitizen
+            stages: [commit-msg]
+          - id: commitizen-branch
+            stages: [pre-push]
+
+    # 🐍 uv for Python environment management
+    - repo: https://github.com/astral-sh/uv-pre-commit
+      rev: 0.8.4
+      hooks:
+          - id: uv-lock
+
+    - repo: https://github.com/hukkin/mdformat
+      rev: 0.7.22
+      hooks:
+          - id: mdformat
+            additional_dependencies:
+                - mdformat-gfm
+                - mdformat-admon
+                - mdformat-config
+                - mdformat-footnote
+                - mdformat-frontmatter
+                - mdformat-simple-breaks
+                - mdformat-tables
+                - mdformat-web
+                - mdformat-wikilink
+                - mdformat-ruff
+                - mdformat-gfm-alerts
+                - mdformat-rustfmt
+                - mdformat-toc
+
+    - repo: https://github.com/DavidAnson/markdownlint-cli2
+      rev: v0.18.1
+      hooks:
+          - id: markdownlint-cli2
+            args: ["-c", ".markdownlint-cli2.jsonc"]
+            exclude: ^legacy/
