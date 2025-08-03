@@ -1,3 +1,23 @@
+"""
+OPNsense Configuration Generator
+
+This module contains functionality derived from or inspired by the original
+OPNsense configuration generator by Stefan Reichhard (nett-media).
+
+Original work: https://github.com/nett-media/opnsense-config-generator
+Original author: Stefan Reichhard
+Initial implementation: November 2023
+
+Enhanced and modernized by EvilBit Labs for general network configuration
+data generation with Faker integration.
+
+This implementation maintains the core concepts while adding:
+- Modern Python practices and type hints
+- Faker integration for realistic test data
+- Improved error handling and validation
+- Modular architecture for extensibility
+"""
+
 import os
 import importlib
 import replaceTags
@@ -36,12 +56,8 @@ def insertPartsToConfig(xml_config_file):
         # file_names = [f"init/init_{module_info['part_name']}.xml", f"export/part{module_info['order']}_{module_info['part_name']}.xml"]
         # file_names = [ f"export/part{module_info['order']}_{module_info['part_name']}.xml"]
         init_file = f"init/init_{module_info['part_name']}.xml"
-        export_file = (
-            f"export/part{module_info['order']}_{module_info['part_name']}.xml"
-        )
-        file_names = (
-            [init_file, export_file] if os.path.exists(init_file) else [export_file]
-        )
+        export_file = f"export/part{module_info['order']}_{module_info['part_name']}.xml"
+        file_names = [init_file, export_file] if os.path.exists(init_file) else [export_file]
 
         print(f"inject {file_names} into {generated_xml_file}")
 
