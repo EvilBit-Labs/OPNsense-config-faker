@@ -4,18 +4,19 @@ This document outlines the core concepts, framework, and coding standards for th
 
 ## 1. Core Philosophy
 
-- **Data Generation Focus**: This project specializes in generating realistic network configuration test data using the Faker library
-- **Operator-Centric Design**: Built for network operators and automation engineers who need realistic test data
+- **OPNsense Configuration Focus**: This project's primary purpose is generating valid OPNsense `config.xml` files with realistic faked data
+- **Single Platform Target**: Specifically designed for OPNsense firewall configurations - not a general network configuration tool
+- **CSV as Intermediate Format**: CSV generation is an internal implementation detail, not a primary feature
+- **Operator-Centric Design**: Built for network operators and automation engineers who need realistic OPNsense test configurations
 - **Ethical Development**: Maintain proper boundaries and respect for the original nett-media/opnsense-config-generator project
-- **Structured Data**: All generated configurations should be structured, consistent, and useful for testing purposes
 
 ## 2. Project Structure
 
 ```text
 /
-├── generate_csv.py           # Main CSV generation script
+├── generate_csv.py           # Main script with integrated CSV and XML generation
 ├── run_generator.sh          # Interactive helper script
-├── legacy/                   # Original OPNsense functionality (preserved)
+├── legacy/                   # Original OPNsense functionality (preserved for reference)
 ├── output/                   # Generated configuration files
 ├── tests/                    # Test suite (when implemented)
 ├── justfile                  # Task runner configuration
@@ -24,14 +25,14 @@ This document outlines the core concepts, framework, and coding standards for th
 
 ## 3. Technology Stack
 
-| Layer               | Technology                      | Notes                                    |
-| ------------------- | ------------------------------- | ---------------------------------------- |
-| **Language**        | Python 3.10+                    | Modern Python with type hints            |
-| **Data Generation** | Faker                           | For realistic network configuration data |
-| **XML Processing**  | lxml                            | For legacy XML functionality             |
-| **CLI Enhancement** | Rich (potential future)         | For enhanced terminal output             |
-| **Testing**         | pytest                          | When test suite is implemented           |
-| **Tooling**         | `uv` for deps, `just` for tasks | `ruff` for linting and formatting        |
+|| Layer | Technology | Notes |
+|| \------------------- | ------------------------------- | ---------------------------------------- |
+|| **Language** | Python 3.10+ | Modern Python with type hints |
+|| **Data Generation** | Faker | For realistic network configuration data |
+|| **XML Processing** | lxml | For OPNsense XML configuration generation|
+|| **CLI Framework** | Typer + Rich | Modern CLI with enhanced terminal output |
+|| **Testing** | pytest | When test suite is implemented |
+|| **Tooling** | `uv` for deps, `just` for tasks | `ruff` for linting and formatting |
 
 ## 4. Coding Standards and Conventions
 
@@ -63,16 +64,21 @@ This document outlines the core concepts, framework, and coding standards for th
 
 ### Core Functionality
 
-- **Main Script**: `generate_csv.py` - Generates CSV files with network configurations
-- **Default Output**: `output/test-config.csv`
-- **CLI Interface**: Supports `--count` and `--output` parameters
-- **Data Format**: CSV with columns: VLAN, IP Range, Beschreibung, WAN
+- **Primary Purpose**: Generate valid OPNsense `config.xml` files with realistic faked data
+- **Main Script**: `generate_csv.py` - Tool for OPNsense configuration generation
+- **XML Generation**: Primary feature - creates complete OPNsense configurations with realistic test data
+- **CSV as Intermediate**: CSV generation is an internal implementation detail for data processing
+- **Single Platform**: OPNsense only - not designed for other platforms or output formats
+- **CLI Interface**: Simple interface focused on OPNsense configuration generation
+- **Internal Data Format**: CSV with columns: VLAN, IP Range, Beschreibung, WAN (used internally)
 
-### Legacy Support
+### Legacy Support and Integration
 
-- **Preservation**: Original OPNsense functionality preserved in `legacy/` directory
-- **Guidance**: Users encouraged to use upstream project for OPNsense-specific features
-- **Separation**: Clear distinction between new data generation features and legacy code
+- **Preservation**: Original OPNsense functionality preserved in `legacy/` directory for reference
+- **Integration**: Core XML generation functionality integrated into main tool with proper attribution
+- **Modernization**: Legacy code enhanced with modern Python practices, type hints, and error handling
+- **Attribution**: All integrated code maintains proper attribution to Stefan Reichhard's original work
+- **Upstream Guidance**: Users still encouraged to use upstream project for latest OPNsense-specific features
 
 ### Quality Assurance
 
@@ -91,10 +97,35 @@ This document outlines the core concepts, framework, and coding standards for th
 - **Focus on Value**: Enhance the project's unique value proposition as a network configuration data generator
 - **Ethical Boundaries**: Always respect the original project authors and encourage upstream usage where appropriate
 
-## 7. Future Roadmap Considerations
+## 7. Integrated XML Generation
 
-- Enhanced CLI with Rich for better user experience
+### Features
+
+- **Complete Integration**: Legacy XML functionality now integrated into main tool
+- **Modern CLI**: `python generate_csv.py xml` command for XML generation
+- **Core Dependencies**: All required dependencies included by default
+- **Attribution Maintained**: All integrated code properly attributed to original author
+- **Enhanced Functionality**: Error handling, progress indicators, and validation added
+
+### Usage Examples
+
+```bash
+# Primary use case - Generate OPNsense XML configuration
+python generate_csv.py xml --base-config config.xml --count 25
+
+# Generate CSV for intermediate processing (rarely needed directly)
+python generate_csv.py csv --count 25
+
+# Use existing CSV file for XML generation (advanced usage)
+python generate_csv.py xml --base-config config.xml --csv-file my-data.csv
+```
+
+## 8. Future Roadmap Considerations
+
 - Comprehensive test suite with pytest
-- Additional network configuration elements (firewall rules, DHCP scopes, etc.)
-- Configuration validation and consistency checking
-- Export formats beyond CSV (JSON, YAML, etc.)
+- Enhanced OPNsense configuration elements (additional modules, more realistic data)
+- Configuration validation and consistency checking for OPNsense configs
+- Enhanced XML template system for different OPNsense versions
+- Improved realistic data generation for OPNsense-specific features
+
+**Note**: Supporting other platforms or output formats beyond OPNsense XML is explicitly NOT a feature goal

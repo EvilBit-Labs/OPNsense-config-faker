@@ -1,236 +1,214 @@
-# Network Configuration Data Generator
+# OPNsense Config Faker
 
-A flexible tool for generating realistic network configuration test data, particularly useful for testing network automation tools, configuration management systems, and network infrastructure projects.
+Generate realistic OPNsense firewall configurations for testing, training, and development. Create complete `config.xml` files with VLANs, interfaces, DHCP, NAT rules, firewall policies, and more using authentic network data.
 
-## Origin and Attribution
+## What This Tool Does
 
-This project is forked from [nett-media/opnsense-config-generator](https://github.com/nett-media/opnsense-config-generator), originally designed for generating OPNsense firewall configurations. We've transformed it into a general-purpose network configuration data generator while preserving the original git history and respecting the source project.
+**Primary Use**: Generate complete OPNsense firewall configurations with realistic network data for:
 
-**Original Project**: OPNsense Config Generation by nett-media\
-**Fork Purpose**: General network configuration test data generation\
-**License**: Preserves original project licensing
+- Testing OPNsense automation tools and scripts
+- Validating configuration management systems
+- Training network administrators on OPNsense
+- Load testing OPNsense deployments
+- Developing OPNsense management applications
 
-## Features
+**What You Get**: Fully functional OPNsense `config.xml` files containing:
 
-- **Realistic Network Data**: Generate VLAN configurations with RFC 1918 compliant private IP ranges
-- **Flexible Output**: Configurable number of records and output formats
-- **Command-Line Interface**: Easy-to-use CLI with comprehensive options
-- **Faker Integration**: Uses Faker library for realistic, varied test data
-- **Virtual Environment**: Isolated Python dependencies for clean development
-- **Extensible**: Easy to modify for different network configuration formats
+- VLAN configurations with realistic IP ranges
+- Network interface assignments
+- DHCP server configurations
+- NAT rules and port mappings
+- Firewall policies and rules
+- CARP virtual IP configurations
+- RADIUS user accounts
 
 ## Quick Start
 
 ```bash
-# Clone the repository
+# Download and setup
 git clone https://github.com/EvilBit-Labs/OPNsense-config-faker.git
 cd OPNsense-config-faker
 
-# Set up virtual environment and dependencies
-./setup.sh
+# Install dependencies
+uv sync
 
-# Generate 10 VLAN configurations (default)
-python generate_csv.py
-
-# Generate 50 configurations with custom filename
-python generate_csv.py --count 50 --output my-network-config.csv
+# Generate 25 OPNsense configurations
+python generate_csv.py xml --base-config legacy/opnsense/config-example.xml --count 25
 ```
+
+## Real-World Use Cases
+
+### Network Administrators
+
+- **Testing Automation**: Validate your Ansible/Puppet/Chef OPNsense playbooks with realistic data
+- **Training Scenarios**: Create diverse network topologies for team training
+- **Migration Testing**: Test configuration migrations with complex network setups
+- **Load Testing**: Generate large configurations to test OPNsense performance
+
+### Security Administrators
+
+- **Policy Testing**: Test firewall rule deployments across multiple network segments
+- **Compliance Validation**: Generate configurations that match your security policies
+- **Incident Response Training**: Create realistic network scenarios for security drills
+- **Vulnerability Assessment**: Test security tools against varied network configurations
+
+### DevOps Engineers
+
+- **Infrastructure Testing**: Validate OPNsense deployments in CI/CD pipelines
+- **Configuration Management**: Test Terraform/Pulumi OPNsense modules
+- **Monitoring Setup**: Generate configurations to test monitoring and alerting
+- **Backup Testing**: Validate backup and restore procedures
 
 ## Installation
 
-### Prerequisites
+### Requirements
 
-- Python 3.10+ (Python 3.13 recommended)
-- Git
+- Python 3.10+ (3.13 recommended)
+- UV package manager (recommended) or pip
 
-### Setup
+### Quick Setup
 
 ```bash
-# Create virtual environment
-python3.13 -m venv venv
+# Using UV (recommended)
+uv sync
 
-# Activate virtual environment
-source venv/bin/activate  # Linux/macOS
-# OR
-venv\Scripts\activate     # Windows
-
-# Install dependencies
-pip install -r requirements.txt
+# Or using pip
+pip install faker typer rich lxml
 ```
 
-## Usage
+## Usage Examples
 
-### Command Line Interface
+### Generate Basic Configurations
 
 ```bash
-# Basic usage - generates 10 VLANs to output/test-config.csv
-python generate_csv.py
+# Create 10 OPNsense configurations
+python generate_csv.py xml --base-config legacy/opnsense/config-example.xml --count 10
 
-# Specify number of VLANs
-python generate_csv.py --count 25
-
-# Custom output file
-python generate_csv.py --output production-test.csv
-
-# Combination
-python generate_csv.py -c 100 -o large-dataset.csv
-
-# Help
-python generate_csv.py --help
+# Specify output directory
+python generate_csv.py xml --base-config config.xml --count 25 --output-dir ./my-configs
 ```
 
-### Interactive Helper Script
+### Advanced Scenarios
 
 ```bash
+# Generate configurations for a large enterprise (100 firewalls)
+python generate_csv.py xml --base-config config.xml --count 100 --output-dir enterprise-configs
+
+# Create configurations with specific firewall settings
+python generate_csv.py xml --base-config config.xml --count 50 \
+  --firewall-nr 3 --opt-counter 15
+
+# Use existing CSV data as input
+python generate_csv.py xml --base-config config.xml --csv-file my-network-data.csv
+```
+
+### Interactive Mode
+
+```bash
+# Use the interactive helper
 ./run_generator.sh
 ```
 
-This provides an interactive menu for common operations.
+## Generated Configuration Details
 
-## Generated Data Format
+### Network Components
 
-The tool generates CSV files with the following columns:
+- **VLANs**: 10-4094 range with unique IDs
+- **IP Ranges**: RFC 1918 compliant private networks
+  - 10.0.0.0/8 (Class A)
+  - 172.16.0.0/12 (Class B)
+  - 192.168.0.0/16 (Class C)
+- **Departments**: IT, Sales, HR, Finance, Marketing, Operations, Engineering, Support, Admin, Guest, Lab, Test, Security, DevOps, QA
 
-| Column       | Description          | Example     |
-| ------------ | -------------------- | ----------- |
-| VLAN         | VLAN ID (10-4094)    | 1234        |
-| IP Range     | Private IP network   | 10.123.45.x |
-| Beschreibung | Department + VLAN ID | IT1234      |
-| WAN          | WAN assignment (1-3) | 2           |
-
-### Sample Output
+### Sample Generated Data
 
 ```csv
-VLAN,IP Range,Beschreibung,WAN
+VLAN,IP Range,Description,WAN
 1234,10.123.45.x,IT1234,2
 2567,172.16.78.x,Sales2567,1
 3890,192.168.90.x,HR3890,3
 ```
 
-## Data Characteristics
+## Configuration Features
 
-- **Unique VLAN IDs**: No duplicates, valid range (10-4094)
-- **RFC 1918 Compliant**: All IP ranges use private address spaces
-  - 10.0.0.0/8 (Class A)
-  - 172.16.0.0/12 (Class B)
-  - 192.168.0.0/16 (Class C)
-- **Realistic Descriptions**: Department-based naming
-- **Varied Data**: Uses Faker for natural distribution
+### What's Included in Each Generated Config
 
-## Customization
+- **Network Interfaces**: Realistic interface assignments and configurations
+- **VLAN Segments**: Proper VLAN tagging and network segmentation
+- **DHCP Servers**: Complete DHCP configurations with realistic IP pools
+- **NAT Rules**: Port forwarding and address translation rules
+- **Firewall Policies**: Security rules with appropriate source/destination
+- **CARP Configurations**: High availability virtual IP setups
+- **RADIUS Users**: Authentication user accounts and policies
 
-### Modify Data Generation
+### Data Quality
 
-Edit `generate_csv.py` to customize:
+- **Realistic**: Uses industry-standard network practices
+- **Unique**: No duplicate VLAN IDs or conflicting IP ranges
+- **Compliant**: Follows RFC standards for private addressing
+- **Varied**: Multiple department types and network topologies
 
-- VLAN ID ranges
-- IP address patterns
-- Department names
-- Output format
-- Additional fields
+## Common Workflows
 
-### Example Customization
+### Testing OPNsense Automation
 
-```python
-# Add new department types
-department = fake.random_element(
-    elements=(
-        "Sales",
-        "IT",
-        "HR",
-        "Finance",
-        "Marketing",
-        "Operations",
-        "Engineering",
-        "Support",
-        "Admin",
-        "Guest",
-        "Lab",
-        "Test",
-        "Security",
-        "DevOps",
-        "QA",  # Add your departments here
-    )
-)
+```bash
+# Generate test configurations
+python generate_csv.py xml --count 50 --output-dir test-configs
+
+# Use with your automation tools
+ansible-playbook -i test-configs deploy-opnsense.yml
 ```
 
-## Use Cases
+### Training Environment Setup
 
-- **Network Testing**: Generate test configurations for network automation
-- **Configuration Management**: Test infrastructure-as-code tools
-- **Training Data**: Practice with realistic network datasets
-- **Load Testing**: Generate large datasets for performance testing
-- **Development**: Mock data for network management applications
+```bash
+# Create diverse training scenarios
+python generate_csv.py xml --count 20 --output-dir training-configs
 
-## Dependencies
+# Deploy to training lab
+for config in training-configs/*.xml; do
+  # Deploy to OPNsense instance
+done
+```
 
-- `faker` - Generate realistic test data
-- `lxml` - XML processing (inherited from original project)
-- `tzdata` - Timezone data for faker
+### Load Testing
 
-## Contributing
+```bash
+# Generate large configuration set
+python generate_csv.py xml --count 500 --output-dir load-test-configs
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+# Test OPNsense performance with large configs
+```
 
-## Attribution and Acknowledgments
+## Troubleshooting
 
-### Original Project Credit
+### Common Issues
 
-This project builds upon and was inspired by the foundational work of:
+- **Permission Errors**: Ensure write access to output directory
+- **Invalid Base Config**: Use the provided example config or a valid OPNsense config
 
-- **Stefan Reichhard** and the **nett-media team**
-- **Original Repository**: [nett-media/opnsense-config-generator](https://github.com/nett-media/opnsense-config-generator)
-- **Original Purpose**: Batch creation of VLANs, Interfaces, DHCP Server, CARP IP, NAT, Firewall Rules and Radius User configurations for OPNsense
-- **Initial Release**: November 2023
+### Getting Help
 
-### Our Contributions
+```bash
+# Command help
+python generate_csv.py xml --help
+python generate_csv.py csv --help
 
-While respecting and crediting the original work, this fork has evolved into a distinct project with:
+# Interactive mode for guided usage
+./run_generator.sh
+```
 
-- **General Purpose**: Expanded from OPNsense-specific to general network configuration data generation
-- **Modern Architecture**: Rebuilt with Pydantic models, type safety, and modern Python practices
-- **Faker Integration**: Realistic test data generation using the Faker library
-- **Enhanced Tooling**: Modern development workflow with `uv`, `ruff`, and comprehensive testing
-- **Multiple Formats**: Support for CSV, JSON, and XML output formats
-- **Extensible Design**: Plugin architecture for adding new configuration types
+## Project Background
 
-### Additional Acknowledgments
+This tool is based on the original work by Stefan Reichhard and the nett-media team, enhanced with modern Python practices and integrated functionality. It maintains compatibility with OPNsense while adding realistic data generation capabilities.
 
-- **The Faker Library maintainers** - For excellent test data generation capabilities
-- **The Python Community** - For the robust ecosystem enabling projects like this
-- **Pydantic developers** - For outstanding data validation and serialization tools
+## Support and Contributing
+
+- **Issues**: Report problems or request features via GitHub issues
+- **Contributions**: Submit pull requests for improvements
+- **Documentation**: Help improve this README for other administrators
 
 ## License
 
-This project is licensed under the MIT License. While the original project did not specify a license, we've chosen MIT to ensure maximum compatibility and usability. See [CONTRIBUTORS.md](CONTRIBUTORS.md) for detailed attribution information.
-
-## Migration from Original Project
-
-If you're coming from the original OPNsense config generator:
-
-1. The `generate_csv.py` script replaces manual CSV creation
-2. Virtual environment setup is now standardized
-3. The project focuses on data generation rather than OPNsense-specific XML
-4. Original OPNsense functionality is preserved but not the primary focus
-
-## Roadmap
-
-- [ ] Additional network configuration elements:
-  - [ ] Firewall rules with realistic rule patterns
-  - [ ] DHCP server configurations with realistic scopes
-  - [ ] Interface configurations with realistic naming
-  - [ ] NAT rules with port mappings
-  - [ ] CARP virtual IP configurations
-  - [ ] Radius user accounts with authentication details
-- [ ] Enhanced data relationships:
-  - [ ] Cross-reference VLANs with appropriate interfaces
-  - [ ] Link DHCP scopes to corresponding VLAN networks
-  - [ ] Generate consistent firewall rules based on network topology
-- [ ] Configuration validation:
-  - [ ] Ensure generated configurations are internally consistent
-  - [ ] Validate IP address assignments don't conflict
-  - [ ] Check VLAN ID uniqueness across all components
+MIT License - Free for commercial and non-commercial use.

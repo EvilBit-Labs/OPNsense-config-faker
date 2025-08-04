@@ -27,20 +27,24 @@ classifiers = [
 ]
 
 dependencies = [
-    "faker>=37.5.3",            # For realistic network data generation
-    "typer>=0.12.0",            # For modern CLI interface
-    "rich>=14.1.0",             # For enhanced terminal output
+    "faker>=37.5.3", # For realistic network data generation
+    "typer>=0.12.0", # For modern CLI interface
+    "rich>=14.1.0",  # For enhanced terminal output
+    "lxml>=5.0.0",   # For XML configuration generation (OPNsense)
 ]
+
+[project.optional-dependencies]
+# No optional dependencies needed - all core functionality is included
 
 [dependency-groups]
 dev = [
     "ruff>=0.8.0",
     "pytest>=8.4.1",
     "pytest-cov>=6.0.0",
-    "polyfactory>=2.0.0",       # For generating test data
-    "pre-commit>=3.0.0",        # For git hooks
-    "basedpyright>=1.31.0",     # For static type checking
-    "deptry>=0.23.1",           # For dependency checks
+    "polyfactory>=2.0.0",   # For generating test data
+    "pre-commit>=3.0.0",    # For git hooks
+    "basedpyright>=1.31.0", # For static type checking
+    "deptry>=0.23.1",       # For dependency checks
 ]
 
 [project.urls]
