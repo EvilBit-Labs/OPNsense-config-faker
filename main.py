@@ -1,7 +1,8 @@
-"""OPNsense Config Generator - Direct XML Configuration Generator.
+"""OPNsense Config Faker - Network Configuration Generator.
 
-Generates valid OPNsense config.xml files with realistic faked data.
-Designed specifically for testing OPNsense automation tools and infrastructure.
+Generates realistic network configuration test data and complete OPNsense XML configurations
+for testing network automation tools, configuration management systems, and network
+infrastructure projects.
 
 This module contains functionality derived from or inspired by the original
 OPNsense configuration generator by Stefan Reichhard (nett-media).
@@ -10,18 +11,19 @@ Original work: https://github.com/nett-media/opnsense-config-generator
 Original author: Stefan Reichhard
 Initial implementation: November 2023
 
-Enhanced and modernized by EvilBit Labs for direct OPNsense configuration generation.
+Enhanced and modernized by EvilBit Labs for comprehensive network configuration generation.
 
 This implementation maintains the core concepts while adding:
 - Modern Python practices and type hints
 - Faker integration for realistic test data
-- Direct in-memory data generation (no CSV intermediate)
+- Both CSV and direct XML generation modes
 - Improved error handling and validation
 - Modular architecture for extensibility
 """
 
 from __future__ import annotations
 
+import csv
 import ipaddress
 import random
 import shutil
@@ -55,6 +57,7 @@ stderr_console = Console(file=sys.stderr)
 
 # Constants
 MAX_VLAN_COUNT = 4084  # Maximum practical VLAN count (4094 - 10 reserved VLANs)
+DEFAULT_CSV_OUTPUT = Path("output/test-config.csv")
 WAN1_ID = 1
 WAN2_ID = 2
 WAN3_ID = 3
@@ -184,6 +187,67 @@ def generate_vlan_configurations(count: int) -> list[VLANConfig]:
 
     except Exception as e:
         raise ConfigGenerationError(f"Failed to generate VLAN configurations: {e}") from e
+    else:
+        return configs
+
+
+def save_to_csv(configs: list[VLANConfig], output_file: Path) -> None:
+    """Save VLAN configurations to CSV file.
+
+    Args:
+        configs: List of VLAN configurations
+        output_file: Output CSV file path
+
+    Raises:
+        ConfigGenerationError: If CSV writing fails
+    """
+    try:
+        with output_file.open(mode="w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(["VLAN", "IP Range", "Beschreibung", "WAN"])
+
+            for config in configs:
+                writer.writerow([config.vlan_id, config.ip_network, config.description, config.wan_assignment])
+
+    except OSError as e:
+        raise ConfigGenerationError(f"Failed to write CSV file '{output_file}': {e}") from e
+
+
+def load_from_csv(csv_file: Path) -> list[VLANConfig]:
+    """Load VLAN configurations from CSV file.
+
+    Args:
+        csv_file: Input CSV file path
+
+    Returns:
+        List of VLANConfig objects
+
+    Raises:
+        ConfigGenerationError: If CSV reading fails
+    """
+    try:
+        configs: list[VLANConfig] = []
+        with csv_file.open() as file:
+            reader = csv.reader(file)
+            next(reader)  # Skip header row
+
+            for row in reader:
+                vlan_id = int(row[0].strip())
+                ip_network = row[1].strip()
+                description = row[2].strip()
+                wan_assignment = int(row[3].strip())
+
+                configs.append(
+                    VLANConfig(
+                        vlan_id=vlan_id,
+                        ip_network=ip_network,
+                        description=description,
+                        wan_assignment=wan_assignment,
+                    )
+                )
+
+    except (OSError, ValueError, IndexError) as e:
+        raise ConfigGenerationError(f"Failed to read CSV file '{csv_file}': {e}") from e
     else:
         return configs
 
@@ -318,12 +382,12 @@ def generate_rules_xml(configs: list[VLANConfig], output_file: Path, options: di
             outfile.write("  <updated>\n")
             outfile.write("    <username>root@10.1.1.1</username>\n")
             outfile.write(f"    <time>{formatted_timestamp}</time>\n")
-            outfile.write("    <description>OPNsense Config Generator</description>\n")
+            outfile.write("    <description>OPNsense Config Faker generated</description>\n")
             outfile.write("  </updated>\n")
             outfile.write("  <created>\n")
             outfile.write("    <username>root@10.1.1.1</username>\n")
             outfile.write(f"    <time>{formatted_timestamp}</time>\n")
-            outfile.write("    <description>OPNsense Config Generator</description>\n")
+            outfile.write("    <description>OPNsense Config Faker generated</description>\n")
             outfile.write("  </created>\n")
             outfile.write("</rule>\n\n")
 
@@ -344,6 +408,10 @@ def generate_nat_xml(configs: list[VLANConfig], output_file: Path, options: dict
     opt_counter: int = options.get("opt_counter", 1)
 
     with output_file.open("w") as outfile:
+        # Write the required mode element first
+        # Use 'advanced' mode since we're providing specific NAT rules
+        outfile.write("<mode>advanced</mode>\n")
+
         for config in configs:
             timestamp = time.time()
             formatted_timestamp = f"{timestamp:.4f}"
@@ -374,14 +442,14 @@ def generate_nat_xml(configs: list[VLANConfig], output_file: Path, options: dict
             outfile.write("  <created>\n")
             outfile.write("    <username>root@10.1.1.1</username>\n")
             outfile.write(f"    <time>{formatted_timestamp}</time>\n")
-            outfile.write("    <description>OPNsense Config Generator</description>\n")
+            outfile.write("    <description>OPNsense Config Faker generated</description>\n")
             outfile.write("  </created>\n")
             outfile.write(f"  <target>{wan_ip}</target>\n")
             outfile.write("  <sourceport/>\n")
             outfile.write("  <updated>\n")
             outfile.write("    <username>root@10.1.1.1</username>\n")
             outfile.write(f"    <time>{formatted_timestamp}</time>\n")
-            outfile.write("    <description>OPNsense Config Generator</description>\n")
+            outfile.write("    <description>OPNsense Config Faker generated</description>\n")
             outfile.write("  </updated>\n")
             outfile.write("</rule>\n")
 
@@ -538,17 +606,17 @@ def modify_xml_config(input_xml: Path, tag_path: str, file_names: list[Path]) ->
 
 
 def generate_opnsense_config(
-    base_config: Path, output_dir: Path, count: int, options: dict[str, Any] | None = None
+    configs: list[VLANConfig], base_config: Path, output_dir: Path, options: dict[str, Any] | None = None
 ) -> Path:
-    """Generate complete OPNsense configuration with realistic faked data.
+    """Generate complete OPNsense configuration from VLAN configurations.
 
     This function integrates the functionality from the original generateXMLConfig.py
     from Stefan Reichhard's OPNsense configuration generator.
 
     Args:
+        configs: List of VLAN configurations
         base_config: Base OPNsense XML configuration file
         output_dir: Directory for generated files
-        count: Number of VLAN configurations to generate
         options: Configuration options
 
     Returns:
@@ -556,7 +624,6 @@ def generate_opnsense_config(
 
     Raises:
         XMLGenerationError: If XML generation fails
-        ConfigGenerationError: If configuration generation fails
     """
     if options is None:
         options = {
@@ -584,10 +651,6 @@ def generate_opnsense_config(
     ]
 
     try:
-        # Generate VLAN configurations
-        console.print(f"[green]Generating {count} VLAN configurations...[/green]")
-        vlan_configs = generate_vlan_configurations(count)
-
         # Ensure output directory exists
         output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -598,9 +661,9 @@ def generate_opnsense_config(
 
             # Call the appropriate generator function
             if module_info["part_name"] in ("RadiusUser", "VLAN"):
-                module_info["generator"](vlan_configs, xml_file)
+                module_info["generator"](configs, xml_file)
             else:
-                module_info["generator"](vlan_configs, xml_file, options)
+                module_info["generator"](configs, xml_file, options)
 
         # Create final configuration
         final_config = output_dir / f"generated_{base_config.name}"
@@ -621,23 +684,123 @@ def generate_opnsense_config(
 
 # Initialize Typer app
 app = typer.Typer(
-    name="opnsense-config-generator",
-    help="Generate valid OPNsense config.xml files with realistic faked data",
+    name="opnsense-config-faker",
+    help="Generate realistic network configuration test data and OPNsense XML configurations",
     epilog="""Examples:
 
-  Generate OPNsense configuration:
-    python opnsense_config_generator.py --base-config config.xml --count 25
-    python opnsense_config_generator.py -b config.xml -c 50 -o /path/to/output
+  Generate CSV only:
+    python main.py csv --count 25 --output my-config.csv
+
+  Generate OPNsense XML directly:
+    python main.py xml --base-config config.xml --count 25
+
+  Generate OPNsense XML from existing CSV:
+    python main.py xml --base-config config.xml --csv-file my-config.csv
 
   Help:
-    python opnsense_config_generator.py --help
+    python main.py --help
+    python main.py csv --help
+    python main.py xml --help
     """,
     rich_markup_mode="rich",
 )
 
 
-@app.command(help="Generate OPNsense XML configuration with realistic faked data")
-def main(
+@app.command("csv", help="Generate CSV file with network configuration data")
+def generate_csv_command(
+    count: Annotated[
+        int,
+        typer.Option(
+            "-c",
+            "--count",
+            help="Number of VLAN configurations to generate",
+            min=1,
+            max=MAX_VLAN_COUNT,
+            show_default=True,
+        ),
+    ] = 10,
+    output: Annotated[
+        Path | None,
+        typer.Option(
+            "-o",
+            "--output",
+            help="Output CSV filename",
+            exists=False,
+            file_okay=True,
+            dir_okay=False,
+            writable=True,
+            resolve_path=True,
+            show_default=True,
+        ),
+    ] = None,
+    force: Annotated[
+        bool,
+        typer.Option(
+            "-f",
+            "--force",
+            help="Overwrite existing output file without confirmation",
+        ),
+    ] = False,
+) -> None:
+    """Generate CSV file with realistic network configuration test data.
+
+    Creates VLAN configurations with unique IDs, private IP ranges,
+    department-based descriptions, and WAN assignments suitable for
+    testing network automation tools and configuration management systems.
+    """
+    # Set default output if not provided
+    if output is None:
+        output = DEFAULT_CSV_OUTPUT
+
+    try:
+        # Validate input parameters
+        if count < 1:
+            stderr_console.print("[red]Error:[/red] Count must be at least 1")
+            raise typer.Exit(1)
+
+        if count > MAX_VLAN_COUNT:
+            stderr_console.print(
+                f"[yellow]Warning:[/yellow] Requested count ({count}) exceeds practical VLAN limit "
+                f"({MAX_VLAN_COUNT}), may have duplicate issues"
+            )
+
+        # Handle existing file
+        if output.exists() and not force:
+            console.print(f"[yellow]File '{output}' already exists.[/yellow]")
+            if not Confirm.ask("Overwrite", default=False):
+                console.print("[blue]Operation cancelled.[/blue]")
+                raise typer.Exit(0)
+
+        # Ensure output directory exists
+        output.parent.mkdir(parents=True, exist_ok=True)
+
+        # Display generation info
+        console.print(f"[green]Generating {count} VLAN configurations...[/green]")
+        console.print(f"[blue]Output file:[/blue] {output}")
+
+        # Generate configurations and save to CSV
+        configs = generate_vlan_configurations(count)
+        save_to_csv(configs, output)
+
+        # Success message
+        console.print(f"[green]✓ Successfully generated {count} VLAN configurations in {output}[/green]")
+
+    except ConfigGenerationError as e:
+        stderr_console.print(f"[red]Generation Error:[/red] {e}")
+        raise typer.Exit(1) from e
+    except ValueError as e:
+        stderr_console.print(f"[red]Validation Error:[/red] {e}")
+        raise typer.Exit(1) from e
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Operation cancelled by user.[/yellow]")
+        raise typer.Exit(130) from None
+    except Exception as e:
+        stderr_console.print(f"[red]Unexpected Error:[/red] {e}")
+        raise typer.Exit(1) from e
+
+
+@app.command("xml", help="Generate OPNsense XML configuration")
+def generate_xml_command(
     base_config: Annotated[
         Path,
         typer.Option(
@@ -651,12 +814,24 @@ def main(
             resolve_path=True,
         ),
     ],
+    csv_file: Annotated[
+        Path | None,
+        typer.Option(
+            "--csv-file",
+            "-c",
+            help="CSV file with network configuration data (if not provided, will generate data directly)",
+            exists=False,
+            file_okay=True,
+            dir_okay=False,
+            resolve_path=True,
+        ),
+    ] = None,
     count: Annotated[
         int,
         typer.Option(
             "--count",
-            "-c",
-            help="Number of VLAN configurations to generate",
+            "-n",
+            help="Number of VLAN configurations to generate (used if --csv-file not provided)",
             min=1,
             max=MAX_VLAN_COUNT,
         ),
@@ -699,12 +874,12 @@ def main(
         ),
     ] = False,
 ) -> None:
-    """Generate OPNsense XML configuration with realistic faked data.
+    """Generate OPNsense XML configuration from network data.
 
     Creates complete OPNsense configuration files including VLANs, interfaces,
-    DHCP settings, NAT rules, firewall rules, CARP virtual IPs, and RADIUS users
-    based on generated realistic network data.
+    DHCP settings, NAT rules, firewall rules, CARP virtual IPs, and RADIUS users.
 
+    Can work with existing CSV data or generate configurations directly.
     Requires lxml package for XML processing: uv add lxml
     """
     # Set default output_dir if not provided
@@ -726,6 +901,20 @@ def main(
                 console.print("[blue]Operation cancelled.[/blue]")
                 raise typer.Exit(0)
 
+        # Generate or load configurations
+        if csv_file is None:
+            # Generate configurations directly
+            console.print(f"[yellow]Generating {count} VLAN configurations directly...[/yellow]")
+            configs = generate_vlan_configurations(count)
+        else:
+            # Load from CSV file
+            if not csv_file.exists():
+                stderr_console.print(f"[red]Error:[/red] CSV file not found: {csv_file}")
+                raise typer.Exit(1)
+
+            console.print(f"[yellow]Loading configurations from CSV file: {csv_file}[/yellow]")
+            configs = load_from_csv(csv_file)
+
         # Prepare options
         options: dict[str, Any] = {
             "firewallNr": firewall_nr,
@@ -739,12 +928,12 @@ def main(
         console.print("[green]Generating OPNsense configuration...[/green]")
         console.print(f"[blue]Base config:[/blue] {base_config}")
         console.print(f"[blue]Output directory:[/blue] {output_dir}")
-        console.print(f"[blue]VLAN count:[/blue] {count}")
+        console.print(f"[blue]VLAN count:[/blue] {len(configs)}")
         console.print(f"[blue]Firewall number:[/blue] {firewall_nr}")
         console.print(f"[blue]Starting OPT counter:[/blue] {opt_counter}")
 
         # Generate the OPNsense configuration
-        final_config = generate_opnsense_config(base_config, output_dir, count, options)
+        final_config = generate_opnsense_config(configs, base_config, output_dir, options)
 
         # Success message
         console.print(f"[green]✓ Successfully generated OPNsense configuration: {final_config}[/green]")
