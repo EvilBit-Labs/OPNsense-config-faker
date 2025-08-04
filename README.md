@@ -33,7 +33,7 @@ cd OPNsense-config-faker
 uv sync
 
 # Generate 25 OPNsense configurations
-python generate_csv.py xml --base-config legacy/opnsense/config-example.xml --count 25
+python main.py xml --base-config legacy/opnsense/config-example.xml --count 25
 ```
 
 ## Real-World Use Cases
@@ -82,24 +82,27 @@ pip install faker typer rich lxml
 
 ```bash
 # Create 10 OPNsense configurations
-python generate_csv.py xml --base-config legacy/opnsense/config-example.xml --count 10
+python main.py xml --base-config legacy/opnsense/config-example.xml --count 10
 
 # Specify output directory
-python generate_csv.py xml --base-config config.xml --count 25 --output-dir ./my-configs
+python main.py xml --base-config config.xml --count 25 --output-dir ./my-configs
+
+# Generate CSV data only
+python main.py csv --count 50 --output network-data.csv
 ```
 
 ### Advanced Scenarios
 
 ```bash
 # Generate configurations for a large enterprise (100 firewalls)
-python generate_csv.py xml --base-config config.xml --count 100 --output-dir enterprise-configs
+python main.py xml --base-config config.xml --count 100 --output-dir enterprise-configs
 
 # Create configurations with specific firewall settings
-python generate_csv.py xml --base-config config.xml --count 50 \
+python main.py xml --base-config config.xml --count 50 \
   --firewall-nr 3 --opt-counter 15
 
 # Use existing CSV data as input
-python generate_csv.py xml --base-config config.xml --csv-file my-network-data.csv
+python main.py xml --base-config config.xml --csv-file my-network-data.csv
 ```
 
 ### Interactive Mode
@@ -154,7 +157,7 @@ VLAN,IP Range,Description,WAN
 
 ```bash
 # Generate test configurations
-python generate_csv.py xml --count 50 --output-dir test-configs
+python main.py xml --base-config config.xml --count 50 --output-dir test-configs
 
 # Use with your automation tools
 ansible-playbook -i test-configs deploy-opnsense.yml
@@ -164,7 +167,7 @@ ansible-playbook -i test-configs deploy-opnsense.yml
 
 ```bash
 # Create diverse training scenarios
-python generate_csv.py xml --count 20 --output-dir training-configs
+python main.py xml --base-config config.xml --count 20 --output-dir training-configs
 
 # Deploy to training lab
 for config in training-configs/*.xml; do
@@ -176,7 +179,7 @@ done
 
 ```bash
 # Generate large configuration set
-python generate_csv.py xml --count 500 --output-dir load-test-configs
+python main.py xml --base-config config.xml --count 500 --output-dir load-test-configs
 
 # Test OPNsense performance with large configs
 ```
@@ -192,8 +195,9 @@ python generate_csv.py xml --count 500 --output-dir load-test-configs
 
 ```bash
 # Command help
-python generate_csv.py xml --help
-python generate_csv.py csv --help
+python main.py --help
+python main.py xml --help
+python main.py csv --help
 
 # Interactive mode for guided usage
 ./run_generator.sh
@@ -202,6 +206,20 @@ python generate_csv.py csv --help
 ## Project Background
 
 This tool is based on the original work by Stefan Reichhard and the nett-media team, enhanced with modern Python practices and integrated functionality. It maintains compatibility with OPNsense while adding realistic data generation capabilities.
+
+## Roadmap
+
+For detailed development plans and upcoming features, see [ROADMAP.md](ROADMAP.md).
+
+### Current Focus
+
+- **Enhanced Configuration Elements**: More realistic firewall rules, DHCP scopes, and interface configurations
+- **Configuration Validation**: Ensure generated configurations are internally consistent and conflict-free
+- **Template System**: Support for different OPNsense versions and deployment scenarios
+- **Advanced Data Relationships**: Cross-reference VLANs with interfaces and generate consistent network topologies
+- **Comprehensive Testing**: Full test suite for validation and regression testing
+
+**Note**: This tool is specifically designed for OPNsense configurations. Supporting other platforms is not planned.
 
 ## Support and Contributing
 

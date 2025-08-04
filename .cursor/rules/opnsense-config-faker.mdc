@@ -1,0 +1,84 @@
+---
+alwaysApply: true
+---
+# OPNsense Config Faker - Project Guide
+
+## Project Overview
+
+This project generates realistic OPNsense firewall configurations for testing, training, and development purposes. The system creates `config.xml` files with faked but valid data that can be imported into OPNsense.
+
+## Key Project Files
+
+### Specification Documents
+
+- [requirements.md](mdc:project_spec/requirements.md) - Complete functional and technical requirements (F001-F033)
+- [tasks.md](mdc:project_spec/tasks.md) - Implementation task checklist (TASK-001 to TASK-050)
+- [user_stories.md](mdc:project_spec/user_stories.md) - User stories and use cases (US-001 to US-024)
+
+### Schema and Configuration
+
+- [opnsense-config.xsd](mdc:opnsense-config.xsd) - XSD schema for OPNsense config.xml files
+- [pyproject.toml](mdc:pyproject.toml) - Python project configuration and dependencies
+
+### Legacy Code
+
+- [legacy/](mdc:legacy/) - Original implementation files (for reference only)
+- [main.py](mdc:main.py) - Current main entry point
+
+## Development Approach
+
+### XSD-Based Model Generation
+
+The project uses [xsdata-pydantic](https://xsdata-pydantic.readthedocs.io/en/latest/codegen/) to generate Pydantic models from the XSD schema:
+
+```bash
+xsdata opnsense-config.xsd --output pydantic --package opnsense.models
+```
+
+This ensures type-safe, validated configuration generation that perfectly matches the OPNsense schema.
+
+### Task Organization
+
+Tasks are organized into 5 phases:
+
+- **Phase 1**: Core Infrastructure (TASK-001 to TASK-011)
+- **Phase 2**: Data Processing (TASK-012 to TASK-024)
+- **Phase 3**: Output Generation (TASK-025 to TASK-036)
+- **Phase 4**: Configuration Validation (TASK-037 to TASK-040)
+- **Phase 5**: Integration and Testing (TASK-041 to TASK-050)
+
+### Key Requirements
+
+- **F001-F014**: Core generation requirements (XML, VLAN, Interface, DHCP, NAT, Firewall, VPN, etc.)
+- **F015-F018**: Input/Output requirements
+- **F019-F025**: Configuration options
+- **F026-F033**: Data quality requirements
+
+## Development Guidelines
+
+### Code Quality
+
+- Follow Python best practices and modern development standards
+- Use type hints and Pydantic models for data validation
+- Maintain comprehensive test coverage
+- Use UV package manager for dependency management
+
+### Configuration Generation
+
+- All generated configurations must pass XSD validation
+- Use realistic but faked data following RFC 1918 standards
+- Ensure unique VLAN IDs, IP ranges, and VPN keys
+- Maintain consistency between related components
+
+### File Organization
+
+- Generated configurations go in [output/](mdc:output/)
+- Tests in [tests/](mdc:tests/)
+- Documentation in [project_spec/](mdc:project_spec/)
+
+## Current Status
+
+- Requirements specification complete (v1.1)
+- Tasks organized and aligned with requirements (v1.6)
+- XSD schema available for model generation
+- Ready for implementation using xsdata-pydantic approach
