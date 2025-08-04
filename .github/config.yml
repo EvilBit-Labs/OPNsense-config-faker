@@ -1,0 +1,14 @@
+# GitHub repository configuration
+# This file configures various GitHub features
+
+# Issue template configuration
+blank_issues_enabled: false
+
+# Contact links for additional support channels
+contact_links:
+  - name: GitHub Discussions
+    url: https://github.com/EvilBit-Labs/OPNsense-config-faker/discussions
+    about: Please ask and answer questions here.
+  - name: Security Issues
+    url: https://github.com/EvilBit-Labs/OPNsense-config-faker/security/advisories
+    about: Please report security vulnerabilities here.
