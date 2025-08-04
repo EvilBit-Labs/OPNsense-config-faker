@@ -53,6 +53,11 @@ export/*.xml
 output/*
 !output/README.md
 
+# Generated XML files (temporary)
+generated_*.xml
+part*.xml
+test-output/
+
 # Keep cursor rules but ignore other cursor files
 .cursor/*
 !.cursor/rules/
