@@ -103,8 +103,13 @@ clean-test: clean
 
 # Generate Pydantic models from XSD schema
 generate-models: _ensure-cd
+    @just verify-xsd
     @echo "🔧 Generating Pydantic models from XSD schema..."
+    rm -rf {{justfile_dir()}}/opnsense/models/*
     {{_uv}} xsdata generate opnsense-config.xsd --config {{justfile_dir()}}/pydantic.config.xml
+    @find {{justfile_dir()}}/opnsense/models -name "*.py" -type f -exec {{_uv}} pyupgrade --py310-plus {} \;
+    @just format
+    @just lint-fix
     @echo "✅ Models generated successfully!"
 
 # Verify xsdata installation and XSD schema

@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Config xmlns="http://pypi.org/project/xsdata" version="25.7">
-  <Output maxLineLength="79" genericCollections="true" unionType="true">
+  <Output maxLineLength="79" genericCollections="true" unionType="false">
     <Package>opnsense.models</Package>
     <Format repr="true" eq="true" order="false" unsafeHash="false" frozen="false" slots="true" kwOnly="true">pydantic</Format>
     <Structure>clusters</Structure>
-    <DocstringStyle>google</DocstringStyle>
+    <DocstringStyle>Google</DocstringStyle>
     <RelativeImports>false</RelativeImports>
     <CompoundFields defaultName="choice" useSubstitutionGroups="false" forceDefaultName="false" maxNameParts="3">true</CompoundFields>
     <WrapperFields>true</WrapperFields>
-    <PostponedAnnotations>true</PostponedAnnotations>
+    <PostponedAnnotations>false</PostponedAnnotations>
     <UnnestClasses>true</UnnestClasses>
     <IgnorePatterns>false</IgnorePatterns>
     <IncludeHeader>false</IncludeHeader>

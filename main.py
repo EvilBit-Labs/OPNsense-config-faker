@@ -679,9 +679,23 @@ def generate_opnsense_config(
             "wan3": "10.11.12.13",
         }
 
+    # Import model-based generators
+    try:
+        from opnsense.generators import generate_interface_xml_with_models
+
+        use_model_generators = True
+    except ImportError:
+        use_model_generators = False
+        generate_interface_xml_with_models = None  # type: ignore[assignment]
+
     # Configuration modules - derived from original MODULES definition
     modules: list[dict[str, Any]] = [
-        {"order": 1, "part_name": "Interface", "tag_path": "./interfaces", "generator": generate_interface_xml},
+        {
+            "order": 1,
+            "part_name": "Interface",
+            "tag_path": "./interfaces",
+            "generator": generate_interface_xml_with_models if use_model_generators else generate_interface_xml,
+        },
         {"order": 2, "part_name": "DHCP", "tag_path": "./dhcpd", "generator": generate_dhcp_xml},
         {"order": 3, "part_name": "NAT", "tag_path": "./nat/outbound", "generator": generate_nat_xml},
         {"order": 4, "part_name": "Rules", "tag_path": "./filter", "generator": generate_rules_xml},

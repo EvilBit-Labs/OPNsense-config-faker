@@ -25,14 +25,14 @@ def test_generate_csv_creates_file(tmp_path: Path) -> None:
     output_file = tmp_path / "test_output.csv"
     configs = generate_vlan_configurations(TEST_RECORD_COUNT)
     save_to_csv(configs, output_file)
-    assert output_file.exists()  # noqa: S101
+    assert output_file.exists()
 
     # Verify file content structure
     with output_file.open(newline="") as f:
         reader = csv.reader(f)
         rows = list(reader)
-    assert len(rows) == EXPECTED_HEADER_PLUS_RECORDS  # noqa: S101
-    assert rows[0] == ["VLAN", "IP Range", "Beschreibung", "WAN"]  # noqa: S101
+    assert len(rows) == EXPECTED_HEADER_PLUS_RECORDS
+    assert rows[0] == ["VLAN", "IP Range", "Beschreibung", "WAN"]
 
 
 def test_generate_csv_minimum_records() -> None:
@@ -47,7 +47,7 @@ def test_generate_csv_maximum_records(tmp_path: Path) -> None:
     # Should allow MAX_VLAN_COUNT
     configs = generate_vlan_configurations(MAX_VLAN_COUNT)
     save_to_csv(configs, output_file)
-    assert output_file.exists()  # noqa: S101
+    assert output_file.exists()
 
 
 def test_generate_csv_exceeds_max_records_warning_only(tmp_path: Path) -> None:
@@ -64,13 +64,13 @@ def test_generate_csv_exceeds_max_records_warning_only(tmp_path: Path) -> None:
         configs = generate_vlan_configurations(MAX_VLAN_COUNT + 1)
         save_to_csv(configs, output_file)
 
-    assert output_file.exists()  # noqa: S101
+    assert output_file.exists()
 
     # Check that warning was printed
-    assert len(captured_output) == 1  # noqa: S101
+    assert len(captured_output) == 1
     warning_text = captured_output[0]
-    assert "exceeds practical VLAN limit" in warning_text  # noqa: S101
-    assert "may have duplicate issues" in warning_text  # noqa: S101
+    assert "exceeds practical VLAN limit" in warning_text
+    assert "may have duplicate issues" in warning_text
 
 
 def test_generate_csv_handles_os_error(monkeypatch: MonkeyPatch) -> None:
@@ -97,7 +97,7 @@ def test_generate_csv_unique_vlans_and_networks(tmp_path: Path) -> None:
         for row in reader:
             vlan = int(row["VLAN"])
             ip_range = row["IP Range"]
-            assert vlan not in vlans  # noqa: S101
-            assert ip_range not in ip_ranges  # noqa: S101
+            assert vlan not in vlans
+            assert ip_range not in ip_ranges
             vlans.add(vlan)
             ip_ranges.add(ip_range)
