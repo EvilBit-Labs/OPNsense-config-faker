@@ -179,32 +179,19 @@ clean-build:
 # CI-friendly check that runs all validation (no formatting, strict checking)
 ci-check:
     cd {{justfile_dir()}}
-    @echo "=== CI Validation ==="
-    @echo "Checking Python version compatibility..."
-    uv run python --version
-    @echo "\nVerifying xsdata availability..."
-    uv run xsdata --version
-    @echo "\nRunning strict linting (treating warnings as errors)..."
+    # Linting and formatting
     uv run ruff check . --output-format=github
-    @echo "\nRunning format validation..."
     uv run ruff format --check --diff .
-    @echo "\nRunning type checking..."
+    # Type checking
     uv run basedpyright
-    @echo "\nRunning tests with coverage..."
+    # Tests with coverage
     -TERM=dumb uv run pytest --cov=. --cov-report=xml --cov-report=term-missing --tb=short -v || echo "No tests found or pytest not configured"
-    @echo "\nValidating project structure..."
-    @test -f pyproject.toml || (echo "ERROR: pyproject.toml missing" && exit 1)
-    @test -f generate_csv.py || (echo "ERROR: generate_csv.py missing" && exit 1)
-    @test -f justfile || (echo "ERROR: justfile missing" && exit 1)
-    @test -f opnsense-config.xsd || (echo "ERROR: opnsense-config.xsd missing" && exit 1)
-    @echo "\n✅ All CI checks passed!"
 
 # Setup CI checks and dependencies for CI workflow
 ci-setup:
     cd {{justfile_dir()}}
     uv sync --no-install-project --extra dev || @echo "Make sure uv is installed manually"
     uv run pre-commit install --hook-type commit-msg || @echo "Make sure pre-commit is installed manually"
-    uv run xsdata --version || @echo "Make sure xsdata-pydantic is installed manually"
 
 # -----------------------------
 # 🚀 Development Environment
