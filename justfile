@@ -1,7 +1,14 @@
 # 🔧 justfile — OPNsense Config Faker Developer Tasks
-set shell := ["bash", "-cu"]
 set dotenv-load := true
 set ignore-comments := true
+
+# Common variables
+_uv := "uv run"
+_cd := "cd {{justfile_dir()}}"
+_pytest := _uv + " pytest"
+_ruff := _uv + " ruff"
+_basedpyright := _uv + " basedpyright"
+_precommit := _uv + " pre-commit"
 
 # Default recipe - shows available commands
 default:
@@ -16,27 +23,21 @@ help:
 # -----------------------------
 
 # Install dependencies and setup pre-commit hooks
-install:
-    cd {{justfile_dir()}}
+install: _ensure-cd
     # 🚀 Set up dev env & pre-commit hooks
     uv sync --no-install-project --extra dev
-    uv run pre-commit install
-    uv run pre-commit install --hook-type commit-msg
-    uv run pre-commit install --hook-type pre-push
+    {{_precommit}} install
+    {{_precommit}} install --hook-type commit-msg
+    {{_precommit}} install --hook-type pre-push
     # Verify xsdata is available for model generation
-    uv run xsdata --version
-
-# Install additional optional dependencies
-install-rich:
-    uv sync --no-install-project --extra rich
+    {{_uv}} xsdata --version
 
 # Install all extras
 install-all:
     uv sync --no-install-project --all-extras
 
 # Update uv dependencies
-update-deps:
-    cd {{justfile_dir()}}
+update-deps: _ensure-cd
     uv sync --no-install-project --extra dev -U
 
 # -----------------------------
@@ -44,40 +45,32 @@ update-deps:
 # -----------------------------
 
 # Format code with ruff
-format:
-    cd {{justfile_dir()}}
-    uv run ruff format .
+format: _ensure-cd
+    {{_ruff}} format .
 
 # Check code formatting using ruff
 format-check:
-    uv run ruff format --check .
+    {{_ruff}} format --check .
 
 # Lint code with ruff
 lint:
-    uv run ruff check .
+    {{_ruff}} check .
 
 # Fix linting issues automatically
 lint-fix:
-    uv run ruff check --fix .
-    uv run ruff format .
+    {{_ruff}} check --fix .
+    {{_ruff}} format .
 
 # Run type checking with basedpyright
 type-check:
-    uv run basedpyright
+    {{_basedpyright}}
 
 # Run type checking in watch mode
 type-check-watch:
-    uv run basedpyright --watch
+    {{_basedpyright}} --watch
 
 # Run all linting and type checks
-full-checks:
-    cd {{justfile_dir()}}
-    just format-check
-    just lint
-    just pre-commit-run
-    just type-check
-    just test-fast
-    just verify-xsd
+full-checks: _ensure-cd format-check lint pre-commit-run type-check test-fast verify-xsd
 
 # -----------------------------
 # 🧪 Testing & Coverage
@@ -85,19 +78,19 @@ full-checks:
 
 # Run tests (when test suite is created)
 test:
-    TERM=dumb uv run pytest
+    {{_pytest}}
 
 # Run tests with coverage
 test-cov:
-    TERM=dumb uv run pytest --cov=. --cov-report=term-missing --cov-report=html
+    {{_pytest}} --cov=. --cov-report=term-missing --cov-report=html
 
 # Run all tests with maxfail=1 and disable warnings
 test-fast:
-    TERM=dumb uv run pytest --maxfail=1 --disable-warnings -v tests/
+    {{_pytest}} --maxfail=1 --disable-warnings -v tests/
 
 # Run coverage report
 coverage:
-    uv run coverage report
+    {{_uv}} coverage report
 
 # Clean up and run tests
 clean-test: clean
@@ -109,37 +102,31 @@ clean-test: clean
 # -----------------------------
 
 # Generate Pydantic models from XSD schema
-generate-models:
-    cd {{justfile_dir()}}
+generate-models: _ensure-cd
     @echo "🔧 Generating Pydantic models from XSD schema..."
-    uv run xsdata generate opnsense-config.xsd --config {{justfile_dir()}}/pydantic.config.xml
+    {{_uv}} xsdata generate opnsense-config.xsd --config {{justfile_dir()}}/pydantic.config.xml
     @echo "✅ Models generated successfully!"
 
 # Verify xsdata installation and XSD schema
-verify-xsd:
-    cd {{justfile_dir()}}
+verify-xsd: _ensure-cd
     @echo "🔍 Verifying XSD setup..."
-    uv run xsdata --version
-    @test -f opnsense-config.xsd || (echo "ERROR: opnsense-config.xsd missing" && exit 1)
-    @echo "✅ XSD setup verified!"
+    {{_uv}} xsdata --version
+    ./scripts/verify_xsd.py
 
 # -----------------------------
 # 📦 CSV Generation & Usage
 # -----------------------------
 
 # Run the CSV generator with default settings
-run count="10":
-    cd {{justfile_dir()}}
-    uv run python generate_csv.py --count {{count}}
+run count="10": _ensure-cd
+    {{_uv}} python generate_csv.py --count {{count}}
 
 # Run the CSV generator with custom output file
-run-output count="10" output="test-config.csv":
-    cd {{justfile_dir()}}
-    uv run python generate_csv.py --count {{count}} --output {{output}}
+run-output count="10" output="test-config.csv": _ensure-cd
+    {{_uv}} python generate_csv.py --count {{count}} --output {{output}}
 
 # Generate sample data for testing
-generate-sample:
-    cd {{justfile_dir()}}
+generate-sample: _ensure-cd
     @echo "🔧 Generating sample configurations..."
     just run 5
     @echo "✅ Sample data generated! Check the output files."
@@ -149,57 +136,41 @@ generate-sample:
 # -----------------------------
 
 # Clean up generated files and caches
-clean:
-    cd {{justfile_dir()}}
-    @echo "🧹 Cleaning .pyc files, __pycache__, and .pytest_cache..."
-    find . -type d -name "__pycache__" -exec rm -rf "{}" +
-    find . -type f -name "*.pyc" -delete
-    find . -type f -name "*.pyo" -delete
-    rm -rf .pytest_cache/
-    rm -rf htmlcov/
-    rm -rf .coverage
-    rm -rf build/
-    rm -rf dist/
-    rm -rf *.egg-info/
+clean: _ensure-cd
+    ./scripts/clean.py
 
 # Build the project
 build:
     uvx --from build pyproject-build --installer uv
 
 # Clean up and build the project
-clean-build:
-    just ci-check
-    just clean
-    just build
+clean-build: ci-check clean build
 
 # -----------------------------
 # 🤖 CI Workflow
 # -----------------------------
 
 # CI-friendly check that runs all validation (no formatting, strict checking)
-ci-check:
-    cd {{justfile_dir()}}
+ci-check: _ensure-cd
     # Linting and formatting
-    uv run ruff check . --output-format=github
-    uv run ruff format --check --diff .
+    {{_ruff}} check . --output-format=github
+    {{_ruff}} format --check --diff .
     # Type checking
-    uv run basedpyright
+    {{_basedpyright}}
     # Tests with coverage
-    -TERM=dumb uv run pytest --cov=. --cov-report=xml --cov-report=term-missing --tb=short -v || echo "No tests found or pytest not configured"
+    -{{_pytest}} --cov=. --cov-report=xml --cov-report=term-missing --tb=short -v || echo "No tests found or pytest not configured"
 
 # Setup CI checks and dependencies for CI workflow
-ci-setup:
-    cd {{justfile_dir()}}
+ci-setup: _ensure-cd
     uv sync --no-install-project --extra dev || @echo "Make sure uv is installed manually"
-    uv run pre-commit install --hook-type commit-msg || @echo "Make sure pre-commit is installed manually"
+    {{_precommit}} install --hook-type commit-msg || @echo "Make sure pre-commit is installed manually"
 
 # -----------------------------
 # 🚀 Development Environment
 # -----------------------------
 
 # Development setup (install + generate sample)
-dev-setup:
-    cd {{justfile_dir()}}
+dev-setup: _ensure-cd
     @echo "🚀 Setting up OPNsense Config Faker development environment..."
     just install
     @echo "\n📦 Generating sample configuration (5 records)..."
@@ -207,11 +178,7 @@ dev-setup:
     @echo "\n✅ Setup complete! Try: just run 25"
 
 # Development workflow: clean, check, and generate sample
-dev:
-    cd {{justfile_dir()}}
-    just clean
-    just check-all
-    just generate-sample
+dev: _ensure-cd clean full-checks generate-sample
 
 # -----------------------------
 # 🔧 Pre-commit Management
@@ -219,22 +186,29 @@ dev:
 
 # Run pre-commit on all files
 pre-commit-run:
-    uv run pre-commit run --all-files
+    {{_precommit}} run --all-files
 
 # Update pre-commit hooks
 pre-commit-update:
-    uv run pre-commit autoupdate
+    {{_precommit}} autoupdate
 
 # -----------------------------
 # 📊 Project Information
 # -----------------------------
 
 # Show project info
-info:
-    cd {{justfile_dir()}}
+info: _ensure-cd
     @echo "🔧 OPNsense Config Faker"
     @echo "========================"
-    @echo "Python version: $(uv run python --version)"
+    @echo "Python version: $({{_uv}} python --version)"
     @echo "UV version: $(uv --version)"
     @echo "Project dependencies:"
     @uv tree --depth 1
+
+# -----------------------------
+# 🔧 Internal Utilities
+# -----------------------------
+
+# Ensure we're in the project directory (internal dependency)
+_ensure-cd:
+    cd {{justfile_dir()}}
