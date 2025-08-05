@@ -47,14 +47,3 @@ jobs:
     - name: Run CI checks
       run: |
         just ci-check
-
-    - name: Generate coverage report
-      run: |
-        # Ensure coverage.xml is generated for Codecov
-        uv run pytest --cov=. --cov-report=xml --cov-report=term-missing || echo "No tests found or pytest failed"
-
-    - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v5
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        slug: EvilBit-Labs/OPNsense-config-faker
