@@ -112,7 +112,7 @@ clean-test: clean
 generate-models:
     cd {{justfile_dir()}}
     @echo "🔧 Generating Pydantic models from XSD schema..."
-    uv run xsdata generate opnsense-config.xsd --output pydantic --package opnsense.models --compound-fields --generic-collections --union-type --postponed-annotations --structure-style=clusters
+    uv run xsdata generate opnsense-config.xsd --config {{justfile_dir()}}/pydantic.config.xml
     @echo "✅ Models generated successfully!"
 
 # Verify xsdata installation and XSD schema
