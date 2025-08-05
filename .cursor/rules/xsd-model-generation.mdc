@@ -4,6 +4,17 @@ alwaysApply: false
 ---
 # XSD Model Generation Guide
 
+## ⚠️ CRITICAL WARNING ⚠️
+
+**The `opnsense/models/` directory contains GENERATED CODE that must NEVER be manually edited.**
+
+- **✅ DO**: Regenerate models using `just generate-models` or xsdata commands
+- **✅ DO**: Extend generated models in separate files if customization is needed
+- **❌ NEVER**: Manually edit any file in `opnsense/models/`
+- **❌ NEVER**: Commit manual changes to generated model files
+
+**All manual edits will be lost during model regeneration!**
+
 ## Overview
 
 This project uses [xsdata-pydantic](https://xsdata-pydantic.readthedocs.io/en/latest/codegen/) to generate type-safe Pydantic models from the OPNsense XSD schema.
