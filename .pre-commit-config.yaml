@@ -41,7 +41,7 @@ repos:
       rev: 0.23.0
       hooks:
           - id: deptry
-            exclude: ^legacy/
+            exclude: ^legacy/|^opnsense/models/
 
     - repo: https://github.com/asottile/pyupgrade
       rev: v3.20.0

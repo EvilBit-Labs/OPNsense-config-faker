@@ -37,6 +37,11 @@ $PYTHON_CMD -m venv venv
 
 # Activate virtual environment
 echo "Activating virtual environment..."
+if [ ! -f "venv/bin/activate" ]; then
+    echo "Error: Virtual environment activation script not found at venv/bin/activate"
+    echo "The virtual environment may not have been created properly."
+    exit 1
+fi
 # shellcheck source=/dev/null
 source venv/bin/activate
 

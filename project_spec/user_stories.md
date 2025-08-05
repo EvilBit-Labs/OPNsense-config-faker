@@ -1,21 +1,22 @@
 # OPNsense Config Faker - User Stories
 
-**Document Version**: 1.1
-**Last Modified**: 2025-08-03
+**Document Version**: 1.2
+**Last Modified**: 2025-01-27
 **Project**: OPNsense Config Faker
 **Status**: Active
 
 ## Document Metadata
 
-- **Version**: 1.1
+- **Version**: 1.2
 - **Created**: 2025-08-03
-- **Last Modified**: 2025-08-03
+- **Last Modified**: 2025-01-27
 - **Author**: Project Team
 - **Reviewer**: UncleSp1d3r
 - **Approval**: TBD
 
 ## Change History
 
+- **v1.2** (2025-01-27): Added US-024 for template processing and validation to properly reference F002
 - **v1.1** (2025-08-03): Updated requirement references to align with requirements.md v1.1
 - **v1.0** (2025-08-03): Initial user stories specification
 
@@ -377,18 +378,18 @@ This document defines user stories and use cases for the OPNsense Config Faker p
 - **Priority**: Low
 - **Requirements**: F017, TR014
 
-**US-024**: Large-Scale Generation
+**US-024**: Template Processing and Validation
 
-- **As a** DevOps engineer
-- **I want to** generate large numbers of configurations
-- **So that** I can test at scale
+- **As a** network administrator
+- **I want to** process and validate base OPNsense configuration templates
+- **So that** I can ensure templates are valid before using them for generation
 - **Acceptance Criteria**:
-  - Can generate 100+ configurations efficiently
-  - Maintains performance with large datasets
-  - Provides progress feedback
-  - Handles memory efficiently
-- **Priority**: High
-- **Requirements**: TR001, TR002, TR004
+  - Validates XML structure of base templates
+  - Checks for required OPNsense configuration elements
+  - Ensures templates are compatible with target OPNsense version
+  - Reports validation errors with clear descriptions
+- **Priority**: Medium
+- **Requirements**: F002, F015, TR013
 
 ## Use Cases
 

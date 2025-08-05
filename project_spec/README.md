@@ -8,7 +8,7 @@ This directory contains the complete project specification for the OPNsense Conf
 
 - **[requirements.md](requirements.md)** - **Complete requirements specification**
 
-  - Contains all functional requirements (F001-F025) and technical requirements
+  - Contains all functional requirements (F001-F033) and technical requirements
   - Defines system capabilities, constraints, and implementation details
   - Serves as the authoritative source for what the system must do
   - Includes document metadata for version control and change tracking
@@ -63,6 +63,26 @@ This directory contains the complete project specification for the OPNsense Conf
 
 ## Validation Commands
 
+### Prerequisites
+
+The validation commands use the `just` task runner. Install it first:
+
+```bash
+# macOS (using Homebrew)
+brew install just
+
+# Linux (using Cargo)
+cargo install just
+
+# Windows (using Chocolatey)
+choco install just
+
+# Or download directly
+curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash
+```
+
+### Validation Commands
+
 ```bash
 # Check markdown formatting
 just format
@@ -76,6 +96,21 @@ grep -n "F0[0-9][0-9]" requirements.md
 # Check task-requirement alignment
 grep -n "TASK-" tasks.md
 grep -n "F0[0-9][0-9]" tasks.md
+```
+
+### Alternative Commands (if just is not available)
+
+If `just` is not installed, you can run the equivalent commands directly:
+
+```bash
+# Format code (equivalent to 'just format')
+uv run ruff format .
+
+# Run CI checks (equivalent to 'just ci-check')
+uv run ruff check . --output-format=github
+uv run ruff format --check --diff .
+uv run basedpyright
+TERM=dumb uv run pytest --tb=short -v
 ```
 
 ## Related Documents

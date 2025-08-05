@@ -21,6 +21,7 @@ This implementation maintains the core concepts while adding:
 import csv
 import uuid
 import time
+from .string_utils import escape_string
 
 
 def generate_xml_from_csv(csv_file, output_file, options):
@@ -34,7 +35,7 @@ def generate_xml_from_csv(csv_file, output_file, options):
         with open(output_file, "w") as outfile:
             for row in reader:
                 vlan_nr = row[0].strip()
-                description = row[2].strip()
+                description = escape_string(row[2].strip())
                 wan = row[3].strip()
                 random_uuid = str(uuid.uuid4())
 
@@ -49,8 +50,10 @@ def generate_xml_from_csv(csv_file, output_file, options):
                         wan_ip = options.get("wan2", "80.200.10.12")
                     case "3":
                         wan_ip = options.get("wan3", "80.200.10.13")
+                    case _:
+                        raise ValueError(f"Invalid WAN value: {wan}. Expected '1', '2', or '3'")
 
-                outfile.write(f"<rule>\n")
+                outfile.write(f"<rule uuid=\"{random_uuid}\">\n")
                 outfile.write(f"  <source>\n")
                 outfile.write(f"    <network>opt{opt_counter}</network>\n")
                 outfile.write(f"  </source>\n")
