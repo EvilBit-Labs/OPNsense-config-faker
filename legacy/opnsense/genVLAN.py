@@ -20,6 +20,7 @@ This implementation maintains the core concepts while adding:
 
 import csv
 import uuid
+from .string_utils import escape_string
 
 
 def generate_xml_from_csv(csv_file, output_file, options):
@@ -34,7 +35,7 @@ def generate_xml_from_csv(csv_file, output_file, options):
             for row in reader:
                 vlan_nr = row[0].strip()
                 vlan_uuid = str(uuid.uuid4())
-                descr = row[2].strip()
+                descr = escape_string(row[2].strip())
 
                 outfile.write(f'    <vlan uuid="{vlan_uuid}">\n')
                 outfile.write(f"      <if>lagg0</if>\n")

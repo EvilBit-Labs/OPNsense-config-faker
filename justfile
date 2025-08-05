@@ -12,7 +12,7 @@ help:
     just --summary
 
 # -----------------------------
-# 🔧 Setup & Installation  
+# 🔧 Setup & Installation
 # -----------------------------
 
 # Install dependencies and setup pre-commit hooks
@@ -23,6 +23,8 @@ install:
     uv run pre-commit install
     uv run pre-commit install --hook-type commit-msg
     uv run pre-commit install --hook-type pre-push
+    # Verify xsdata is available for model generation
+    uv run xsdata --version
 
 # Install additional optional dependencies
 install-rich:
@@ -68,11 +70,14 @@ type-check-watch:
     uv run basedpyright --watch
 
 # Run all linting and type checks
-check-all:
+full-checks:
     cd {{justfile_dir()}}
     just format-check
+    just lint
     just pre-commit-run
     just type-check
+    just test-fast
+    just verify-xsd
 
 # -----------------------------
 # 🧪 Testing & Coverage
@@ -98,6 +103,25 @@ coverage:
 clean-test: clean
     @echo "✅ Cleaned. Running tests..."
     just test
+
+# -----------------------------
+# 🔧 XSD Model Generation
+# -----------------------------
+
+# Generate Pydantic models from XSD schema
+generate-models:
+    cd {{justfile_dir()}}
+    @echo "🔧 Generating Pydantic models from XSD schema..."
+    uv run xsdata generate opnsense-config.xsd --output pydantic --package opnsense.models --compound-fields --generic-collections --union-type --postponed-annotations --structure-style=clusters
+    @echo "✅ Models generated successfully!"
+
+# Verify xsdata installation and XSD schema
+verify-xsd:
+    cd {{justfile_dir()}}
+    @echo "🔍 Verifying XSD setup..."
+    uv run xsdata --version
+    @test -f opnsense-config.xsd || (echo "ERROR: opnsense-config.xsd missing" && exit 1)
+    @echo "✅ XSD setup verified!"
 
 # -----------------------------
 # 📦 CSV Generation & Usage
@@ -158,6 +182,8 @@ ci-check:
     @echo "=== CI Validation ==="
     @echo "Checking Python version compatibility..."
     uv run python --version
+    @echo "\nVerifying xsdata availability..."
+    uv run xsdata --version
     @echo "\nRunning strict linting (treating warnings as errors)..."
     uv run ruff check . --output-format=github
     @echo "\nRunning format validation..."
@@ -170,6 +196,7 @@ ci-check:
     @test -f pyproject.toml || (echo "ERROR: pyproject.toml missing" && exit 1)
     @test -f generate_csv.py || (echo "ERROR: generate_csv.py missing" && exit 1)
     @test -f justfile || (echo "ERROR: justfile missing" && exit 1)
+    @test -f opnsense-config.xsd || (echo "ERROR: opnsense-config.xsd missing" && exit 1)
     @echo "\n✅ All CI checks passed!"
 
 # Setup CI checks and dependencies for CI workflow
@@ -177,6 +204,7 @@ ci-setup:
     cd {{justfile_dir()}}
     uv sync --no-install-project --extra dev || @echo "Make sure uv is installed manually"
     uv run pre-commit install --hook-type commit-msg || @echo "Make sure pre-commit is installed manually"
+    uv run xsdata --version || @echo "Make sure xsdata-pydantic is installed manually"
 
 # -----------------------------
 # 🚀 Development Environment

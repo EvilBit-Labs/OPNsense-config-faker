@@ -29,13 +29,15 @@ This document defines the complete functional and technical requirements for the
 
 **F001** (XML configuration generation): Create complete OPNsense XML configuration files from base templates and generated data
 
+**F002** (Template processing): Process and validate base OPNsense configuration templates for use in generation
+
 **F003** (VLAN configuration): Generate unique VLAN configurations with realistic IP ranges following RFC 1918 standards
 
 **F004** (Interface configuration): Create network interface configurations with proper assignments and realistic naming
 
 **F005** (DHCP server configuration): Generate DHCP server configurations with appropriate IP pools and settings
 
-**F006** (NAT rules generation): Create NAT rules and port forwarding configurations for network services
+**F006** (Outbound NAT generation): Create outbound NAT rules and Port Address Translation (PAT) configurations for internal network access to external services
 
 **F007** (Firewall rules generation): Generate firewall policies and security rules with realistic patterns
 
@@ -51,7 +53,7 @@ This document defines the complete functional and technical requirements for the
 
 **F013** (IPSec tunnel generation): Create IPSec tunnel configurations with realistic encryption parameters and key exchange settings
 
-**F014** (Inbound NAT generation): Generate inbound NAT mappings with realistic port forwarding rules and service configurations
+**F014** (Inbound NAT generation): Generate inbound NAT mappings and port forwarding rules for external access to internal network services
 
 **F015** (Data validation): Ensure generated configurations are internally consistent and conflict-free
 

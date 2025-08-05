@@ -35,7 +35,7 @@ def generate_xml_from_csv(csv_file, output_file, options):
             for row in reader:
                 vlan_nr = row[0].strip()
                 random_uuid = str(uuid.uuid4())
-                description = row[2].strip()
+                description = escape_string(row[2].strip())
 
                 username = str(f"top{vlan_nr}")
                 password = escape_string(description)

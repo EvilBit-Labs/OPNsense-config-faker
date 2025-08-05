@@ -19,14 +19,7 @@ This implementation maintains the core concepts while adding:
 """
 
 import csv
-from xml.sax.saxutils import escape
-
-
-def escape_string(s):
-    # return escape(s, {"ä": "& #xE4;", "ö": "& #xF6;", "ü": "& #xFC;", "ß": "& #xDF;", "Ä": "& #xC4;", "Ö": "& #xD6;", "Ü": "& #xDC;", " ": "","-":"_"})
-    return escape(
-        s, {"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss", "Ä": "AE", "Ö": "OE;", "Ü": "UE", " ": "", "-": "_", "/": "_"}
-    )
+from .string_utils import sanitize_string
 
 
 def process_csv(file_name):
@@ -39,8 +32,8 @@ def process_csv(file_name):
 
         for row in reader:
             # description = row[-1]  # Nimmt das letzte Feld (Beschreibung)
-            # row.append(escape_string(description))  # Fügt das geänderte Feld als neuen Eintrag hinzu
-            row[-1] = escape_string(row[-1])  # Überschreibt das letzte Feld (Beschreibung) mit dem geänderten Wert
+            # row.append(sanitize_string(description))  # Fügt das geänderte Feld als neuen Eintrag hinzu
+            row[-1] = sanitize_string(row[-1])  # Überschreibt das letzte Feld (Beschreibung) mit dem geänderten Wert
             data.append(row)
 
     new_file = file_name.replace(".csv", "Sanitized.csv")

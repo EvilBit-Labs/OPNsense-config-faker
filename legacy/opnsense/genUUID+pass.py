@@ -21,12 +21,13 @@ This implementation maintains the core concepts while adding:
 import uuid
 import time
 import random
+import secrets
 import string
 
 
 def generate_random_password(length=32):
     characters = string.ascii_letters + string.digits
-    return "".join(random.choice(characters) for i in range(length))
+    return "".join(secrets.choice(characters) for i in range(length))
 
 
 random_uuid = str(uuid.uuid4())
