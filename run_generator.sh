@@ -58,14 +58,14 @@ case $choice in
         read -r -p "Output filename (default: test-config.csv): " filename
         read -r -p "How many VLAN configurations? (default: 10): " vlan_count
         echo -e "${YELLOW}Generating network configuration data...${NC}"
-        cmd="python generate_csv.py"
+        cmd_args=("python" "generate_csv.py")
         if [ -n "$vlan_count" ]; then
-            cmd="$cmd --count $vlan_count"
+            cmd_args+=("--count" "$vlan_count")
         fi
         if [ -n "$filename" ]; then
-            cmd="$cmd --output $filename"
+            cmd_args+=("--output" "$filename")
         fi
-        eval "$cmd"
+        "${cmd_args[@]}"
         ;;
     4)
         echo -e "${YELLOW}Legacy OPNsense generator...${NC}"

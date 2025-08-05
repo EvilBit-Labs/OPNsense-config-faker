@@ -22,6 +22,7 @@ import csv
 import uuid
 import random
 import string
+from .string_utils import escape_string
 
 
 def generate_random_password(length=32):
@@ -44,7 +45,7 @@ def generate_xml_from_csv(csv_file, output_file, options):
             for row in reader:
                 vlan_nr = row[0].strip()
                 ip_range = row[1].strip().replace(".x", ".254")
-                description = row[2].strip()
+                description = escape_string(row[2].strip())
                 random_uuid = str(uuid.uuid4())
                 random_password = generate_random_password()
 

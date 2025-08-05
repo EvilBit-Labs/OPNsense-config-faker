@@ -18,14 +18,12 @@ This implementation maintains the core concepts while adding:
 - Modular architecture for extensibility
 """
 
-from xml.sax.saxutils import escape
 import sys
+from .string_utils import escape_html_entities
 
 
 def escape_string(s):
-    return escape(
-        s, {"ä": "&#xE4;", "ö": "&#xF6;", "ü": "&#xFC;", "ß": "&#xDF;", "Ä": "&#xC4;", "Ö": "&#xD6;", "Ü": "&#xDC;"}
-    )
+    return escape_html_entities(s)
 
 
 if __name__ == "__main__":

@@ -31,7 +31,21 @@ This project generates realistic OPNsense firewall configurations for testing, t
 
 The project uses [xsdata-pydantic](https://xsdata-pydantic.readthedocs.io/en/latest/codegen/) to generate Pydantic models from the XSD schema:
 
+**Setup Requirements:**
+
+- xsdata-pydantic is included in dev dependencies
+- Install with: `uv sync --extra dev` or `pip install xsdata-pydantic`
+
+**Model Generation:**
+
 ```bash
+# Verify xsdata is available
+just verify-xsd
+
+# Generate Pydantic models from XSD schema
+just generate-models
+
+# Or run directly:
 xsdata opnsense-config.xsd --output pydantic --package opnsense.models
 ```
 
@@ -62,6 +76,8 @@ Tasks are organized into 5 phases:
 - Use type hints and Pydantic models for data validation
 - Maintain comprehensive test coverage
 - Use UV package manager for dependency management
+- Use justfile for task management
+- Always run `just full-checks` and ensure all tests pass before committing
 
 ### Configuration Generation
 

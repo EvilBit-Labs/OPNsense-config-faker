@@ -65,15 +65,72 @@ python main.py xml --base-config legacy/opnsense/config-example.xml --count 25
 
 - Python 3.10+ (3.13 recommended)
 - UV package manager (recommended) or pip
+- xsdata-pydantic (for XSD model generation)
 
 ### Quick Setup
 
 ```bash
 # Using UV (recommended)
-uv sync
+uv sync --extra dev
 
 # Or using pip
 pip install faker typer rich lxml
+pip install xsdata-pydantic  # For XSD model generation
+```
+
+## Development Setup
+
+### Prerequisites
+
+The development workflow uses the `just` task runner for common development tasks:
+
+```bash
+# Install just (choose one method)
+
+# macOS (using Homebrew)
+brew install just
+
+# Linux (using Cargo)
+cargo install just
+
+# Windows (using Chocolatey)
+choco install just
+
+# Or download directly
+curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash
+```
+
+### XSD Model Generation
+
+The project uses xsdata-pydantic to generate Pydantic models from the OPNsense XSD schema:
+
+```bash
+# Install development dependencies (includes xsdata-pydantic)
+uv sync --extra dev
+
+# Generate Pydantic models from XSD schema
+just generate-models
+
+# Verify XSD setup
+just verify-xsd
+```
+
+This generates type-safe models that ensure generated configurations match the OPNsense schema exactly.
+
+### Development Workflow
+
+```bash
+# Complete development setup
+just dev-setup
+
+# Run all checks and tests
+just check-all
+
+# Format code
+just format
+
+# Run CI validation
+just ci-check
 ```
 
 ## Usage Examples

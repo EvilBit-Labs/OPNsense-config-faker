@@ -31,12 +31,10 @@ dependencies = [
     "typer>=0.12.0", # For modern CLI interface
     "rich>=14.1.0",  # For enhanced terminal output
     "lxml>=5.0.0",   # For XML configuration generation (OPNsense)
+    "pydantic>=2.0.0", # For data validation (required by generated models)
 ]
 
 [project.optional-dependencies]
-# No optional dependencies needed - all core functionality is included
-
-[dependency-groups]
 dev = [
     "ruff>=0.8.0",
     "pytest>=8.4.1",
@@ -45,6 +43,7 @@ dev = [
     "pre-commit>=3.0.0",    # For git hooks
     "basedpyright>=1.31.0", # For static type checking
     "deptry>=0.23.1",       # For dependency checks
+    "xsdata-pydantic[cli]>=24.0.0", # For XSD to Pydantic model generation with CLI
 ]
 
 [project.urls]
@@ -64,6 +63,7 @@ line-length = 119
 target-version = "py310"
 exclude = [
     "legacy/",          # Exclude legacy code from linting
+    "opnsense/models/", # Exclude auto-generated models from linting
     "**/__pycache__",
     "**/.pytest_cache",
     "**/htmlcov",
@@ -133,6 +133,7 @@ pythonVersion = "3.10"
 include = ["."] # Check all files by default
 exclude = [
     "legacy/",          # Exclude legacy code from type checking
+    "opnsense/models/", # Exclude auto-generated models from type checking
     ".venv/",           # Exclude virtual environment
     "venv/",            # Exclude virtual environment (alternative name)
     "**/__pycache__",
@@ -206,3 +207,8 @@ package_module_name_map = { "pytest-cov" = "pytest_cov", "pre-commit" = "pre_com
 ignore = ["DEP002", "DEP004"]
 # Mark dev dependencies as known first party to avoid unused warnings
 known_first_party = ["tests"]
+
+[dependency-groups]
+dev = [
+    "deptry>=0.23.1",
+]

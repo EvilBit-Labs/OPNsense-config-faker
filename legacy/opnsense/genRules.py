@@ -71,4 +71,5 @@ def generate_xml_from_csv(csv_file, output_file, options):
 if __name__ == "__main__":
     csv_file = "config.csv"
     output_file = "part_Rules.xml"
-    generate_xml_from_csv(csv_file, output_file)
+    options = {"opt_counter": 1}  # Default starting counter
+    generate_xml_from_csv(csv_file, output_file, options)
