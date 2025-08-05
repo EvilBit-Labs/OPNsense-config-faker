@@ -93,9 +93,24 @@ def escape_xml_string(s: str) -> str:
     Returns:
         Escaped string safe for XML
     """
-    return escape(
-        s, {"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss", "Ä": "AE", "Ö": "OE", "Ü": "UE", " ": "", "-": "_", "/": "_"}
-    )
+    # First apply character replacements for German umlauts and special characters
+    replacements = {
+        "ä": "ae",
+        "ö": "oe",
+        "ü": "ue",
+        "ß": "ss",
+        "Ä": "AE",
+        "Ö": "OE",
+        "Ü": "UE",
+        " ": "",
+        "-": "_",
+        "/": "_",
+    }
+    for old, new in replacements.items():
+        s = s.replace(old, new)
+
+    # Then escape XML special characters: &, <, >, ", '
+    return escape(s)
 
 
 def generate_vlan_configurations(count: int) -> list[VLANConfig]:
@@ -301,7 +316,7 @@ def generate_vlan_xml(configs: list[VLANConfig], output_file: Path) -> None:
             outfile.write(f"      <tag>{config.vlan_id}</tag>\n")
             outfile.write("      <pcp>0</pcp>\n")
             outfile.write("      <proto/>\n")
-            outfile.write(f"      <descr>{config.description}</descr>\n")
+            outfile.write(f"      <descr>{escape_xml_string(config.description)}</descr>\n")
             outfile.write(f"      <vlanif>vlan0{config.vlan_id}</vlanif>\n")
             outfile.write("    </vlan>\n")
 
@@ -461,7 +476,7 @@ def generate_nat_xml(configs: list[VLANConfig], output_file: Path, options: dict
             outfile.write("  <destination>\n")
             outfile.write("    <any>1</any>\n")
             outfile.write("  </destination>\n")
-            outfile.write(f"  <descr>{config.description}</descr>\n")
+            outfile.write(f"  <descr>{escape_xml_string(config.description)}</descr>\n")
             outfile.write("  <category/>\n")
             outfile.write("  <interface>wan</interface>\n")
             outfile.write("  <tag/>\n")
@@ -535,7 +550,7 @@ def generate_carp_xml(configs: list[VLANConfig], output_file: Path, options: dic
             outfile.write(f"    <vhid>{config.vlan_id}</vhid>\n")
             outfile.write("    <advbase>1</advbase>\n")
             outfile.write(f"    <advskew>{advskew}</advskew>\n")
-            outfile.write(f"    <descr>{config.description}</descr>\n")
+            outfile.write(f"    <descr>{escape_xml_string(config.description)}</descr>\n")
             outfile.write("  </vip>\n")
 
             opt_counter += 1
@@ -561,7 +576,7 @@ def generate_radius_user_xml(configs: list[VLANConfig], output_file: Path) -> No
             outfile.write("          <enabled>1</enabled>\n")
             outfile.write(f"          <username>{username}</username>\n")
             outfile.write(f"          <password>{password}</password>\n")
-            outfile.write(f"          <description>{config.description}</description>\n")
+            outfile.write(f"          <description>{escape_xml_string(config.description)}</description>\n")
             outfile.write("          <ip/>\n")
             outfile.write("          <subnet/>\n")
             outfile.write("          <route/>\n")
