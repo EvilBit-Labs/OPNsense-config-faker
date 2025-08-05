@@ -1,3 +1,7 @@
+---
+alwaysApply: true
+---
+
 # Core Rules for OPNsense Config Faker
 
 ## 1. Code Structure
@@ -12,6 +16,13 @@
 - Unit tests must be written for all new features
 - Integration tests should verify overall functionality
 - Code reviews are required for all pull requests
+
+### Generated Code Management
+
+- **⚠️ CRITICAL**: Never manually edit files in `opnsense/models/` - they are generated from XSD
+- Use `just generate-models` or xsdata commands to regenerate models when schema changes
+- Generated model files should be committed to version control but never manually modified
+- If customization is needed, extend generated models in separate files, don't modify originals
 
 ## 3. Ethical Considerations
 

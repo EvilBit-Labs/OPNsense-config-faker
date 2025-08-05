@@ -1,0 +1,17 @@
+from pydantic import BaseModel, ConfigDict
+from xsdata_pydantic.fields import field
+
+__NAMESPACE__ = "https://opnsense.org/config"
+
+
+class IgnoreAcquireTs(BaseModel):
+    class Meta:
+        name = "ignore_acquire_ts"
+        namespace = "https://opnsense.org/config"
+
+    model_config = ConfigDict(defer_build=True)
+    value: int = field(
+        metadata={
+            "required": True,
+        }
+    )

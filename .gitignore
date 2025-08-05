@@ -61,3 +61,6 @@ test-output/
 # Keep cursor rules but ignore other cursor files
 .cursor/*
 !.cursor/rules/
+
+# Generated models - committed but should never be manually edited
+# opnsense/models/ - These are generated from XSD, do not edit manually!
