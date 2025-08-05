@@ -39,6 +39,10 @@ def escape_string(s: str, mappings: Optional[Dict[str, str]] = None) -> str:
     Returns:
         The escaped string
     """
+    # Handle None input gracefully
+    if s is None:
+        return ""
+
     if mappings is None:
         mappings = HTML_ENTITY_MAPPINGS
 
