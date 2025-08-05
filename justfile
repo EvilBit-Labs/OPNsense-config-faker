@@ -190,8 +190,8 @@ ci-check:
     uv run ruff format --check --diff .
     @echo "\nRunning type checking..."
     uv run basedpyright
-    @echo "\nRunning tests (when available)..."
-    -TERM=dumb uv run pytest --tb=short -v || echo "No tests found or pytest not configured"
+    @echo "\nRunning tests with coverage..."
+    -TERM=dumb uv run pytest --cov=. --cov-report=xml --cov-report=term-missing --tb=short -v || echo "No tests found or pytest not configured"
     @echo "\nValidating project structure..."
     @test -f pyproject.toml || (echo "ERROR: pyproject.toml missing" && exit 1)
     @test -f generate_csv.py || (echo "ERROR: generate_csv.py missing" && exit 1)

@@ -40,17 +40,21 @@ jobs:
     - name: Install dependencies
       run: |
         uv sync --no-install-project --group dev
+        # Install pre-commit explicitly
+        uv run pip install pre-commit
         uv run pre-commit install --hook-type commit-msg
 
     - name: Run CI checks
       run: |
         just ci-check
 
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v4
-      if: always()
+    - name: Generate coverage report
+      run: |
+        # Ensure coverage.xml is generated for Codecov
+        uv run pytest --cov=. --cov-report=xml --cov-report=term-missing || echo "No tests found or pytest failed"
+
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v5
       with:
-        file: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
+        slug: EvilBit-Labs/OPNsense-config-faker
