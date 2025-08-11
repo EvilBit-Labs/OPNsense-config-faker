@@ -200,7 +200,7 @@ fn test_progress_normalization() {
     // Remove temp file first to avoid force requirement
     drop(temp_file);
     std::fs::remove_file(&csv_path).ok(); // Ignore error if file doesn't exist
-    
+
     let output = cli_command()
         .arg("generate")
         .arg("--format")
@@ -236,7 +236,7 @@ fn test_bash_completion_snapshot() {
     assert_snapshot!("bash_completion_script", normalized);
 }
 
-/// Test zsh completion script snapshot  
+/// Test zsh completion script snapshot
 #[test]
 fn test_zsh_completion_snapshot() {
     let output = cli_command().arg("completions").arg("zsh").run_success();

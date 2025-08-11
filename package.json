@@ -1,0 +1,21 @@
+{
+    "name": "opnsense-config-faker",
+    "version": "0.1.0",
+    "description": "A flexible tool for generating realistic network configuration test data",
+    "private": true,
+    "scripts": {
+        "lint:md": "markdownlint-cli2 \"**/*.md\"",
+        "lint:md:fix": "markdownlint-cli2 \"**/*.md\" --fix",
+        "commitlint": "commitlint --edit"
+    },
+    "devDependencies": {
+        "@commitlint/cli": "^19.8.1",
+        "@commitlint/config-conventional": "^19.8.1",
+        "markdownlint-cli2": "^0.18.1"
+    },
+    "engines": {
+        "node": ">=18.0.0",
+        "pnpm": ">=8.0.0"
+    },
+    "packageManager": "pnpm@8.15.0"
+}

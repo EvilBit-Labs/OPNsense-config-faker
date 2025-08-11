@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 env:
   CARGO_TERM_COLOR: never
@@ -167,19 +167,19 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: boa-dev/criterion-compare-action@v3
         with:
-          cwd: '.'
+          cwd: "."
           branchName: ${{ github.head_ref }}
 
       - name: Track benchmark performance (main/develop)
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
         uses: rhysd/github-action-benchmark@v1
         with:
-          tool: 'criterion'
-          output-file-path: 'target/criterion/*/base/estimates.json'
+          tool: "criterion"
+          output-file-path: "target/criterion/*/base/estimates.json"
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
           comment-on-alert: true
-          alert-threshold: '150%'
+          alert-threshold: "150%"
           fail-on-alert: false
           max-items-in-chart: 100
 
@@ -198,15 +198,15 @@ jobs:
         with:
           script: |
             const comment = `## 📊 Benchmark Results
-            
+
             Benchmarks completed for commit \`${{ github.sha }}\`.
-            
+
             📈 **Detailed HTML Reports**: Download the [criterion-html-reports-${{ github.sha }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) artifact and open \`target/criterion/report/index.html\` in your browser.
-            
+
             🔍 **Performance Comparison**: Check the step outputs above for any performance regressions detected.
-            
+
             > ℹ️ **Note**: Artifacts are available for 30 days. Significant performance changes (>150% regression) will be highlighted in the workflow output.`;
-            
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,

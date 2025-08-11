@@ -10,11 +10,13 @@ Use this reusable snippet in GitHub issues under a "CLI Usage" section:
 ## CLI Usage
 
 ### Rust Implementation
+
 - **Development (cargo)**: `cargo run --release -- <subcommand> [flags]`
-- **Installed binary**: `<binary-name> <subcommand> [flags]` *(replace `<binary-name>` once finalized)*
+- **Installed binary**: `<binary-name> <subcommand> [flags]` _(replace `<binary-name>` once finalized)_
 
 ### Legacy Python (during transition)
-- **Legacy path**: `python generate_csv.py [args]` *(kept for parity until full Rust cutover)*
+
+- **Legacy path**: `python generate_csv.py [args]` _(kept for parity until full Rust cutover)_
 ```
 
 ## Example Usage
@@ -25,11 +27,13 @@ Use this reusable snippet in GitHub issues under a "CLI Usage" section:
 ## CLI Usage
 
 ### Rust Implementation
+
 - **Development (cargo)**: `cargo run --release -- generate --count 100 --output ./out`
-- **Installed binary**: `<binary-name> generate --count 100 --output ./out` *(replace `<binary-name>` once finalized)*
+- **Installed binary**: `<binary-name> generate --count 100 --output ./out` _(replace `<binary-name>` once finalized)_
 
 ### Legacy Python (during transition)
-- **Legacy path**: `python generate_csv.py --count 100 --output ./out` *(kept for parity until full Rust cutover)*
+
+- **Legacy path**: `python generate_csv.py --count 100 --output ./out` _(kept for parity until full Rust cutover)_
 ```
 
 ### Complex Example with Multiple Subcommands
@@ -38,17 +42,19 @@ Use this reusable snippet in GitHub issues under a "CLI Usage" section:
 ## CLI Usage
 
 ### Rust Implementation
+
 - **Development (cargo)**:
   - `cargo run --release -- analyze --input data.csv --format json`
   - `cargo run --release -- export --database ./db.sqlite --output report.pdf`
 - **Installed binary**:
-  - `<binary-name> analyze --input data.csv --format json` *(replace `<binary-name>` once finalized)*
-  - `<binary-name> export --database ./db.sqlite --output report.pdf` *(replace `<binary-name>` once finalized)*
+  - `<binary-name> analyze --input data.csv --format json` _(replace `<binary-name>` once finalized)_
+  - `<binary-name> export --database ./db.sqlite --output report.pdf` _(replace `<binary-name>` once finalized)_
 
 ### Legacy Python (during transition)
+
 - **Legacy path**:
-  - `python analyze.py --input data.csv --format json` *(kept for parity until full Rust cutover)*
-  - `python export.py --database ./db.sqlite --output report.pdf` *(kept for parity until full Rust cutover)*
+  - `python analyze.py --input data.csv --format json` _(kept for parity until full Rust cutover)_
+  - `python export.py --database ./db.sqlite --output report.pdf` _(kept for parity until full Rust cutover)_
 ```
 
 ## Acceptance Criteria for Color Output
@@ -88,7 +94,7 @@ All CLI implementations must respect terminal environment variables for color ou
 ## Binary Name Placeholder
 
 - Use `<binary-name>` as placeholder in all documentation
-- Include note: "*(replace `<binary-name>` once finalized)*"
+- Include note: "_(replace `<binary-name>` once finalized)_"
 - Update all documentation once final binary name is decided
 - Consider creating a find-and-replace checklist for the final naming
 
@@ -98,6 +104,7 @@ When using this convention in issues, consider adding implementation status:
 
 ```md
 ## Implementation Status
+
 - [ ] Rust implementation complete
 - [ ] Python legacy support maintained
 - [ ] Color output respects NO_COLOR

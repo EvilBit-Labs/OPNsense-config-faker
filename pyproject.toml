@@ -206,10 +206,10 @@ addopts = [
 ]
 
 [tool.deptry]
-# Exclude legacy code and virtual environment from dependency checking
-exclude = ["legacy/", ".venv/", "venv/"]
+# Exclude legacy code, virtual environment, and node_modules from dependency checking
+exclude = ["legacy/", ".venv/", "venv/", "node_modules/", "**/node_modules/"]
 # Map package names to their module names for packages that don't follow standard naming
-package_module_name_map = { "pytest-cov" = "pytest_cov", "pre-commit" = "pre_commit" }
+package_module_name_map = { "pytest-cov" = "pytest_cov", "pre-commit" = "pre_commit", "polyfactory" = "polyfactory", "basedpyright" = "basedpyright" }
 # Ignore unused and dev dependency issues
 ignore = ["DEP002", "DEP004"]
 # Mark dev dependencies as known first party to avoid unused warnings

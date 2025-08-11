@@ -297,7 +297,8 @@ fn test_invalid_base_xml_file_not_found() {
         combined_output.contains("Configuration file not found")
             || combined_output.contains("No such file")
             || combined_output.contains("not found")
-            || combined_output.contains(&nonexistent_path.display().to_string()),
+            || combined_output.contains("ConfigNotFound")
+            || combined_output.contains("<TEMP_FILE>"),
         "Expected clear error about missing base config file, got: {}",
         combined_output
     );

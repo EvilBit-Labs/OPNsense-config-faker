@@ -12,7 +12,7 @@ All scattered markdown files in the OPNsense Config Faker project have been succ
 
 - `MIGRATION_EXECUTIVE_SUMMARY.md` → `rust_migration/MIGRATION_EXECUTIVE_SUMMARY.md`
 - `RUST_MIGRATION_ROADMAP.md` → `rust_migration/RUST_MIGRATION_ROADMAP.md`
-- `migration_task_list.md` → `rust_migration/migration_task_list_python.md` *(renamed for clarity)*
+- `migration_task_list.md` → `rust_migration/migration_task_list_python.md` _(renamed for clarity)_
 - `docs/OPNsense-Config-Faker-Rust-Port-Plan.md` → `rust_migration/OPNsense-Config-Faker-Rust-Port-Plan.md`
 
 ### Files Moved to `docs/github/` Directory
