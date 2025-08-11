@@ -4,7 +4,7 @@
 
 ### 6.1.1 Technical Implementation Risks
 
-**R001: XSD Validation Ecosystem Maturity**
+#### R001: XSD Validation Ecosystem Maturity
 
 - **Impact**: High - Affects XML compliance validation and schema adherence
 - **Probability**: Medium - Rust XML ecosystem is less mature than Python/Java
@@ -14,7 +14,7 @@
   - Fallback: Custom validation logic for critical schema requirements
   - Implementation: Validate during CI pipeline with `xmllint --schema` integration
 
-**R002: Performance Regression Risk**
+#### R002: Performance Regression Risk
 
 - **Impact**: High - Could negate primary benefits of Rust migration
 - **Probability**: Medium - Complex XML processing and memory allocation patterns
@@ -25,7 +25,7 @@
   - Memory profiling with `jemalloc` and allocation pattern analysis
   - Mandatory TR001/TR002 benchmark validation before milestone completion
 
-**R003: Cross-Platform Compatibility Issues**
+#### R003: Cross-Platform Compatibility Issues
 
 - **Impact**: Medium - May limit deployment flexibility across target environments
 - **Probability**: Low-Medium - Windows path handling and filesystem differences
@@ -37,7 +37,7 @@
 
 ### 6.1.2 Data and Configuration Risks
 
-**R004: Parity Gap with Python Implementation**
+#### R004: Parity Gap with Python Implementation
 
 - **Impact**: High - Incomplete feature coverage could break compatibility
 - **Probability**: Medium - Complex data models and behavioral nuances
@@ -47,7 +47,7 @@
   - Property-based testing with `proptest` for edge case validation
   - Incremental compatibility test suite with rollback capabilities
 
-**R005: Random Data Realism Degradation**
+#### R005: Random Data Realism Degradation
 
 - **Impact**: Medium - Poor test data quality affects validation effectiveness
 - **Probability**: Low - Well-established patterns in existing implementation
@@ -59,7 +59,7 @@
 
 ### 6.1.3 User Experience and Environment Risks
 
-**R006: Terminal Environment Compatibility**
+#### R006: Terminal Environment Compatibility
 
 - **Impact**: Low-Medium - Affects user experience across different environments
 - **Probability**: Low - Well-understood terminal capability detection patterns
@@ -69,7 +69,7 @@
   - TTY detection using `is-terminal` crate with progressive enhancement
   - Explicit `--no-color` and `--output-format` CLI flags
 
-**R007: Dependency Stability and Security**
+#### R007: Dependency Stability and Security
 
 - **Impact**: Medium - External dependencies may introduce vulnerabilities or breaking changes
 - **Probability**: Medium - Active Rust ecosystem with frequent updates
@@ -81,7 +81,7 @@
 
 ### 6.1.4 Project Management Risks
 
-**R008: Scope Creep and Feature Expansion**
+#### R008: Scope Creep and Feature Expansion
 
 - **Impact**: High - Could lead to timeline delays and resource overruns
 - **Probability**: High - Temptation to implement F001-F033 requirements simultaneously
@@ -126,7 +126,7 @@
 
 ---
 
-# Section 7: Phased Milestone Approach and Implementation Plan
+## Section 7: Phased Milestone Approach and Implementation Plan
 
 ## 7.1 Milestone Architecture Overview
 
@@ -242,7 +242,7 @@ Following established user preferences, milestones are named as version numbers 
 
 #### Implementation Path Decision Point
 
-**Path A: XSD Integration Approach**
+##### Path A: XSD Integration Approach
 
 | Deliverable             | Acceptance Criteria                                                 | Validation Method                                      |
 | ----------------------- | ------------------------------------------------------------------- | ------------------------------------------------------ |
@@ -251,7 +251,7 @@ Following established user preferences, milestones are named as version numbers 
 | **Validation Pipeline** | Automated XSD validation integrated into CI/CD process              | CI pipeline testing + validation reporting             |
 | **Error Mapping**       | User-friendly error messages from XSD validation failures           | Error translation testing + user experience validation |
 
-**Path B: Typed Models Expansion Approach**
+##### Path B: Typed Models Expansion Approach
 
 | Deliverable              | Acceptance Criteria                                                    | Validation Method                                          |
 | ------------------------ | ---------------------------------------------------------------------- | ---------------------------------------------------------- |

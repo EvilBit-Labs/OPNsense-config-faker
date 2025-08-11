@@ -38,7 +38,7 @@ This document provides the complete GitHub milestone and issue structure for org
 
 **Due Date:** 8 weeks from start
 
-- [ ] TR001: Generate 1000+ VLAN configurations in <2 seconds
+- [ ] TR001: Generate 1000+ VLAN configurations in \<2 seconds
 
 - [ ] Parallel processing shows measurable improvements
 
@@ -79,7 +79,6 @@ This document provides the complete GitHub milestone and issue structure for org
 **Quality Gates:**
 
 - [ ] Documentation covers all features with practical examples
-
 - [ ] Binary releases work on all supported platforms
 - [ ] Performance meets or exceeds all benchmarks
 
@@ -99,13 +98,10 @@ This document provides the complete GitHub milestone and issue structure for org
 ```rust
 // Expected CLI structure
 #[derive(Parser)]
+Generate(GenerateArgs),
 
 }
-
-
-    Generate(GenerateArgs),
-
-}
+```
 
 **Dependencies:** None
 
@@ -121,6 +117,7 @@ This document provides the complete GitHub milestone and issue structure for org
 Implement VLAN ID generation and IP range allocation with uniqueness constraints and RFC compliance.
 
 **Acceptance Criteria:**
+
 - [ ] Allocate RFC 1918 compliant IP ranges
 - [ ] Prevent duplicate VLAN IDs across generations
 - [ ] Support department-based naming conventions
@@ -129,18 +126,18 @@ Implement VLAN ID generation and IP range allocation with uniqueness constraints
 
 ```rust
 pub struct VlanConfig {
-    pub ip_range: IpNet,   // RFC 1918 networks
+    pub ip_range: IpNet,     // RFC 1918 networks
     pub description: String, // Department-based
 
-    pub wan_interface: u8,  // WAN assignment
-pub trait VlanGenerator {
-
+    pub wan_interface: u8, // WAN assignment
 }
-
+pub trait VlanGenerator {}
+```
 
 **Dependencies:** None
 
 **Definition of Done:**
+
 - [ ] Integration tests with realistic data
 - [ ] Performance tests for large generations
 
@@ -148,9 +145,7 @@ pub trait VlanGenerator {
 
 ### Issue: [v0.1] CSV Writer - Data Serialization
 
-
 **Description:**
-
 
 - [ ] Serialize VlanConfig to CSV format
 - [ ] Support custom output paths
@@ -159,13 +154,9 @@ pub trait VlanGenerator {
 **Technical Specifications:**
 
 ```rust
-pub struct CsvWriter {
+pub struct CsvWriter {}
 
-
-}
-
-impl CsvWriter {
-}
+impl CsvWriter {}
 ```
 
 **Dependencies:** VLAN Generator
@@ -182,10 +173,10 @@ Establish comprehensive testing infrastructure with unit, integration, and prope
 - [ ] Unit test framework setup with rstest
 
 - [ ] Test coverage reporting
+
 - [ ] Snapshot tests for output formats
 
 ```rust
-
 // Example property-based test
 #[rstest]
 fn test_vlan_generation_uniqueness(#[case] count: usize) {
@@ -214,6 +205,7 @@ Setup GitHub Actions workflow with comprehensive quality gates including clippy,
 - [ ] Cross-platform builds (Linux, macOS, Windows)
 - [ ] Test execution with coverage reporting
 - [ ] Performance benchmark execution
+
 **Technical Specifications:**
 
 ```yaml
@@ -238,6 +230,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # Performance regression detection
+```
 
 **Dependencies:** All v0.1 components
 
@@ -246,7 +239,9 @@ jobs:
 - [ ] Cross-platform builds successful
 
 - [ ] Performance benchmarks tracked
+
 - [ ] Badge integration in README
+
 ---
 
 ## Issue Templates for v0.2 XML Generation
@@ -258,24 +253,26 @@ jobs:
 **Description:**
 Implement XML document generation using quick-xml with proper namespacing, formatting, and OPNsense configuration structure.
 
-
 - [ ] Generate valid XML documents
+
 - [ ] Support OPNsense configuration namespaces
+
 - [ ] Implement proper XML formatting and indentation
 
 - [ ] Support template-based generation
 
 **Technical Specifications:**
 
-
+```rust
     writer: Writer<W>,
     config: XmlWriterConfig,
-
 
 impl<W: Write> XmlWriter<W> {
     pub fn write_opnsense_config(&mut self, config: &OpnsenseConfig) -> Result<(), XmlError>;
     pub fn write_vlan_section(&mut self, vlans: &[VlanConfig]) -> Result<(), XmlError>;
 }
+```
+
 **Dependencies:** VLAN Generator
 
 **Definition of Done:**
@@ -286,8 +283,8 @@ impl<W: Write> XmlWriter<W> {
 - [ ] Performance tests for large documents
 
 ---
-### Issue: [v0.2] Configuration Templates - Base Structure
 
+### Issue: [v0.2] Configuration Templates - Base Structure
 
 **Description:**
 Create template system for different OPNsense configuration types with support for base configurations and custom sections.
@@ -297,18 +294,16 @@ Create template system for different OPNsense configuration types with support f
 - [ ] Implement section-based template composition
 - [ ] Allow custom template registration
 - [ ] Support template inheritance and overrides
-**Technical Specifications:**
+  **Technical Specifications:**
 
 ```rust
 pub struct ConfigTemplate {
     pub base: BaseConfig,
-
 }
 
 pub trait TemplateEngine {
     fn load_template(&mut self, name: &str) -> Result<ConfigTemplate, TemplateError>;
     fn render(&self, template: &ConfigTemplate, data: &ConfigData) -> Result<String, RenderError>;
-
 }
 ```
 
@@ -328,9 +323,9 @@ pub trait TemplateEngine {
 
 ### Issue Assignment Strategy
 
-2. **Dependency Management**: Ensure prerequisites are completed before dependent tasks
-3. **Parallel Work**: Multiple agents can work on independent components simultaneously
-4. **Integration Points**: Regular merge points to prevent divergence
+1. **Dependency Management**: Ensure prerequisites are completed before dependent tasks
+2. **Parallel Work**: Multiple agents can work on independent components simultaneously
+3. **Integration Points**: Regular merge points to prevent divergence
 
 - **Code Reviews**: Cross-agent review process for quality assurance
 - **Integration Testing**: Collaborative testing at milestone boundaries

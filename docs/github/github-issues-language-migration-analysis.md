@@ -174,14 +174,17 @@ These issues focus on:
 ### Immediate Actions
 
 1. **Update Infrastructure Issues First** (#21, #23, #24, #28, #29)
+
    - These are foundational and block other development
    - Focus on dual-language approach during transition
 
 2. **Update Architecture Issues** (#20, #22)
+
    - Critical for development direction
    - Ensure alignment with Rust migration strategy
 
 3. **Standardize CLI Examples** (#14-#18 and others)
+
    - Create consistent command examples
    - Use final CLI design decisions from Rust migration
 

@@ -43,12 +43,17 @@ All scattered markdown files in the OPNsense Config Faker project have been succ
 ### App-Specific Documentation (Already Well-Organized)
 
 - `.cursor/rules/*.mdc` - Cursor AI rules (app-specific configuration)
+
 - `.github/ISSUE_TEMPLATE/*.md` - GitHub issue templates
+
 - `.github/pull_request_template.md` - PR template
+
 - `.github/workflows/README.md` - CI/CD documentation
 
 - `project_spec/*.md` - Project specification documents
+
 - `output/README.md` - Output directory documentation
+
 - `legacy/README*.md` - Legacy code documentation
 
 ### Rust Migration Directory (Already Organized)
@@ -90,22 +95,27 @@ All scattered markdown files in the OPNsense Config Faker project have been succ
 ## Organizational Principles Applied
 
 1. **Rust Migration Content** → `rust_migration/` directory
+
    - All files directly related to the Python-to-Rust migration effort
    - Executive summaries, roadmaps, and migration planning documents
 
 2. **GitHub Process Documentation** → `docs/github/` directory
+
    - Files about GitHub issues, milestones, and transition processes
    - Issue analysis and update procedures
 
 3. **General Documentation** → `docs/` directory
+
    - CLI conventions and other general project documentation
    - Not tied to specific app functionality or migration efforts
 
 4. **App-Specific Files** → Left in their existing locations
+
    - Files that are properly organized in app-specific directories
    - Configuration files, templates, and module-specific documentation
 
 5. **Root-Level Files** → Left in place
+
    - Project-wide documentation (README, ROADMAP, etc.)
    - Core project configuration and contributor guidelines
 
@@ -128,7 +138,7 @@ All scattered markdown files in the OPNsense Config Faker project have been succ
 
 - **Total markdown files organized**: 8 files moved
 - **Files moved to rust_migration/**: 4 files
-- **Files moved to docs/github/**: 4 files  
+- **Files moved to docs/github/**: 4 files
 - **Files moved to docs/**: 1 file
 - **Files left in appropriate existing locations**: All others
 
