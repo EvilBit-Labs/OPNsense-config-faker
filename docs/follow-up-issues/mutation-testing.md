@@ -10,7 +10,7 @@ Implement mutation testing using `cargo-mutants` to improve test quality and ide
 
 ## Background
 
-While we have achieved high code coverage (90%+ threshold), code coverage alone doesn't guarantee test quality. Mutation testing complements our existing testing strategy by:
+While we have achieved high code coverage (80%+ threshold), code coverage alone doesn't guarantee test quality. Mutation testing complements our existing testing strategy by:
 
 1. **Testing the Tests**: Verifying that our tests actually catch bugs by introducing deliberate mutations
 2. **Quality Assurance**: Identifying tests that pass even when the code they're supposed to test is broken

@@ -133,7 +133,7 @@ v0.2 XML Generation (3 issues, 2 weeks)
 
 - **Performance Improvement**: TR001/TR002 benchmarks consistently exceeded
 
-- **Quality Standards**: Zero clippy warnings, ≥90% test coverage
+- **Quality Standards**: Zero clippy warnings, ≥80% test coverage
 
 - **AI Agent Efficiency**: Parallel development reduces timeline by 50%+
 

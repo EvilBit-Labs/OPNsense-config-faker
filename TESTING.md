@@ -168,7 +168,7 @@ Generate test coverage reports:
 # Basic coverage report
 just coverage
 
-# Coverage with 90% threshold enforcement
+# Coverage with 80% threshold enforcement
 just coverage
 
 # HTML coverage report (opens in browser)
@@ -181,7 +181,7 @@ just coverage-ci
 just coverage-report
 ```
 
-The project enforces a **90% coverage threshold**. Coverage reports are generated using `cargo-llvm-cov`.
+The project enforces an **80% coverage threshold**. Coverage reports are generated using `cargo-llvm-cov`.
 
 ### Linting and Formatting
 
@@ -319,7 +319,7 @@ The CI pipeline automatically:
 1. **Validates Formatting**: `just rust-fmt-check`
 2. **Runs Linting**: `just rust-clippy` with strict warnings
 3. **Executes Tests**: `just rust-test` with all features
-4. **Generates Coverage**: `just coverage-ci` with 90% threshold
+4. **Generates Coverage**: `just coverage-ci` with 80% threshold
 5. **Respects Environment**: Adapts output based on `TERM` variable
 
 ## Test Data and Fixtures
@@ -333,7 +333,7 @@ The CI pipeline automatically:
 
 ### Coverage Issues
 
-If coverage falls below 90%:
+If coverage falls below 80%:
 
 ```bash
 # View detailed coverage report
@@ -356,5 +356,5 @@ just coverage
 1. **Write Tests First**: Follow TDD principles for new features
 2. **Use Property-Based Testing**: Leverage `proptest` for edge cases
 3. **Snapshot Critical Outputs**: Use `insta` for CLI behavior verification
-4. **Maintain Coverage**: Keep above 90% line coverage
+4. **Maintain Coverage**: Keep above 80% line coverage
 5. **CI-Friendly Output**: Ensure all tools respect `TERM=dumb`

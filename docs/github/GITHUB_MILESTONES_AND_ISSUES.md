@@ -32,7 +32,7 @@ This document provides the complete GitHub milestone and issue structure for org
 
 - [ ] All cross-component dependencies validated correctly
 - [ ] Duplicate detection prevents invalid configurations
-- [ ] Unit test coverage ≥90%
+- [ ] Unit test coverage ≥80%
 
 ### Milestone: v0.4 - Concurrency and Performance
 

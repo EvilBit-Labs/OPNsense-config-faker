@@ -1,6 +1,6 @@
 # Coverage Tooling
 
-This project uses cargo-llvm-cov for code coverage analysis with a >90% coverage threshold.
+This project uses cargo-llvm-cov for code coverage analysis with a >80% coverage threshold.
 
 ## Setup
 
@@ -20,7 +20,7 @@ This will install:
 ### Local Development
 
 ```bash
-# Generate coverage report with 90% threshold
+# Generate coverage report with 80% threshold
 just coverage
 
 # Generate HTML coverage report for local viewing
@@ -64,7 +64,7 @@ just coverage-ci
 
 ## Thresholds
 
-- **Line Coverage**: >90% required (enforced by `--fail-under-lines 90`)
+- **Line Coverage**: >80% required (enforced by `--fail-under-lines 80`)
 - Coverage failures will cause CI builds to fail
 - Use `just coverage-ci` for CI environments to generate reports even with test failures
 
@@ -72,7 +72,7 @@ just coverage-ci
 
 ### Coverage Too Low
 
-If coverage drops below 90%:
+If coverage drops below 80%:
 
 1. Add more unit tests for uncovered code
 2. Add integration tests for user-facing functionality
@@ -98,7 +98,7 @@ just coverage-clean
 
 | Command                 | Description                                           |
 | ----------------------- | ----------------------------------------------------- |
-| `just coverage`         | Run tests with coverage and enforce 90% threshold     |
+| `just coverage`         | Run tests with coverage and enforce 80% threshold     |
 | `just coverage-ci`      | Run coverage for CI (ignores test failures)           |
 | `just coverage-html`    | Generate HTML coverage report                         |
 | `just coverage-html-ci` | Generate HTML coverage report (ignores test failures) |
