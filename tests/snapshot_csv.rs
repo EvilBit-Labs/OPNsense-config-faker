@@ -15,7 +15,7 @@ use tempfile::NamedTempFile;
 fn normalize_temp_paths(output: &str) -> String {
     let temp_path_regex = Regex::new(r"/[^/]*/[^/]*/T/[^\s]+").unwrap();
     temp_path_regex
-        .replace_all(output, "<TEMP_FILE>")
+        .replace_all(output, "<TEMP_PATH>")
         .to_string()
 }
 

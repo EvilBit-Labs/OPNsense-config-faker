@@ -165,6 +165,7 @@ fn test_invalid_output_file_permissions_without_force() {
 }
 
 #[test]
+#[cfg(unix)]
 fn test_invalid_output_directory_permissions() {
     let temp_dir = TempDir::new().unwrap();
     let readonly_dir = temp_dir.child("readonly");
