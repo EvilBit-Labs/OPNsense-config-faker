@@ -8,11 +8,9 @@ use opnsense_config_faker::Result;
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    
+
     match cli.command {
-        Commands::Generate(args) => {
-            opnsense_config_faker::cli::commands::generate::execute(args)
-        }
+        Commands::Generate(args) => opnsense_config_faker::cli::commands::generate::execute(args),
         Commands::Completions { shell } => {
             opnsense_config_faker::cli::commands::completions::execute(shell)
         }

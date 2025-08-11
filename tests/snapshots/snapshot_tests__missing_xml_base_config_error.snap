@@ -1,0 +1,5 @@
+---
+source: tests/snapshot_tests.rs
+expression: output.normalized_stderr()
+---
+Error: InvalidParameter { parameter: "base-config", reason: "Base configuration file is required for XML format. Use --base-config or -b to specify." }

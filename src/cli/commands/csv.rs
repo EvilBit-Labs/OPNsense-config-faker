@@ -9,7 +9,12 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 /// Execute the CSV generation command
 pub fn execute(args: CsvArgs) -> Result<()> {
-    println!("{}", style("🔧 OPNsense Config Faker - CSV Generator").bold().blue());
+    println!(
+        "{}",
+        style("🔧 OPNsense Config Faker - CSV Generator")
+            .bold()
+            .blue()
+    );
     println!();
 
     // Check if output file exists and handle force flag
@@ -32,12 +37,12 @@ pub fn execute(args: CsvArgs) -> Result<()> {
 
     // Generate VLAN configurations
     let configs = generate_vlan_configurations(args.count, args.seed, Some(&pb))?;
-    
+
     pb.set_message("Writing CSV file...");
-    
+
     // Write to CSV file
     write_csv(&configs, &args.output)?;
-    
+
     pb.finish_with_message(format!(
         "✅ Generated {} VLAN configurations in '{}'",
         configs.len(),
@@ -48,7 +53,8 @@ pub fn execute(args: CsvArgs) -> Result<()> {
     println!("{}", style("Summary:").bold());
     println!("  📊 Configurations: {}", configs.len());
     println!("  📁 Output file: {}", args.output.display());
-    println!("  🏷️  VLAN IDs: {} - {}", 
+    println!(
+        "  🏷️  VLAN IDs: {} - {}",
         configs.iter().map(|c| c.vlan_id).min().unwrap_or(0),
         configs.iter().map(|c| c.vlan_id).max().unwrap_or(0)
     );

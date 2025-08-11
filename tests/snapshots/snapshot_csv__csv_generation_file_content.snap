@@ -1,0 +1,10 @@
+---
+source: tests/snapshot_csv.rs
+expression: normalized_csv
+---
+VLAN,IP Range,Beschreibung,WAN
+554,10.134.64.x,Security VLAN 554,1
+1968,10.1.209.x,Development VLAN 1968,1
+3286,10.133.208.x,Security VLAN 3286,1
+665,10.132.118.x,Marketing VLAN 665,3
+1903,10.127.249.x,IT VLAN 1903,2

@@ -12,27 +12,40 @@ pub fn handle_deprecated_csv(args: CsvArgs) -> Result<()> {
     println!();
     println!("{}", style("Migration Guide:").bold());
     println!("  Old command:");
-    println!("    {} csv --count {} --output {} {}{}",
+    println!(
+        "    {} csv --count {} --output {} {}{}",
         style("opnsense-config-faker").cyan(),
         args.count,
         args.output.display(),
         if args.force { "--force " } else { "" },
-        if let Some(seed) = args.seed { format!("--seed {seed}") } else { String::new() }
+        if let Some(seed) = args.seed {
+            format!("--seed {seed}")
+        } else {
+            String::new()
+        }
     );
     println!();
     println!("  New command:");
-    println!("    {} generate --format csv --count {} --output {} {}{}",
+    println!(
+        "    {} generate --format csv --count {} --output {} {}{}",
         style("opnsense-config-faker").cyan(),
         args.count,
         args.output.display(),
         if args.force { "--force " } else { "" },
-        if let Some(seed) = args.seed { format!("--seed {seed}") } else { String::new() }
+        if let Some(seed) = args.seed {
+            format!("--seed {seed}")
+        } else {
+            String::new()
+        }
     );
     println!();
-    println!("Use '{}' for more information.", style("opnsense-config-faker generate --help").cyan());
-    
+    println!(
+        "Use '{}' for more information.",
+        style("opnsense-config-faker generate --help").cyan()
+    );
+
     Err(crate::model::ConfigError::config(
-        "Please use the new 'generate' command format. See migration guide above."
+        "Please use the new 'generate' command format. See migration guide above.",
     ))
 }
 
@@ -44,8 +57,11 @@ pub fn handle_deprecated_xml(args: XmlArgs) -> Result<()> {
     println!();
     println!("{}", style("Migration Guide:").bold());
     println!("  Old command:");
-    
-    let mut old_cmd = format!("opnsense-config-faker xml --base-config {}", args.base_config.display());
+
+    let mut old_cmd = format!(
+        "opnsense-config-faker xml --base-config {}",
+        args.base_config.display()
+    );
     if let Some(count) = args.count {
         old_cmd.push_str(&format!(" --count {count}"));
     }
@@ -65,11 +81,14 @@ pub fn handle_deprecated_xml(args: XmlArgs) -> Result<()> {
     if let Some(seed) = args.seed {
         old_cmd.push_str(&format!(" --seed {seed}"));
     }
-    
+
     println!("    {}", style(old_cmd).cyan());
     println!();
-    
-    let mut new_cmd = format!("opnsense-config-faker generate --format xml --base-config {}", args.base_config.display());
+
+    let mut new_cmd = format!(
+        "opnsense-config-faker generate --format xml --base-config {}",
+        args.base_config.display()
+    );
     if let Some(count) = args.count {
         new_cmd.push_str(&format!(" --count {count}"));
     }
@@ -89,13 +108,16 @@ pub fn handle_deprecated_xml(args: XmlArgs) -> Result<()> {
     if let Some(seed) = args.seed {
         new_cmd.push_str(&format!(" --seed {seed}"));
     }
-    
+
     println!("  New command:");
     println!("    {}", style(new_cmd).cyan());
     println!();
-    println!("Use '{}' for more information.", style("opnsense-config-faker generate --help").cyan());
-    
+    println!(
+        "Use '{}' for more information.",
+        style("opnsense-config-faker generate --help").cyan()
+    );
+
     Err(crate::model::ConfigError::config(
-        "Please use the new 'generate' command format. See migration guide above."
+        "Please use the new 'generate' command format. See migration guide above.",
     ))
 }

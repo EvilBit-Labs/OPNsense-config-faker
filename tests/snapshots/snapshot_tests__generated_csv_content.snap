@@ -1,0 +1,8 @@
+---
+source: tests/snapshot_tests.rs
+expression: csv_content
+---
+VLAN,IP Range,Beschreibung,WAN
+2186,10.78.237.x,Security VLAN 2186,2
+2557,10.72.158.x,Security VLAN 2557,3
+183,10.165.167.x,Development VLAN 183,1
