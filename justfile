@@ -2,218 +2,232 @@
 set dotenv-load := true
 set ignore-comments := true
 
-# Common variables
-_uv := "uv run"
-_cd := "cd {{justfile_dir()}}"
-_pytest := _uv + " pytest"
-_ruff := _uv + " ruff"
-_basedpyright := _uv + " basedpyright"
-_precommit := _uv + " pre-commit"
-
 # Default recipe - shows available commands
 default:
-    just --summary
+    just --list
 
 # Show help
 help:
-    just --summary
+    just --list
 
 # -----------------------------
 # 🔧 Setup & Installation
 # -----------------------------
 
-# Install dependencies and setup pre-commit hooks
-install: _ensure-cd
-    # 🚀 Set up dev env & pre-commit hooks
-    uv sync --no-install-project --extra dev
-    {{_precommit}} install
-    {{_precommit}} install --hook-type commit-msg
-    {{_precommit}} install --hook-type pre-push
-    # Verify xsdata is available for model generation
-    {{_uv}} xsdata --version
+# Install cargo-llvm-cov for coverage
+install-cov:
+    cargo install cargo-llvm-cov
 
-# Install all extras
-install-all:
-    uv sync --no-install-project --all-extras
-
-# Update uv dependencies
-update-deps: _ensure-cd
-    uv sync --no-install-project --extra dev -U
+# Setup development environment
+setup:
+    @echo "🚀 Setting up Rust development environment..."
+    rustup component add clippy rustfmt
+    just install-cov
+    @echo "✅ Setup complete!"
 
 # -----------------------------
-# 🧹 Linting, Typing & Formatting
+# 🧹 Linting, Formatting & Checking
 # -----------------------------
 
-# Format code with ruff
-format: _ensure-cd
-    {{_ruff}} format .
+# Format code with rustfmt
+format:
+    cargo fmt
 
-# Check code formatting using ruff
+# Check code formatting
 format-check:
-    {{_ruff}} format --check .
+    cargo fmt --check
 
-# Lint code with ruff
+# Lint code with clippy (strict warnings as errors)
 lint:
-    {{_ruff}} check .
+    cargo clippy -- -D warnings
 
-# Fix linting issues automatically
-lint-fix:
-    {{_ruff}} check --fix .
-    {{_ruff}} format .
+# Run all linting and formatting checks
+check: format-check lint
+    @echo "✅ All checks passed!"
 
-# Run type checking with basedpyright
-type-check:
-    {{_basedpyright}}
+# Fix linting and formatting issues
+fix: format
+    cargo clippy --fix --allow-dirty
 
-# Run type checking in watch mode
-type-check-watch:
-    {{_basedpyright}} --watch
+# -----------------------------
+# 🦀 Standardized Rust Tasks
+# -----------------------------
 
-# Run all linting and type checks
-full-checks: _ensure-cd format-check lint pre-commit-run type-check test-fast verify-xsd
+# Format all Rust code
+rust-fmt:
+    cargo fmt --all
+
+# Check Rust code formatting
+rust-fmt-check:
+    cargo fmt --all -- --check
+
+# Lint Rust code with clippy (strict mode)
+rust-clippy:
+    cargo clippy --all-targets --all-features -- -D warnings
+
+# Run all Rust tests
+rust-test:
+    cargo test --all-features --workspace
+
+# Run Rust test coverage with HTML report
+rust-cov:
+    cargo llvm-cov --all-features --workspace --open
+
+# Run Rust benchmarks
+rust-bench:
+    cargo bench
+
+# Quality assurance: format check, clippy, and tests
+qa: rust-fmt-check rust-clippy rust-test
+    @echo "✅ All QA checks passed!"
+
+# Quality assurance with coverage
+qa-cov: rust-fmt-check rust-clippy rust-test rust-cov
+    @echo "✅ All QA checks with coverage completed!"
 
 # -----------------------------
 # 🧪 Testing & Coverage
 # -----------------------------
 
-# Run tests (when test suite is created)
+# Run all tests
 test:
-    {{_pytest}}
+    cargo test --all-features
 
-# Run tests with coverage
-test-cov:
-    {{_pytest}} --cov=. --cov-report=term-missing --cov-report=html
+# Run tests excluding benchmarks
+test-no-bench:
+    cargo test --all-features --lib --bins --tests
 
-# Run all tests with maxfail=1 and disable warnings
-test-fast:
-    {{_pytest}} --maxfail=1 --disable-warnings -v tests/
+# Run integration tests only
+test-integration:
+    cargo test --test '*' --all-features
 
-# Run coverage report
+# Run unit tests only
+test-unit:
+    cargo test --lib --all-features
+
+# Run doctests only
+test-doc:
+    cargo test --doc --all-features
+
+# Run coverage with cargo-llvm-cov and enforce 90% threshold
 coverage:
-    {{_uv}} coverage report
+    @echo "🔍 Running coverage with >90% threshold..."
+    cargo llvm-cov --all-features --workspace --lcov --fail-under-lines 90 --output-path lcov.info
+    @echo "✅ Coverage passed 90% threshold!"
 
-# Clean up and run tests
-clean-test: clean
-    @echo "✅ Cleaned. Running tests..."
-    just test
+# Run coverage for CI - generates report even if some tests fail
+coverage-ci:
+    @echo "🔍 Running coverage for CI with >90% threshold..."
+    cargo llvm-cov --all-features --workspace --lcov --fail-under-lines 90 --output-path lcov.info --ignore-run-fail
+    @echo "✅ Coverage report generated!"
 
-# -----------------------------
-# 🔧 XSD Model Generation
-# -----------------------------
+# Run coverage report in HTML format for local viewing
+coverage-html:
+    @echo "🔍 Generating HTML coverage report..."
+    cargo llvm-cov --all-features --workspace --html --output-dir target/llvm-cov/html
+    @echo "📊 HTML report available at target/llvm-cov/html/index.html"
 
-# Generate Pydantic models from XSD schema
-generate-models: _ensure-cd
-    @just verify-xsd
-    @echo "🔧 Generating Pydantic models from XSD schema..."
-    rm -rf {{justfile_dir()}}/opnsense/models/*
-    {{_uv}} xsdata generate opnsense-config.xsd --config {{justfile_dir()}}/pydantic.config.xml
-    @find {{justfile_dir()}}/opnsense/models -name "*.py" -type f -exec {{_uv}} pyupgrade --py310-plus {} \;
-    @just format
-    @just lint-fix
-    @echo "✅ Models generated successfully!"
+# Run coverage report in HTML format ignoring test failures
+coverage-html-ci:
+    @echo "🔍 Generating HTML coverage report (ignoring test failures)..."
+    cargo llvm-cov --all-features --workspace --html --output-dir target/llvm-cov/html --ignore-run-fail
+    @echo "📊 HTML report available at target/llvm-cov/html/index.html"
 
-# Verify xsdata installation and XSD schema
-verify-xsd: _ensure-cd
-    @echo "🔍 Verifying XSD setup..."
-    {{_uv}} xsdata --version
-    ./scripts/verify_xsd.py
+# Run coverage report to terminal
+coverage-report:
+    cargo llvm-cov --all-features --workspace
 
-# -----------------------------
-# 📦 CSV Generation & Usage
-# -----------------------------
-
-# Run the CSV generator with default settings
-run count="10": _ensure-cd
-    {{_uv}} python generate_csv.py --count {{count}}
-
-# Run the CSV generator with custom output file
-run-output count="10" output="test-config.csv": _ensure-cd
-    {{_uv}} python generate_csv.py --count {{count}} --output {{output}}
-
-# Generate sample data for testing
-generate-sample: _ensure-cd
-    @echo "🔧 Generating sample configurations..."
-    just run 5
-    @echo "✅ Sample data generated! Check the output files."
+# Clean coverage artifacts
+coverage-clean:
+    cargo llvm-cov clean --workspace
 
 # -----------------------------
-# 🧹 Build & Clean
+# 🔧 Building & Running
 # -----------------------------
 
-# Clean up generated files and caches
-clean: _ensure-cd
-    ./scripts/clean.py
-
-# Build the project
+# Build the project in debug mode
 build:
-    uvx --from build pyproject-build --installer uv
+    cargo build --all-features
 
-# Clean up and build the project
-clean-build: ci-check clean build
+# Build the project in release mode
+build-release:
+    cargo build --release --all-features
+
+# Build documentation
+doc:
+    cargo doc --all-features --no-deps
+
+# Build and open documentation
+doc-open:
+    cargo doc --all-features --no-deps --open
+
+# Run the CLI tool with sample arguments
+run *args:
+    cargo run --all-features -- {{args}}
+
+# Run benchmarks (exclude from coverage)
+bench:
+    cargo bench --all-features
+
+# -----------------------------
+# 🧹 Clean & Maintenance
+# -----------------------------
+
+# Clean build artifacts
+clean:
+    cargo clean
+    rm -f lcov.info
+
+# Update dependencies
+update:
+    cargo update
+
+# Check for security advisories
+audit:
+    cargo audit
 
 # -----------------------------
 # 🤖 CI Workflow
 # -----------------------------
 
-# CI-friendly check that runs all validation (no formatting, strict checking)
-ci-check: _ensure-cd
-    # Linting and formatting
-    {{_ruff}} check . --output-format=github
-    {{_ruff}} format --check --diff .
-    # Type checking
-    {{_basedpyright}}
-    # Tests with coverage
-    -{{_pytest}} --cov=. --cov-report=xml --cov-report=term-missing --tb=short -v || echo "No tests found or pytest not configured"
+# CI-friendly check that runs all validation
+ci-check: format-check lint test coverage-ci
+    @echo "✅ All CI checks passed!"
 
-# Setup CI checks and dependencies for CI workflow
-ci-setup: _ensure-cd
-    uv sync --no-install-project --extra dev || @echo "Make sure uv is installed manually"
-    {{_precommit}} install --hook-type commit-msg || @echo "Make sure pre-commit is installed manually"
+# Fast CI check without coverage (for quick feedback)
+ci-check-fast: format-check lint test-no-bench
+    @echo "✅ Fast CI checks passed!"
+
+# CI-friendly QA check (respects TERM=dumb, see TESTING.md)
+ci-qa: rust-fmt-check rust-clippy rust-test
+    @echo "✅ CI QA checks passed!"
 
 # -----------------------------
-# 🚀 Development Environment
+# 🚀 Development Workflow
 # -----------------------------
 
-# Development setup (install + generate sample)
-dev-setup: _ensure-cd
-    @echo "🚀 Setting up OPNsense Config Faker development environment..."
-    just install
-    @echo "\n📦 Generating sample configuration (5 records)..."
-    just run 5
-    @echo "\n✅ Setup complete! Try: just run 25"
+# Development workflow: format, lint, test, coverage
+dev: format lint test coverage
+    @echo "✅ Development checks complete!"
 
-# Development workflow: clean, check, and generate sample
-dev: _ensure-cd clean full-checks generate-sample
+# Watch for changes and run tests
+watch:
+    cargo watch -x "test --all-features"
 
-# -----------------------------
-# 🔧 Pre-commit Management
-# -----------------------------
-
-# Run pre-commit on all files
-pre-commit-run:
-    {{_precommit}} run --all-files
-
-# Update pre-commit hooks
-pre-commit-update:
-    {{_precommit}} autoupdate
+# Watch for changes and run checks
+watch-check:
+    cargo watch -x "check --all-features" -x "clippy -- -D warnings"
 
 # -----------------------------
 # 📊 Project Information
 # -----------------------------
 
-# Show project info
-info: _ensure-cd
+# Show project information
+info:
     @echo "🔧 OPNsense Config Faker"
-    @echo "========================"
-    @echo "Python version: $({{_uv}} python --version)"
-    @echo "UV version: $(uv --version)"
-    @echo "Project dependencies:"
-    @uv tree --depth 1
-
-# -----------------------------
-# 🔧 Internal Utilities
-# -----------------------------
-
-# Ensure we're in the project directory (internal dependency)
-_ensure-cd:
-    cd {{justfile_dir()}}
+    @echo "======================="
+    @echo "Rust version: $(rustc --version)"
+    @echo "Cargo version: $(cargo --version)"
+    @echo "Project features:"
+    @cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].features | keys[]' 2>/dev/null || echo "  - python-compat"
+    @echo "  - slow-tests"
