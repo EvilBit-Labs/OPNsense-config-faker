@@ -45,6 +45,11 @@ coverage.xml
 *.py,cover
 .hypothesis/
 
+# Rust
+target/
+*.rlib
+*.pdb
+
 # Project specific
 config.csv
 config-firewall1.xml
