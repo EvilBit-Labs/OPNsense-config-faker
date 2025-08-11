@@ -100,12 +100,22 @@ rm tests/test_model_generation.py
 **Add cargo-audit for vulnerability scanning:**
 
 ```bash
-# Add to Cargo.toml dev-dependencies
-cargo-audit = "0.18"
+# Install cargo-audit in CI
+- name: Install cargo-audit
+  run: cargo install --locked cargo-audit
 
 # Add to CI workflow
 - name: Run security audit
   run: cargo audit
+```
+
+**Alternative: Use official GitHub Action for cargo-audit:**
+
+```yaml
+  - name: Run security audit
+    uses: actions-rs/audit-check@v1
+    with:
+      token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 **Add cargo-deny for comprehensive supply chain checks:**
