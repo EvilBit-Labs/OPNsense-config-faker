@@ -190,7 +190,6 @@ just mutate-report     # Generate mutation testing report
 
 Add to `justfile`:
 
-
 ## Success Criteria
 
 - [ ] cargo-mutants successfully integrated into CI pipeline

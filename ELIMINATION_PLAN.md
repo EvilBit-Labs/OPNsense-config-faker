@@ -7,7 +7,7 @@
 The Rust implementation is fully functional and production-ready:
 
 - **Core Features**: CSV generation, XML generation, VLAN configuration
-**Testing**: Total #[test] functions = 144, Property tests (proptest) = 5, Compatibility tests (heuristic) = 42, Snapshot tests (insta macros) = 32, CI fails if coverage < 80% (temporary during Rust migration; will raise to 90% post-transition)
+  **Testing**: Total #[test] functions = 144, Property tests (proptest) = 5, Compatibility tests (heuristic) = 42, Snapshot tests (insta macros) = 32, CI fails if coverage < 80% (temporary during Rust migration; will raise to 90% post-transition)
 - **CLI**: Unified `generate` command with backward compatibility
 - **Performance**: Benchmarked and optimized
 - **Quality**: Zero warnings, comprehensive error handling
@@ -18,7 +18,7 @@ The Rust implementation is fully functional and production-ready:
 
 ### Phase 1: Immediate Removal (Safe) - **READY NOW**
 
-#### Files to Remove Immediately
+### Files to Remove Immediately
 
 ```bash
 scripts/verify_xsd.py             # XSD verification - can be replaced with Rust
@@ -26,19 +26,19 @@ tests/test_generate_csv.py        # Python CSV tests - replaced by Rust tests
 tests/test_model_generation.py    # Model generation tests - not needed
 ```
 
-#### Justification
+### Justification
 
 - No breaking changes to user experience
 - Maintains backward compatibility through deprecated command handlers
 
-#### Files to Remove After XSD Migration
+### Files to Remove After XSD Migration
 
 ```bash
 tests/__init__.py                 # Python test package - remove if no Python tests
 opnsense/__init__.py              # Python package init - remove if no Python code or if the python-compat feature is dropped
 ```
 
-#### Prerequisites
+### Prerequisites
 
 - Ensure all XML generation uses Rust-based validation
 - Verify no Python dependencies on generated models
@@ -50,7 +50,7 @@ opnsense/__init__.py              # Python package init - remove if no Python co
 rm -rf opnsense/models/
 ```
 
-#### Prerequisites
+### Phase 2 Prerequisites
 
 - Evaluate and disable the `python-compat` feature flag before removing Python compatibility files
 - Ensure all XML generation uses Rust-based validation
@@ -95,7 +95,7 @@ rm tests/test_model_generation.py
 
 ### Step 4: Implement Rust Supply Chain Security and Remove Python Tooling
 
-#### 4.1: Add Rust Supply Chain Security Tools
+### 4.1: Add Rust Supply Chain Security Tools
 
 **Add cargo-audit for vulnerability scanning:**
 
@@ -109,11 +109,11 @@ rm tests/test_model_generation.py
   run: cargo audit
 ```
 
-  - name: Run security audit
-    uses: rustsec/audit-check@v1
-    with:
-      token: ${{ secrets.GITHUB_TOKEN }}
-**Add cargo-deny for comprehensive supply chain checks:**
+- name: Run security audit
+  uses: rustsec/audit-check@v1
+  with:
+  token: ${{ secrets.GITHUB_TOKEN }}
+  **Add cargo-deny for comprehensive supply chain checks:**
 
 ```bash
 # Install cargo-deny
@@ -127,13 +127,14 @@ cargo deny init
   run: cargo deny check
 ```
 
-# Create rust-toolchain.toml
+### Create rust-toolchain.toml
+
 [toolchain]
 channel = "stable"
 components = ["rustfmt", "clippy", "llvm-tools-preview"]
 targets = ["x86_64-unknown-linux-gnu", "x86_64-apple-darwin", "aarch64-apple-darwin", "x86_64-pc-windows-msvc"]
 
-#### 4.2: Remove Python Tooling Files and Workflows
+### 4.2: Remove Python Tooling Files and Workflows
 
 **Files to delete:**
 
@@ -179,7 +180,7 @@ rm scripts/verify_xsd.py
 - Remove Python references from `.mdformat.toml`
 - Update `.cursor/rules/` files to remove Python-specific rules
 
-#### 4.3: Acceptance Criteria
+### 4.3: Acceptance Criteria
 
 **CI must pass with new Rust checks enabled:**
 

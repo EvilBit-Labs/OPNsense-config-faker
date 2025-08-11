@@ -54,6 +54,12 @@ target/
 lcov.info
 *.profraw
 *.profdata
+coverage/
+coverage-*/
+
+# insta pending snapshots (do not commit)
+tests/snapshots/*.snap.new
+**/*.snap.new
 
 # Project specific
 config.csv

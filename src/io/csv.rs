@@ -122,4 +122,15 @@ mod tests {
         assert_eq!(config.description, converted_config.description);
         assert_eq!(config.wan_assignment, converted_config.wan_assignment);
     }
+
+    #[test]
+    fn test_csv_header_exact() {
+        let configs =
+            vec![VlanConfig::new(10, "10.0.0.x".to_string(), "H".to_string(), 1).unwrap()];
+        let tf = NamedTempFile::new().unwrap();
+        write_csv(&configs, tf.path()).unwrap();
+        let content = std::fs::read_to_string(tf.path()).unwrap();
+        let first_line = content.lines().next().unwrap();
+        assert_eq!(first_line, "VLAN,IP Range,Beschreibung,WAN");
+    }
 }
