@@ -22,7 +22,7 @@ While we have achieved high code coverage (90%+ threshold), code coverage alone 
 
 ```toml
 # Add to Cargo.toml [dev-dependencies]
-cargo-mutants = "24.9.0"
+cargo-mutants = "25.2.2"
 ```
 
 ### CI Integration
