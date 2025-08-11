@@ -7,7 +7,7 @@
 The Rust implementation is fully functional and production-ready:
 
 - **Core Features**: CSV generation, XML generation, VLAN configuration
-- **Testing**: Total #[test] functions = 146, Property tests (proptest) = 5, Compatibility tests (heuristic) = 47, Snapshot tests (insta macros) = 0, CI fails if coverage < 80%
+**Testing**: Total #[test] functions = 144, Property tests (proptest) = 5, Compatibility tests (heuristic) = 42, Snapshot tests (insta macros) = 32, CI fails if coverage < 80% (temporary during Rust migration; will raise to 90% post-transition)
 - **CLI**: Unified `generate` command with backward compatibility
 - **Performance**: Benchmarked and optimized
 - **Quality**: Zero warnings, comprehensive error handling
@@ -109,15 +109,10 @@ rm tests/test_model_generation.py
   run: cargo audit
 ```
 
-**Alternative: Use official GitHub Action for cargo-audit:**
-
-```yaml
   - name: Run security audit
-    uses: actions-rs/audit-check@v1
+    uses: rustsec/audit-check@v1
     with:
       token: ${{ secrets.GITHUB_TOKEN }}
-```
-
 **Add cargo-deny for comprehensive supply chain checks:**
 
 ```bash
@@ -132,15 +127,11 @@ cargo deny init
   run: cargo deny check
 ```
 
-**Pin and document Rust toolchain:**
-
-```bash
 # Create rust-toolchain.toml
 [toolchain]
-channel = "1.75.0"
+channel = "stable"
 components = ["rustfmt", "clippy", "llvm-tools-preview"]
-targets = ["x86_64-unknown-linux-gnu", "x86_64-apple-darwin", "x86_64-pc-windows-msvc"]
-```
+targets = ["x86_64-unknown-linux-gnu", "x86_64-apple-darwin", "aarch64-apple-darwin", "x86_64-pc-windows-msvc"]
 
 #### 4.2: Remove Python Tooling Files and Workflows
 
@@ -220,8 +211,8 @@ rm scripts/verify_xsd.py
 **Time-to-restore**: 15-30 minutes\
 **Procedure**:
 
-1. Revert to previous git commit: `git reset --hard HEAD~1`
-2. Restore Python files from backup: `git checkout HEAD~1 -- main.py opnsense/factories/ opnsense/generators/ scripts/verify_xsd.py tests/test_generate_csv.py tests/test_model_generation.py`
+1. Revert the PR merge commit in GitHub (“Revert” button) or via CLI: `git revert -m 1 <merge_commit_sha>`
+2. Restore Python files by reverting specific commits if needed (additional `git revert <sha>`), then open a rollback PR
 3. Re-enable Python dependencies: `uv sync`
 4. Verify restoration: `just test` and `cargo test`
 5. Update CI/CD to restore Python workflows
