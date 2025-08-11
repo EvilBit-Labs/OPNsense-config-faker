@@ -13,15 +13,17 @@ impl XmlTemplate {
     /// Create a new XML template from base content
     pub fn new(base_content: String) -> Result<Self> {
         // Basic validation that this looks like XML
-        if !base_content.trim_start().starts_with("<?xml") && !base_content.trim_start().starts_with('<') {
+        if !base_content.trim_start().starts_with("<?xml")
+            && !base_content.trim_start().starts_with('<')
+        {
             return Err(ConfigError::xml_template(
-                "Base content does not appear to be valid XML"
+                "Base content does not appear to be valid XML",
             ));
         }
-        
+
         Ok(Self { base_content })
     }
-    
+
     /// Apply a VLAN configuration to generate an XML configuration
     pub fn apply_configuration(
         &mut self,
@@ -32,9 +34,9 @@ impl XmlTemplate {
         // This is a placeholder implementation
         // In the full implementation, this would use the OPNsense XML generation
         // logic from the Python version, adapted to Rust
-        
+
         let mut result = self.base_content.clone();
-        
+
         // Replace placeholder values (simplified version)
         result = result.replace("{{VLAN_ID}}", &config.vlan_id.to_string());
         result = result.replace("{{IP_NETWORK}}", &config.ip_network);
@@ -42,21 +44,21 @@ impl XmlTemplate {
         result = result.replace("{{WAN_ASSIGNMENT}}", &config.wan_assignment.to_string());
         result = result.replace("{{FIREWALL_NR}}", &firewall_nr.to_string());
         result = result.replace("{{OPT_COUNTER}}", &opt_counter.to_string());
-        
+
         // Add gateway IP if possible
         if let Ok(gateway) = config.gateway_ip() {
             result = result.replace("{{GATEWAY_IP}}", &gateway);
         }
-        
+
         // Add DHCP range if possible
         if let Ok(dhcp_start) = config.dhcp_range_start() {
             result = result.replace("{{DHCP_START}}", &dhcp_start);
         }
-        
+
         if let Ok(dhcp_end) = config.dhcp_range_end() {
             result = result.replace("{{DHCP_END}}", &dhcp_end);
         }
-        
+
         Ok(result)
     }
 }
@@ -89,7 +91,7 @@ mod tests {
 <opnsense>
     <vlan id="{{VLAN_ID}}">{{DESCRIPTION}}</vlan>
 </opnsense>"#;
-        
+
         let template = XmlTemplate::new(xml_content.to_string()).unwrap();
         assert!(!template.base_content.is_empty());
     }
@@ -109,17 +111,13 @@ mod tests {
     <network>{{IP_NETWORK}}</network>
     <gateway>{{GATEWAY_IP}}</gateway>
 </opnsense>"#;
-        
+
         let mut template = XmlTemplate::new(xml_content.to_string()).unwrap();
-        let config = VlanConfig::new(
-            100,
-            "10.1.2.x".to_string(),
-            "Test VLAN 100".to_string(),
-            1,
-        ).unwrap();
-        
+        let config =
+            VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN 100".to_string(), 1).unwrap();
+
         let result = template.apply_configuration(&config, 1, 6).unwrap();
-        
+
         assert!(result.contains(r#"<vlan id="100">Test VLAN 100</vlan>"#));
         assert!(result.contains("<network>10.1.2.x</network>"));
         assert!(result.contains("<gateway>10.1.2.1</gateway>"));

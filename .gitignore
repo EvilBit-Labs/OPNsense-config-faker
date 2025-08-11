@@ -50,6 +50,11 @@ target/
 *.rlib
 *.pdb
 
+# Coverage artifacts
+lcov.info
+*.profraw
+*.profdata
+
 # Project specific
 config.csv
 config-firewall1.xml
