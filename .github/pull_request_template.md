@@ -21,9 +21,10 @@ Related to #(issue number)
 
 - [ ] I have tested this change locally
 - [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] All existing tests pass
-- [ ] I have run the linter and it passes (`ruff check .`)
-- [ ] I have run type checking and it passes (`basedpyright`)
+- [ ] All existing tests pass (`cargo test`)
+- [ ] I have run the quality assurance checks (`just qa`)
+- [ ] I have run clippy with strict warnings (`cargo clippy -- -D warnings`)
+- [ ] Code is properly formatted (`cargo fmt --check`)
 
 ## Checklist
 
