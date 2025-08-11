@@ -25,7 +25,7 @@ The main CI pipeline runs on all pushes and pull requests to `main` and `develop
 3. **Test and Coverage** (`test-and-coverage`)
 
    - Runs all tests with coverage collection using `cargo-llvm-cov`
-   - Enforces minimum 90% code coverage with `--fail-under 90`
+   - Enforces minimum 90% code coverage with `--fail-under-lines 90`
    - Generates both LCOV and HTML coverage reports
    - Uploads coverage artifacts for 30 days
    - Optionally uploads coverage to Codecov (requires `CODECOV_TOKEN` secret)
@@ -144,7 +144,7 @@ cargo fmt --all -- --check
 cargo clippy --all-targets --all-features -- -D warnings
 
 # Run tests with coverage
-cargo llvm-cov --all-features --workspace --lcov --fail-under 90
+cargo llvm-cov --all-features --workspace --lcov --fail-under-lines 90
 
 # Run benchmarks
 cargo bench
