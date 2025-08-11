@@ -18,7 +18,12 @@ pub fn execute(args: GenerateArgs) -> Result<()> {
     configure_terminal(&args);
 
     // Show header
-    println!("{}", style("🔧 OPNsense Config Faker - Configuration Generator").bold().blue());
+    println!(
+        "{}",
+        style("🔧 OPNsense Config Faker - Configuration Generator")
+            .bold()
+            .blue()
+    );
     println!();
 
     // Handle interactive mode if requested
@@ -49,7 +54,7 @@ fn configure_terminal(args: &GenerateArgs) {
 /// Handle interactive mode prompts for missing required arguments
 fn handle_interactive_mode(mut args: GenerateArgs) -> Result<GenerateArgs> {
     let term = Term::stdout();
-    
+
     match args.format {
         OutputFormat::Csv => {
             if args.output.is_none() {
@@ -74,7 +79,7 @@ fn handle_interactive_mode(mut args: GenerateArgs) -> Result<GenerateArgs> {
                     args.base_config = Some(PathBuf::from(input.trim()));
                 }
             }
-            
+
             if args.csv_file.is_none() && args.count == 10 {
                 print!("Enter number of configurations to generate (default: 10): ");
                 io::stdout().flush()?;
@@ -97,7 +102,7 @@ fn validate_arguments(args: &GenerateArgs) -> Result<()> {
             if args.output.is_none() {
                 return Err(crate::model::ConfigError::invalid_parameter(
                     "output",
-                    "Output file path is required for CSV format. Use --output or -o to specify."
+                    "Output file path is required for CSV format. Use --output or -o to specify.",
                 ));
             }
         }
@@ -109,12 +114,12 @@ fn validate_arguments(args: &GenerateArgs) -> Result<()> {
                     "Base configuration file is required for XML format. Use --base-config or -b to specify."
                 ));
             }
-            
+
             // Either count or csv_file must be specified
             if args.csv_file.is_none() && args.count == 0 {
                 return Err(crate::model::ConfigError::invalid_parameter(
                     "count or csv-file",
-                    "Either --count or --csv-file must be specified for XML generation."
+                    "Either --count or --csv-file must be specified for XML generation.",
                 ));
             }
         }
@@ -128,7 +133,7 @@ fn execute_csv_generation(args: &GenerateArgs) -> Result<()> {
     let output_file = args.output.as_ref().unwrap(); // Validated in validate_arguments
 
     println!("📊 Generating CSV configuration data...");
-    
+
     // Check if output file exists and handle force flag
     if output_file.exists() && !args.force {
         return Err(crate::model::ConfigError::config(format!(
@@ -142,12 +147,12 @@ fn execute_csv_generation(args: &GenerateArgs) -> Result<()> {
 
     // Generate VLAN configurations
     let configs = generate_vlan_configurations(args.count, args.seed, Some(&pb))?;
-    
+
     pb.set_message("Writing CSV file...");
-    
+
     // Write to CSV file
     write_csv(&configs, output_file)?;
-    
+
     pb.finish_with_message(format!(
         "✅ Generated {} VLAN configurations in '{}'",
         configs.len(),
@@ -182,7 +187,7 @@ fn execute_xml_generation(args: &GenerateArgs) -> Result<()> {
         read_csv(csv_file)?
     } else {
         println!("🔄 Generating {} VLAN configurations...", args.count);
-        
+
         let pb = create_progress_bar(args.count as u64, "Generating configurations...");
         let configs = generate_vlan_configurations(args.count, args.seed, Some(&pb))?;
         pb.finish_with_message("✅ Configurations generated");
@@ -201,24 +206,27 @@ fn execute_xml_generation(args: &GenerateArgs) -> Result<()> {
     // Generate XML configurations
     for (index, config) in configs.iter().enumerate() {
         pb.set_message(format!("Processing VLAN {}", config.vlan_id));
-        
+
         // Generate XML for this configuration
-        let output_xml = template.apply_configuration(config, args.firewall_nr, args.opt_counter + index as u16)?;
-        
+        let output_xml = template.apply_configuration(
+            config,
+            args.firewall_nr,
+            args.opt_counter + index as u16,
+        )?;
+
         // Write output file
         let output_file = args.output_dir.join(format!(
             "firewall_{}_vlan_{}.xml",
-            args.firewall_nr,
-            config.vlan_id
+            args.firewall_nr, config.vlan_id
         ));
-        
+
         if output_file.exists() && !args.force {
             return Err(crate::model::ConfigError::config(format!(
                 "Output file '{}' already exists. Use --force to overwrite.",
                 output_file.display()
             )));
         }
-        
+
         fs::write(&output_file, output_xml)?;
         pb.inc(1);
     }
@@ -232,19 +240,21 @@ fn execute_xml_generation(args: &GenerateArgs) -> Result<()> {
 /// Create a progress bar with consistent styling
 fn create_progress_bar(total: u64, message: &str) -> ProgressBar {
     let pb = ProgressBar::new(total);
-    
+
     // Check if we should disable progress bar for non-interactive terminals
     if env::var("NO_COLOR").is_ok() || env::var("TERM").unwrap_or_default() == "dumb" {
         pb.set_style(ProgressStyle::default_spinner().template("{msg}").unwrap());
     } else {
         pb.set_style(
             ProgressStyle::default_bar()
-                .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}")
+                .template(
+                    "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} {msg}",
+                )
                 .unwrap()
                 .progress_chars("#>-"),
         );
     }
-    
+
     pb.set_message(message.to_string());
     pb
 }
@@ -256,7 +266,8 @@ fn print_csv_summary(configs: &[crate::generator::vlan::VlanConfig], output_file
     println!("  📊 Configurations: {}", configs.len());
     println!("  📁 Output file: {}", output_file.display());
     if !configs.is_empty() {
-        println!("  🏷️  VLAN IDs: {} - {}", 
+        println!(
+            "  🏷️  VLAN IDs: {} - {}",
             configs.iter().map(|c| c.vlan_id).min().unwrap_or(0),
             configs.iter().map(|c| c.vlan_id).max().unwrap_or(0)
         );
@@ -264,13 +275,18 @@ fn print_csv_summary(configs: &[crate::generator::vlan::VlanConfig], output_file
 }
 
 /// Print summary for XML generation
-fn print_xml_summary(configs: &[crate::generator::vlan::VlanConfig], output_dir: &Path, firewall_nr: u16) {
+fn print_xml_summary(
+    configs: &[crate::generator::vlan::VlanConfig],
+    output_dir: &Path,
+    firewall_nr: u16,
+) {
     println!();
     println!("{}", style("Summary:").bold());
     println!("  📊 Configurations: {}", configs.len());
     println!("  📁 Output directory: {}", output_dir.display());
     if !configs.is_empty() {
-        println!("  🏷️  VLAN IDs: {} - {}", 
+        println!(
+            "  🏷️  VLAN IDs: {} - {}",
             configs.iter().map(|c| c.vlan_id).min().unwrap_or(0),
             configs.iter().map(|c| c.vlan_id).max().unwrap_or(0)
         );

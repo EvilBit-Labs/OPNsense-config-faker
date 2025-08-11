@@ -1,0 +1,5 @@
+---
+source: tests/snapshot_csv.rs
+expression: stderr
+---
+

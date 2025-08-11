@@ -1,0 +1,21 @@
+---
+source: tests/snapshot_xml.rs
+expression: interface_section
+---
+<interfaces>
+    <lan>
+      <if>em0</if>
+      <ipaddr>dhcp</ipaddr>
+    </lan>
+    <wan>
+      <if>em1</if>
+      <ipaddr>dhcp</ipaddr>
+    </wan>
+    <!-- VLAN interfaces will be added here -->
+    <opt7>
+      <if>em0.1968</if>
+      <ipaddr>10.1.209.1</ipaddr>
+      <subnet>24</subnet>
+      <descr>Development VLAN 1968</descr>
+    </opt7>
+  </interfaces>

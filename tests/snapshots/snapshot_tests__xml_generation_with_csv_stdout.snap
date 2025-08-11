@@ -1,0 +1,5 @@
+---
+source: tests/snapshot_tests.rs
+expression: output.normalized_stdout()
+---
+🔧 OPNsense Config Faker - Configuration Generator 🔧 Generating OPNsense XML configuration... 📄 Loading configurations from CSV: /var/folders/3h/qkcjw3h92rvftf_wjjr4_t5w0000gn/T/vlan_data_fPKzYW.csv 📝 Processing 2 configurations... Summary: 📊 Configurations: 2 📁 Output directory: /tmp 🏷️ VLAN IDs: 100 - 200 🔧 Firewall number: 1

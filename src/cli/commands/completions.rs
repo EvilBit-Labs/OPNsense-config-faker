@@ -8,7 +8,7 @@ use std::io;
 /// Generate shell completions for the specified shell
 pub fn execute(shell: Shell) -> crate::Result<()> {
     let mut app = Cli::command();
-    
+
     match shell {
         Shell::Bash => generate_completions(clap_complete::shells::Bash, &mut app),
         Shell::Zsh => generate_completions(clap_complete::shells::Zsh, &mut app),
@@ -16,7 +16,7 @@ pub fn execute(shell: Shell) -> crate::Result<()> {
         Shell::PowerShell => generate_completions(clap_complete::shells::PowerShell, &mut app),
         Shell::Elvish => generate_completions(clap_complete::shells::Elvish, &mut app),
     }
-    
+
     Ok(())
 }
 

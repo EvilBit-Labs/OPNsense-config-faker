@@ -1,0 +1,5 @@
+---
+source: tests/snapshot_xml.rs
+expression: output.normalized_stderr()
+---
+error: invalid value '0' for '--count <COUNT>': 0 is not in 1..=4084 For more information, try '--help'.

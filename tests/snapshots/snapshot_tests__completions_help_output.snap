@@ -1,0 +1,5 @@
+---
+source: tests/snapshot_tests.rs
+expression: output.normalized_stdout()
+---
+Generate shell completions for the specified shell Usage: opnsense-config-faker completions <SHELL> Arguments: <SHELL> Shell to generate completions for [possible values: bash, zsh, fish, power-shell, elvish] Options: -h, --help Print help

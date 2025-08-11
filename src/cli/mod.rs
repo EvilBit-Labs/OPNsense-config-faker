@@ -8,7 +8,9 @@ pub mod commands;
 /// OPNsense Config Faker - Generate realistic network configuration test data
 #[derive(Parser)]
 #[command(name = "opnsense-config-faker")]
-#[command(about = "A flexible tool for generating realistic network configuration test data for OPNsense")]
+#[command(
+    about = "A flexible tool for generating realistic network configuration test data for OPNsense"
+)]
 #[command(version = env!("CARGO_PKG_VERSION"))]
 #[command(author = "EvilBit Labs <contact@evilbitlabs.com>")]
 #[command(after_help = r#"Examples:

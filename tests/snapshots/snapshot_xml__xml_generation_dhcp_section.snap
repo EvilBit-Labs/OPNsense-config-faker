@@ -1,0 +1,13 @@
+---
+source: tests/snapshot_xml.rs
+expression: dhcp_section
+---
+<dhcpd>
+    <opt7>
+      <enable>1</enable>
+      <range>
+        <from>10.1.209.100</from>
+        <to>10.1.209.200</to>
+      </range>
+    </opt7>
+  </dhcpd>

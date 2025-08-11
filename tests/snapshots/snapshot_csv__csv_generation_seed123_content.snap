@@ -1,0 +1,8 @@
+---
+source: tests/snapshot_csv.rs
+expression: normalized_csv
+---
+VLAN,IP Range,Beschreibung,WAN
+4027,10.45.187.x,HR VLAN 4027,3
+2190,10.106.7.x,Security VLAN 2190,1
+4062,10.36.176.x,Development VLAN 4062,2
