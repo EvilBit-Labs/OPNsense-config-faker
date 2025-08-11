@@ -51,7 +51,6 @@ indicatif = "0.17"
 console = "0.15"
 
 [features]
-python-compat = []
 slow-tests = []
 
 [dev-dependencies]

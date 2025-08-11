@@ -39,10 +39,22 @@ jobs:
             doesn't match the configured pattern. Please ensure that the subject
             doesn't start with an uppercase character.
 
+  # Python removal safety check
+  python-safety-check:
+    name: Python Removal Safety Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Python removal safety checks
+        run: ./scripts/verify_removals.sh
+
   # Linting job
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    needs: python-safety-check
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -72,6 +84,7 @@ jobs:
   test-and-coverage:
     name: Test and Coverage
     runs-on: ubuntu-latest
+    needs: python-safety-check
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -138,6 +151,7 @@ jobs:
   benches:
     name: Benchmarks
     runs-on: ubuntu-latest
+    needs: python-safety-check
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -197,15 +211,15 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const comment = `## 📊 Benchmark Results
+            const comment = `## Benchmark Results
 
             Benchmarks completed for commit \`${{ github.sha }}\`.
 
-            📈 **Detailed HTML Reports**: Download the [criterion-html-reports-${{ github.sha }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) artifact and open \`target/criterion/report/index.html\` in your browser.
+            **Detailed HTML Reports**: Download the [criterion-html-reports-${{ github.sha }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) artifact and open \`target/criterion/report/index.html\` in your browser.
 
-            🔍 **Performance Comparison**: Check the step outputs above for any performance regressions detected.
+            **Performance Comparison**: Check the step outputs above for any performance regressions detected.
 
-            > ℹ️ **Note**: Artifacts are available for 30 days. Significant performance changes (>150% regression) will be highlighted in the workflow output.`;
+            > **Note**: Artifacts are available for 30 days. Significant performance changes (>150% regression) will be highlighted in the workflow output.`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
