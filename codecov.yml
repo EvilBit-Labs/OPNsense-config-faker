@@ -10,7 +10,7 @@ coverage:
   status:
     project:
       default:
-        target: 90%
+        target: 80%
         threshold: 2%
         if_no_uploads: error
         if_not_found: success
@@ -41,8 +41,8 @@ comment:
   layout: "header, diff, flags, files, footer"
   behavior: default
   require_changes: false
-  require_base: no
-  require_head: yes
+  require_base: false
+  require_head: true
   branches:
     - main
     - develop

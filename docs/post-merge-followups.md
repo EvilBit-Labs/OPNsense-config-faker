@@ -10,7 +10,7 @@ This document summarizes the post-merge follow-up tasks completed for Step 17 of
 
 - **Coverage Badge**: Added to README.md with CI status and license badges
 - **Codecov Configuration**: Created `codecov.yml` with optimized settings:
-  - 90% project coverage target (matching our CI threshold)
+  - 80% project coverage target (matching our CI threshold)
   - 85% patch coverage target for new code
   - Proper ignore patterns for benches, tests, and target directories
   - Branch-specific commenting configuration

@@ -25,7 +25,7 @@ The main CI pipeline runs on all pushes and pull requests to `main` and `develop
 3. **Test and Coverage** (`test-and-coverage`)
 
    - Runs all tests with coverage collection using `cargo-llvm-cov`
-   - Enforces minimum 90% code coverage with `--fail-under-lines 90`
+   - Enforces minimum 80% code coverage with `--fail-under-lines 80`
    - Generates both LCOV and HTML coverage reports
    - Uploads coverage artifacts for 30 days
    - Optionally uploads coverage to Codecov (requires `CODECOV_TOKEN` secret)
@@ -91,7 +91,7 @@ To enable all features, configure these repository secrets:
 ## Usage Notes
 
 - The pipeline runs automatically on pushes and PRs
-- Coverage must be ≥90% or the build fails
+- Coverage must be ≥80% or the build fails
 - Clippy warnings are treated as errors (`-D warnings`)
 - All formatting must pass `cargo fmt` checks
 - PR titles must follow conventional commits format
@@ -127,7 +127,7 @@ For optimal CodeRabbit integration:
 
 ### Common Issues
 
-1. **Coverage Below 90%**: Add more tests or exclude non-testable code with `#[cfg(not(test))]`
+1. **Coverage Below 80%**: Add more tests or exclude non-testable code with `#[cfg(not(test))]`
 2. **Clippy Failures**: Fix warnings or use `#[allow(clippy::lint_name)]` for justified cases
 3. **Format Failures**: Run `cargo fmt` locally before pushing
 4. **Benchmark Failures**: Check for significant performance regressions

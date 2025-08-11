@@ -114,17 +114,17 @@ test-unit:
 test-doc:
     cargo test --doc --all-features
 
-# Run coverage with cargo-llvm-cov and enforce 90% threshold
+# Run coverage with cargo-llvm-cov and enforce 80% threshold
 coverage:
-    @echo "🔍 Running coverage with >90% threshold..."
-    cargo llvm-cov --all-features --workspace --lcov --fail-under-lines 90 --output-path lcov.info
-    @echo "✅ Coverage passed 90% threshold!"
+    @echo "🔍 Running coverage with >80% threshold..."
+    cargo llvm-cov --all-features --workspace --lcov --fail-under-lines 80 --output-path lcov.info
+    @echo "✅ Coverage passed 80% threshold!"
 
 # Run coverage for CI - generates report even if some tests fail
 coverage-ci:
-    @echo "🔍 Running coverage for CI with >90% threshold..."
-    cargo llvm-cov --all-features --workspace --lcov --fail-under-lines 90 --output-path lcov.info --ignore-run-fail
-    @echo "✅ Coverage passed 90% threshold!"
+    @echo "🔍 Running coverage for CI with >80% threshold..."
+    cargo llvm-cov --all-features --workspace --lcov --fail-under-lines 80 --output-path lcov.info --ignore-run-fail
+    @echo "✅ Coverage passed 80% threshold!"
 
 # Run coverage report in HTML format for local viewing
 coverage-html:

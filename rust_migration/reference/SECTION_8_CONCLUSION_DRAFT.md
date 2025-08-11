@@ -205,7 +205,7 @@ Based on the comprehensive analysis, the migration to Rust is **strongly recomme
 
    - Prioritize performance targets (3-5x improvement)
    - Maintain strict compatibility with existing workflows
-   - Achieve >90% test coverage with comprehensive validation
+   - Achieve >80% test coverage with comprehensive validation
    - Establish automated CI/CD pipeline with quality gates
 
 **Risk Mitigation:**
