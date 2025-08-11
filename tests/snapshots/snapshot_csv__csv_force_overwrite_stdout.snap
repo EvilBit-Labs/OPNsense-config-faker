@@ -2,4 +2,4 @@
 source: tests/snapshot_csv.rs
 expression: stdout
 ---
-🔧 OPNsense Config Faker - Configuration Generator 📊 Generating CSV configuration data... Summary: 📊 Configurations: 2 📁 Output file: /var/folders<TEMP_FILE> 🏷️ VLAN IDs: 554 - 1968
+🔧 OPNsense Config Faker - Configuration Generator 📊 Generating CSV configuration data... Summary: 📊 Configurations: 2 📁 Output file: <TEMP_DIR> 🏷️ VLAN IDs: 554 - 1968

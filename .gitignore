@@ -75,3 +75,6 @@ test-output/
 # Generated models - committed but should never be manually edited
 # opnsense/models/ - These are generated from XSD, do not edit manually!
 node_modules/
+
+# Snapshot test artifacts - prevent committing unaccepted snapshots
+*.snap.new
