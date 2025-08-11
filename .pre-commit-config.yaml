@@ -57,14 +57,12 @@ repos:
       - id: shellcheck
         exclude: ^legacy/
 
-  # 📝 Commit message linting
+  # 📝 Commit message linting (commit-msg only, not blocking push)
   - repo: https://github.com/commitizen-tools/commitizen
     rev: v4.8.3
     hooks:
       - id: commitizen
         stages: [commit-msg]
-      - id: commitizen-branch
-        stages: [pre-push]
 
     # 📝 Markdown formatting and linting
   - repo: https://github.com/hukkin/mdformat
@@ -92,7 +90,7 @@ repos:
         args: ["-c", ".markdownlint-cli2.jsonc"]
         exclude: ^legacy/
 
-  # 🔒 Security audit for Rust dependencies
+  # 🔒 Security audit for Rust dependencies (moved to CI)
   - repo: local
     hooks:
       - id: cargo-audit
@@ -101,4 +99,3 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
-        stages: [pre-push]
