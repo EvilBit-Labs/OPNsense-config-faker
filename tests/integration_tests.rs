@@ -135,21 +135,20 @@ fn test_missing_required_xml_base_config_fails() {
     cmd.assert().failure();
 }
 
-// Legacy command structure tests (these should be removed once fully migrated)
-// But keeping them here to ensure backward compatibility during transition
+// Legacy command structure tests - these should provide deprecation messages
 
 #[test]
 fn test_csv_command_help() {
     let mut cmd = Command::cargo_bin("opnsense-config-faker").unwrap();
     cmd.arg("csv").arg("--help");
-    cmd.assert().failure(); // Should fail now that csv subcommand is removed
+    cmd.assert().success(); // Help should work for migration guidance
 }
 
 #[test]
 fn test_xml_command_help() {
     let mut cmd = Command::cargo_bin("opnsense-config-faker").unwrap();
     cmd.arg("xml").arg("--help");
-    cmd.assert().failure(); // Should fail now that xml subcommand is removed
+    cmd.assert().success(); // Help should work for migration guidance
 }
 
 #[test]
@@ -166,7 +165,14 @@ fn test_csv_generation() {
         .arg("--seed")
         .arg("42");
     
-    cmd.assert().failure(); // Should fail now that csv subcommand is removed
+    let output = cmd.assert().failure().get_output().clone();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    
+    // Should show deprecation message (could be in stdout or stderr)
+    let combined_output = format!("{stdout}{stderr}");
+    assert!(combined_output.contains("DEPRECATED COMMAND"));
+    assert!(combined_output.contains("generate --format csv"));
 }
 
 #[test]
@@ -187,7 +193,14 @@ fn test_csv_generation_with_force() {
         .arg("--seed")
         .arg("42");
     
-    cmd.assert().failure(); // Should fail now that csv subcommand is removed
+    let output = cmd.assert().failure().get_output().clone();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    
+    // Should show deprecation message (could be in stdout or stderr)
+    let combined_output = format!("{stdout}{stderr}");
+    assert!(combined_output.contains("DEPRECATED COMMAND"));
+    assert!(combined_output.contains("generate --format csv"));
 }
 
 #[test]
@@ -207,5 +220,12 @@ fn test_csv_generation_without_force_fails() {
         .arg("--seed")
         .arg("42");
     
-    cmd.assert().failure(); // Should fail now that csv subcommand is removed
+    let output = cmd.assert().failure().get_output().clone();
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    
+    // Should show deprecation message (could be in stdout or stderr)
+    let combined_output = format!("{stdout}{stderr}");
+    assert!(combined_output.contains("DEPRECATED COMMAND"));
+    assert!(combined_output.contains("generate --format csv"));
 }
