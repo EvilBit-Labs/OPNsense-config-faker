@@ -195,7 +195,7 @@ class Interfaces1(BaseModel):
     class Meta:
         name = "Interfaces"
         namespace = "https://opnsense.org/config"
-    
+
     model_config = ConfigDict(defer_build=True)
     loopbacks: Loopbacks = field(metadata={"type": "Element", ...})
     neighbors: Neighbors = field(metadata={"type": "Element", ...})
@@ -203,7 +203,7 @@ class Interfaces1(BaseModel):
 
 ### 2.2 Rust: XML Modeling Options
 
-**Option 1: Manual Struct Definitions with Serde**
+#### Option 1: Manual Struct Definitions with Serde
 
 ```rust
 #[derive(Debug, Serialize, Deserialize)]
@@ -220,13 +220,13 @@ pub struct Interfaces {
 }
 ```
 
-**Option 2: XML-Specific Crates**
+#### Option 2: XML-Specific Crates
 
 - `quick-xml` with custom serialization
 - `yaserde` for automatic XML serde (less maintained)
 - `xml-rs` for lower-level XML processing
 
-**Option 3: Code Generation**
+#### Option 3: Code Generation
 
 - Custom code generator from XSD schemas
 - `xsd-parser-rs` for XSD parsing
@@ -280,7 +280,7 @@ def test_interface_model_to_xml_element(self) -> None:
 
 **Proposed Test Structure:**
 
-```
+```text
 tests/
 ├── unit/
 │   ├── vlan_generation.rs
@@ -364,7 +364,7 @@ mod prop_tests {
 
 ### 4.1 Module Organization
 
-```
+```text
 src/
 ├── main.rs              # CLI entry point
 ├── config.rs            # Configuration structures
@@ -408,7 +408,7 @@ proptest = "1.4"
 **Memory Usage:**
 
 - Rust's ownership system eliminates unnecessary clones
-- Vec<VlanConfig> instead of Python lists for better cache locality
+- `Vec<VlanConfig>` instead of Python lists for better cache locality
 - Streaming XML generation for large configurations
 
 **Concurrency:**

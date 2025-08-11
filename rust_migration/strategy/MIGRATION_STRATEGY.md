@@ -1,6 +1,6 @@
-# pfSense Configuration Generator - Phased Migration Strategy
+# OPNsense Configuration Generator - Phased Migration Strategy
 
-This document outlines the phased migration strategy for developing the pfSense configuration generator from a basic CLI tool to a production-ready system. Each milestone is named with a version number and includes detailed context, deliverables, and success criteria.
+This document outlines the phased migration strategy for developing the OPNsense configuration generator from a basic CLI tool to a production-ready system. Each milestone is named with a version number and includes detailed context, deliverables, and success criteria.
 
 ## Milestone Overview
 
@@ -35,11 +35,11 @@ The project will be delivered across 8 major milestones over approximately 12-16
 
 ## v0.2 XML Minimal Generation
 
-**Context**: Introduction of XML output capabilities for basic pfSense configuration segments with validation through snapshot testing.
+**Context**: Introduction of XML output capabilities for basic OPNsense configuration segments with validation through snapshot testing.
 
 ### Deliverables
 
-- **XML Writer**: Core XML generation functionality for pfSense configuration format
+- **XML Writer**: Core XML generation functionality for OPNsense configuration format
 - **Configuration Segments**: Support for basic VLAN, interface, and network segments
 - **Snapshot Tests**: Automated tests comparing generated XML against known-good samples
 - **Template Engine**: Flexible template system for different configuration types
@@ -47,7 +47,7 @@ The project will be delivered across 8 major milestones over approximately 12-16
 
 ### Success Criteria
 
-- Generated XML validates against sample pfSense configurations
+- Generated XML validates against sample OPNsense configurations
 - Snapshot tests prevent regression in XML structure
 - CLI seamlessly switches between CSV and XML output modes
 - XML output is properly formatted and readable
@@ -104,14 +104,14 @@ The project will be delivered across 8 major milestones over approximately 12-16
 
 ## v0.5 Schema Alignment
 
-**Context**: Integration of XML Schema Definition (XSD) validation or expansion of typed models to ensure configuration compliance with pfSense standards.
+**Context**: Integration of XML Schema Definition (XSD) validation or expansion of typed models to ensure configuration compliance with OPNsense standards.
 
 ### Option A: XSD Integration Path
 
 #### Deliverables
 
 - **libxml2 Integration**: Rust bindings for XML schema validation
-- **XSD Compliance**: Validation against official pfSense configuration schemas
+- **XSD Compliance**: Validation against official OPNsense configuration schemas
 - **Validation Pipeline**: Automated XSD validation in CI/CD process
 - **Error Mapping**: User-friendly error messages from XSD validation failures
 
@@ -119,14 +119,14 @@ The project will be delivered across 8 major milestones over approximately 12-16
 
 #### Deliverables
 
-- **Enhanced Type System**: Expanded Rust type definitions covering pfSense configuration elements
+- **Enhanced Type System**: Expanded Rust type definitions covering OPNsense configuration elements
 - **Custom Validation**: Rust-native validation logic replacing external schema dependencies
 - **Type Safety**: Compile-time guarantees for configuration correctness
 - **Validation Engine**: Pure Rust validation without external dependencies
 
 ### Success Criteria
 
-- Generated configurations pass pfSense import validation
+- Generated configurations pass OPNsense import validation
 - Validation errors provide actionable feedback to users
 - Schema compliance testing is automated and reliable
 - Performance impact of validation is minimal
@@ -137,7 +137,7 @@ The project will be delivered across 8 major milestones over approximately 12-16
 
 ## v0.6 Extended Features Alignment
 
-**Context**: Implementation of advanced pfSense features including NAT rules, firewall configurations, CARP high availability, and RADIUS authentication.
+**Context**: Implementation of advanced OPNsense features including NAT rules, firewall configurations, CARP high availability, and RADIUS authentication.
 
 ### Deliverables
 
@@ -212,19 +212,19 @@ The project will be delivered across 8 major milestones over approximately 12-16
 
 ### Technical Risks
 
-- **XML Schema Complexity**: pfSense schemas may be more complex than anticipated
+- **XML Schema Complexity**: OPNsense schemas may be more complex than anticipated
 - **Performance Bottlenecks**: Large configurations may require additional optimization
 - **Platform Compatibility**: Cross-platform compilation challenges
 
 ### Mitigation Strategies
 
-- Early validation with sample pfSense configurations
+- Early validation with sample OPNsense configurations
 - Incremental performance testing throughout development
 - Continuous integration across target platforms
 
 ### Dependencies
 
-- Access to pfSense documentation and sample configurations
+- Access to OPNsense documentation and sample configurations
 - Performance testing environment with realistic data sets
 - User feedback for feature prioritization in v0.6
 
@@ -242,7 +242,7 @@ The project will be delivered across 8 major milestones over approximately 12-16
 ### User Experience Metrics
 
 - **Error Clarity**: User-friendly error messages for all failure scenarios
-- **Feature Completeness**: Support for 90%+ of common pfSense configuration patterns
+- **Feature Completeness**: Support for 90%+ of common OPNsense configuration patterns
 - **Reliability**: Zero data corruption or invalid configuration generation
 
 This phased approach ensures incremental value delivery while maintaining high quality standards and allowing for user feedback integration throughout the development process.
