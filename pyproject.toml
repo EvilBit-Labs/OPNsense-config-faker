@@ -5,7 +5,7 @@ description = "A flexible tool for generating realistic network configuration te
 authors = [{ name = "EvilBit Labs", email = "contact@evilbitlabs.com" }]
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 keywords = [
     "networking",
     "testing",
