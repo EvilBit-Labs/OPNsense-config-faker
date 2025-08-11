@@ -1,0 +1,5 @@
+---
+source: tests/snapshot_tests.rs
+expression: output.normalized_stdout()
+---
+⚠️ DEPRECATED COMMAND The 'csv' subcommand has been replaced with the unified 'generate' command. Migration Guide: Old command: opnsense-config-faker csv --count 3 --output /var/folders/3h/qkcjw3h92rvftf_wjjr4_t5w0000gn/T/deprecated_test_aaYtVv.csv --seed 42 New command: opnsense-config-faker generate --format csv --count 3 --output /var/folders/3h/qkcjw3h92rvftf_wjjr4_t5w0000gn/T/deprecated_test_aaYtVv.csv --seed 42 Use 'opnsense-config-faker generate --help' for more information.

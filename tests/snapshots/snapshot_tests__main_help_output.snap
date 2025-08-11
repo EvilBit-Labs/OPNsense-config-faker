@@ -1,0 +1,5 @@
+---
+source: tests/snapshot_tests.rs
+expression: output.normalized_stdout()
+---
+A flexible tool for generating realistic network configuration test data for OPNsense Usage: opnsense-config-faker <COMMAND> Commands: generate Generate network configuration data in CSV or XML format completions Generate shell completions for the specified shell help Print this message or the help of the given subcommand(s) Options: -h, --help Print help -V, --version Print version Examples: Generate CSV configuration data: opnsense-config-faker generate --count 25 --format csv --output my-config.csv Generate OPNsense XML configuration: opnsense-config-faker generate --count 25 --format xml --base-config config.xml Generate XML from existing CSV: opnsense-config-faker generate --format xml --base-config config.xml --csv-file data.csv Force overwrite existing files: opnsense-config-faker generate --count 10 --format csv --output test.csv --force Generate shell completions: opnsense-config-faker completions bash > opnsense-config-faker.bash
