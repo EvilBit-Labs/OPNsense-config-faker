@@ -197,12 +197,8 @@ jobs:
           CARGO_TERM_COLOR: never
           TERM: dumb
 
-      - name: Compare benchmark results (PR)
-        if: github.event_name == 'pull_request'
-        uses: boa-dev/criterion-compare-action@v3
-        with:
-          cwd: "."
-          branchName: ${{ github.head_ref }}
+      # Note: Benchmark comparison removed due to cargo bench compatibility issues
+      # For PR benchmark comparison, use the HTML reports in artifacts
 
       - name: Track benchmark performance (main/develop)
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
@@ -237,9 +233,9 @@ jobs:
 
             **Detailed HTML Reports**: Download the [criterion-html-reports-${{ github.sha }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) artifact and open \`target/criterion/report/index.html\` in your browser.
 
-            **Performance Comparison**: Check the step outputs above for any performance regressions detected.
+            **Performance Analysis**: Review the HTML reports to compare performance with previous runs. The reports include statistical analysis and performance trends.
 
-            > **Note**: Artifacts are available for 30 days. Significant performance changes (>150% regression) will be highlighted in the workflow output.`;
+            > **Note**: Artifacts are available for 30 days. For detailed performance comparison, download the HTML reports and review the statistical analysis.`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
