@@ -12,7 +12,6 @@ use opnsense_config_faker::model::ConfigError;
 use opnsense_config_faker::xml::template::XmlTemplate;
 use predicates::prelude::*;
 use std::fs;
-use std::path::PathBuf;
 
 mod common;
 use common::{cli_command, TestOutputExt};
@@ -270,7 +269,7 @@ fn test_nonexistent_output_directory_created() {
 
 #[test]
 fn test_invalid_base_xml_file_not_found() {
-    let nonexistent_path = PathBuf::from("/tmp/does_not_exist_base_config.xml");
+    let nonexistent_path = std::env::temp_dir().join("does_not_exist_base_config.xml");
 
     // Test CLI command with non-existent base config
     let temp_dir = TempDir::new().unwrap();

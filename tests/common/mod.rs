@@ -188,20 +188,75 @@ pub fn normalize_output(text: &str) -> String {
     let without_progress = progress_regex.replace_all(&without_control, "");
 
     // Normalize temporary file paths to stable placeholders
-    // First normalize full paths, then just filenames
-    let temp_path_pattern = r"/(?:var/folders|tmp)/[^\s]+\.(csv|xml|txt)";
-    let temp_path_regex = Regex::new(temp_path_pattern).unwrap();
-    let with_normalized_paths = temp_path_regex.replace_all(&without_progress, "<TEMP_FILE>");
+    // Handle various temp directory patterns across different OS
+    let temp_path_patterns = vec![
+        // macOS temp paths
+        r"/var/folders/[^/]+/[^/]+/T/[^\s]+\.(csv|xml|txt)",
+        // Linux temp paths
+        r"/tmp/[^\s]+\.(csv|xml|txt)",
+        // Windows temp paths (if running on Windows) - more comprehensive
+        r"[A-Z]:\\[^\\]*\\[Tt]emp[^\\]*\\[^\s]+\.(csv|xml|txt)",
+        r"[A-Z]:\\[^\\]*\\AppData\\Local\\Temp\\[^\s]+\.(csv|xml|txt)",
+        // Generic temp paths
+        r"/(?:var/folders|tmp|temp)/[^\s]+\.(csv|xml|txt)",
+    ];
+
+    // Also handle Windows paths with forward slashes (for cross-platform compatibility)
+    let windows_forward_slash_patterns = vec![
+        r"[A-Z]:/[^/]*/[Tt]emp[^/]*/[^\s]+\.(csv|xml|txt)",
+        r"[A-Z]:/[^/]*/AppData/Local/Temp/[^\s]+\.(csv|xml|txt)",
+    ];
+
+    let mut with_normalized_paths = without_progress.to_string();
+    for pattern in temp_path_patterns {
+        if let Ok(regex) = Regex::new(pattern) {
+            with_normalized_paths = regex
+                .replace_all(&with_normalized_paths, "<TEMP_FILE>")
+                .into_owned();
+        }
+    }
+
+    // Process Windows forward slash patterns
+    for pattern in windows_forward_slash_patterns {
+        if let Ok(regex) = Regex::new(pattern) {
+            with_normalized_paths = regex
+                .replace_all(&with_normalized_paths, "<TEMP_FILE>")
+                .into_owned();
+        }
+    }
 
     // Also normalize just the filename parts for cases where only filename is shown
-    let temp_file_pattern = r"\b[a-zA-Z_][a-zA-Z0-9_]*_[A-Za-z0-9]{6}\.(csv|xml|txt)\b";
+    // But only if they haven't already been normalized as full paths
+    let temp_file_pattern = r"\b[a-zA-Z_][a-zA-Z0-9_]*_[A-Za-z0-9]{6,}\.(csv|xml|txt)\b";
     let temp_file_regex = Regex::new(temp_file_pattern).unwrap();
     let with_normalized_filenames =
         temp_file_regex.replace_all(&with_normalized_paths, "<TEMP_FILE>");
 
+    // Normalize temporary directory paths to stable placeholders
+    let temp_dir_patterns = vec![
+        // macOS temp directories
+        r"/var/folders/[^/]+/[^/]+/T/[^\s]*",
+        // Linux temp directories
+        r"/tmp/[^\s]*",
+        // Windows temp directories
+        r"[A-Z]:\\[^\\]*\\Temp\\[^\s]*",
+        r"[A-Z]:\\[^\\]*\\AppData\\Local\\Temp\\[^\s]*",
+        // Generic temp directories
+        r"/(?:var/folders|tmp|temp)/[^\s]*",
+    ];
+
+    let mut with_normalized_dirs = with_normalized_filenames.into_owned();
+    for pattern in temp_dir_patterns {
+        if let Ok(regex) = Regex::new(pattern) {
+            with_normalized_dirs = regex
+                .replace_all(&with_normalized_dirs, "<TEMP_DIR>")
+                .into_owned();
+        }
+    }
+
     // Normalize whitespace
     let whitespace_regex = Regex::new(r"\s+").unwrap();
-    let normalized = whitespace_regex.replace_all(&with_normalized_filenames, " ");
+    let normalized = whitespace_regex.replace_all(&with_normalized_dirs, " ");
 
     // Trim and return
     normalized.trim().to_string()
@@ -236,10 +291,10 @@ pub fn create_temp_dir(prefix: &str) -> TempDir {
 /// use tests::common::create_assert_temp_dir;
 /// use assert_fs::prelude::*;
 ///
-/// let temp_dir = create_assert_temp_dir("test_prefix");
+/// let temp_dir = create_assert_temp_dir();
 /// temp_dir.child("config.csv").assert(predicates::path::exists());
 /// ```
-pub fn create_assert_temp_dir(_prefix: &str) -> AssertTempDir {
+pub fn create_assert_temp_dir() -> AssertTempDir {
     AssertTempDir::new()
         .unwrap()
         .into_persistent_if(std::env::var_os("TEST_PERSIST_TEMP").is_some())
@@ -420,7 +475,6 @@ impl TestOutputExt for TestOutput {
 
     fn assert_vlan_generation_success(&self, count: u32) -> &Self {
         let normalized = self.normalized_stdout();
-        let _count_str = count.to_string();
         let singular = if count == 1 {
             "configuration"
         } else {
@@ -462,6 +516,32 @@ mod tests {
         // Test combined ANSI and whitespace
         let combined = "\u{001b}[1;34m  Status:  \u{001b}[0m\u{001b}[32m✅  OK  \u{001b}[0m\n";
         assert_eq!(normalize_output(combined), "Status: ✅ OK");
+
+        // Test temp path normalization
+        let macos_temp_file = "Output file: /var/folders/abc123/def456/T/temp_file_abc123.csv";
+        assert_eq!(
+            normalize_output(macos_temp_file),
+            "Output file: <TEMP_FILE>"
+        );
+
+        let linux_temp_file = "Output file: /tmp/temp_file_abc123.xml";
+        assert_eq!(
+            normalize_output(linux_temp_file),
+            "Output file: <TEMP_FILE>"
+        );
+
+        let temp_dir = "Working in /var/folders/abc123/def456/T/";
+        assert_eq!(normalize_output(temp_dir), "Working in <TEMP_DIR>");
+
+        let temp_filename_only = "File: temp_file_abc123.csv";
+        assert_eq!(normalize_output(temp_filename_only), "File: <TEMP_FILE>");
+
+        // Test mixed content with temp paths
+        let mixed_content = "Processing /var/folders/abc123/def456/T/data.csv and /tmp/other.xml";
+        assert_eq!(
+            normalize_output(mixed_content),
+            "Processing <TEMP_FILE> and <TEMP_FILE>"
+        );
     }
 
     #[test]
@@ -517,7 +597,7 @@ mod tests {
         drop(temp_dir);
 
         // Test assert_fs TempDir
-        let assert_temp_dir = create_assert_temp_dir("assert_test_");
+        let assert_temp_dir = create_assert_temp_dir();
         assert!(assert_temp_dir.path().exists());
 
         // Test that the directory exists

@@ -43,7 +43,7 @@ fn assert_no_ansi_escapes(output: &str) {
 }
 
 /// Helper function to create a valid base XML configuration for testing
-fn create_test_base_config() -> (TempDir, std::path::PathBuf) {
+fn create_test_base_config() -> (TempDir, std::path::PathBuf, tempfile::NamedTempFile) {
     let xml_content = r#"<?xml version="1.0"?>
 <opnsense>
   <version>24.1</version>
@@ -85,9 +85,8 @@ fn create_test_base_config() -> (TempDir, std::path::PathBuf) {
     let base_config_path = temp_dir.path().join("base_config.xml");
     fs::copy(&path, &base_config_path).unwrap();
 
-    // Keep temp_file alive to prevent cleanup, but return the copied file
-    std::mem::forget(temp_file);
-    (temp_dir, base_config_path)
+    // Return the temp_file to keep it alive until the test ends
+    (temp_dir, base_config_path, temp_file)
 }
 
 // ===== TERM=dumb enforcement and ANSI escape prevention tests =====
@@ -120,7 +119,7 @@ fn test_term_dumb_enforced_generate_csv() {
 
 #[test]
 fn test_term_dumb_enforced_generate_xml() {
-    let (temp_dir, base_config_path) = create_test_base_config();
+    let (temp_dir, base_config_path, _temp_file) = create_test_base_config();
     let output_dir = temp_dir.path().join("xml_output");
 
     let output = cli_command()
@@ -269,7 +268,7 @@ fn test_generate_csv_missing_output_fails() {
 
 #[test]
 fn test_generate_xml_with_base_config() {
-    let (temp_dir, base_config_path) = create_test_base_config();
+    let (temp_dir, base_config_path, _temp_file) = create_test_base_config();
     let output_dir = temp_dir.path().join("xml_test");
 
     let output = cli_command()
@@ -464,7 +463,7 @@ fn test_deprecated_csv_command_shows_warning() {
 
 #[test]
 fn test_deprecated_xml_command_shows_warning() {
-    let (_temp_dir, base_config_path) = create_test_base_config();
+    let (_temp_dir, base_config_path, _temp_file) = create_test_base_config();
 
     let output = cli_command()
         .arg("xml")
@@ -563,7 +562,7 @@ fn test_invalid_count_parameter_fails() {
 
 #[test]
 fn test_conflicting_xml_options_fails() {
-    let (temp_dir, base_config_path) = create_test_base_config();
+    let (temp_dir, base_config_path, _temp_file) = create_test_base_config();
     let csv_file = temp_dir.path().join("data.csv");
 
     // Create a dummy CSV file

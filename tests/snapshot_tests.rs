@@ -7,6 +7,7 @@ mod common;
 
 use common::{cli_command, create_temp_csv, create_temp_xml, normalize_output, TestOutputExt};
 use insta::assert_snapshot;
+use tempfile::TempDir;
 
 /// Test CSV generation output with stable snapshots
 #[test]
@@ -171,6 +172,9 @@ fn test_xml_generation_snapshots() {
     )
     .unwrap();
 
+    // Create temporary directory for output
+    let temp_dir = TempDir::new().unwrap();
+
     // Test XML generation using CSV input
     let output = cli_command()
         .arg("generate")
@@ -181,7 +185,7 @@ fn test_xml_generation_snapshots() {
         .arg("--csv-file")
         .arg(&csv_path)
         .arg("--output-dir")
-        .arg("/tmp") // Ensure consistent output directory for snapshots
+        .arg(temp_dir.path())
         .arg("--force") // Force overwrite existing files
         .run_success();
 
@@ -190,6 +194,7 @@ fn test_xml_generation_snapshots() {
 
     drop(temp_xml_file);
     drop(temp_csv_file);
+    // TempDir will be automatically cleaned up when it goes out of scope
 }
 
 /// Test progress output normalization
