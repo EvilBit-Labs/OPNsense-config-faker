@@ -429,7 +429,7 @@ src/
 - [ ] Private IP network generation following RFC 1918 standards
 - [ ] Basic CLI structure with `csv` subcommand
 - [ ] CSV serialization matching Python output format exactly
-- [ ] Unit tests achieving >90% code coverage
+- [ ] Unit tests achieving >80% code coverage
 
 **Key Implementation Details**:
 
