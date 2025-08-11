@@ -140,8 +140,8 @@ rust_migration/
 
 ### Performance Targets
 
-- **TR001**: Generate 1000+ VLAN configurations in <2 seconds
-- **TR002**: Process enterprise-scale configs (10K+ objects) in <30 seconds
+- **TR001**: Generate 1000+ VLAN configurations in \<2 seconds
+- **TR002**: Process enterprise-scale configs (10K+ objects) in \<30 seconds
 - **Memory**: 40-60% reduction compared to Python implementation
 - **Overall**: 3-5x performance improvement
 
@@ -268,6 +268,6 @@ graph TB
 
 *This migration represents a strategic investment in performance, reliability, and maintainability while preserving all existing functionality. The comprehensive documentation structure supports successful execution by teams ranging from individual developers to larger engineering organizations.*
 
-**Last Updated**: 2025-08-11  
-**Migration Status**: Ready for Implementation  
+**Last Updated**: 2025-08-11\
+**Migration Status**: Ready for Implementation\
 **Next Milestone**: v0.1 Foundation (2 weeks estimated)
