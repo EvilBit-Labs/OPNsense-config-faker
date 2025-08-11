@@ -69,39 +69,29 @@ mutation-testing:
 
 ### Configuration
 
-Create `.cargo-mutants.toml`:
+Create `.cargo/mutants.toml`:
 
 ```toml
 # Mutation testing configuration
 [mutants]
 # Focus on source code, not tests or benches
-examine_dirs = ["src"]
+examine_globs = ["src/**/*.rs"]
 
 # Skip slow or problematic functions
-skip = [
+exclude_globs = [
   # Skip main function - difficult to test meaningfully
   "src/main.rs::main",
   # Skip CLI parsing - tested via integration tests
   "src/cli.rs::*",
 ]
 
-# Timeout for each mutant (5 minutes)
-timeout = 300
-
-# Run tests in parallel but limit to avoid resource exhaustion  
-jobs = 2
-
-# Additional test arguments to speed up mutation testing
-test_args = ["--", "--test-threads=1"]
-
-# Exclude certain mutation types that are less valuable
-exclude_re = [
-  # Skip some trivial mutations in debug/error handling
-  "panic!",
-  "unwrap",
-  "expect",
-]
+# Note: test_args must be passed via test_tool or CLI wrapper
+# Note: jobs/parallelism is controlled by Cargo/tool flags
+# Note: timeout should use CLI --timeout or timeout_multiplier
+# Note: For regex-based filtering, see function/mutant filter docs
 ```
+
+For the complete list of valid configuration keys, see the [official schema documentation](https://mutants.rs/config-file.html) or the [config.rs source](https://github.com/sourcefrog/cargo-mutants/blob/main/src/config.rs).
 
 ### Target Areas for Mutation Testing
 
