@@ -33,6 +33,7 @@
 
 #![cfg(feature = "python-compat")]
 
+use csv;
 use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
@@ -60,24 +61,17 @@ fn python_script_available() -> bool {
 
 /// Parse CSV file and extract headers and rows
 fn parse_csv_file(file_path: &Path) -> CsvParseResult {
-    let content = std::fs::read_to_string(file_path)?;
-    let mut lines = content.lines();
+    let mut reader = csv::Reader::from_path(file_path)?;
 
-    // Parse headers
-    let headers = if let Some(header_line) = lines.next() {
-        header_line
-            .split(',')
-            .map(|s| s.trim().to_string())
-            .collect()
-    } else {
-        return Err("Empty CSV file".into());
-    };
+    // Read headers
+    let headers = reader.headers()?.iter().map(|s| s.to_string()).collect();
 
     // Parse data rows
     let mut rows = Vec::new();
-    for line in lines {
-        if !line.trim().is_empty() {
-            let row: Vec<String> = line.split(',').map(|s| s.trim().to_string()).collect();
+    for result in reader.records() {
+        let record = result?;
+        let row: Vec<String> = record.iter().map(|s| s.to_string()).collect();
+        if !row.iter().all(|s| s.trim().is_empty()) {
             rows.push(row);
         }
     }

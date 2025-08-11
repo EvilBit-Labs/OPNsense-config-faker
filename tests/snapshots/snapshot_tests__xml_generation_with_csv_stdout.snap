@@ -2,4 +2,4 @@
 source: tests/snapshot_tests.rs
 expression: output.normalized_stdout()
 ---
-🔧 OPNsense Config Faker - Configuration Generator 🔧 Generating OPNsense XML configuration... 📄 Loading configurations from CSV: <TEMP_FILE> 📝 Processing 2 configurations... Summary: 📊 Configurations: 2 📁 Output directory: /tmp 🏷️ VLAN IDs: 100 - 200 🔧 Firewall number: 1
+🔧 OPNsense Config Faker - Configuration Generator 🔧 Generating OPNsense XML configuration... 📄 Loading configurations from CSV: <TEMP_FILE> 📝 Processing 2 configurations... Summary: 📊 Configurations: 2 📁 Output directory: <TEMP_DIR> 🏷️ VLAN IDs: 100 - 200 🔧 Firewall number: 1

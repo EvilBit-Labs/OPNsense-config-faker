@@ -2,4 +2,4 @@
 source: tests/snapshot_xml.rs
 expression: stdout
 ---
-🔧 OPNsense Config Faker - Configuration Generator 🔧 Generating OPNsense XML configuration... 🔄 Generating 3 VLAN configurations... 📝 Processing 3 configurations... Summary: 📊 Configurations: 3 📁 Output directory: /var/folders<TEMP_DIR> 🏷️ VLAN IDs: 554 - 3286 🔧 Firewall number: 1
+🔧 OPNsense Config Faker - Configuration Generator 🔧 Generating OPNsense XML configuration... 🔄 Generating 3 VLAN configurations... 📝 Processing 3 configurations... Summary: 📊 Configurations: 3 📁 Output directory: <TEMP_DIR> 🏷️ VLAN IDs: 554 - 3286 🔧 Firewall number: 1
