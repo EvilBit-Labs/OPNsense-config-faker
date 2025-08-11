@@ -38,14 +38,14 @@ The migration of OPNsense Config Faker from Python to Rust represents a strategi
 
 ### 8.3.1 Single Developer Timeline
 
-**Option 1A: Baseline Configuration (Recommended)**
+#### Option 1A: Baseline Configuration (Recommended)
 
 - **Duration**: 3.6-6.0 weeks (18-30 person-days)
 - **Timeline**: 4-6 weeks accounting for planning and integration
 - **Resource**: 1 senior Rust developer with networking domain knowledge
 - **Deliverable**: Full feature parity with current Python implementation
 
-**Option 1B: Full Configuration with XSD**
+#### Option 1B: Full Configuration with XSD
 
 - **Duration**: 4.2-7.2 weeks (21-36 person-days)
 - **Timeline**: 5-8 weeks with XSD validation complexity
@@ -54,16 +54,16 @@ The migration of OPNsense Config Faker from Python to Rust represents a strategi
 
 ### 8.3.2 Two Developer Timeline (Recommended for Faster Delivery)
 
-**Option 2A: Baseline Configuration (Accelerated)**
+#### Option 2A: Baseline Configuration (Accelerated)
 
 - **Duration**: 1.8-3.0 weeks parallel development (9-15 person-days each)
 - **Timeline**: 2-3 weeks with effective coordination
 - **Resources**: 2 senior Rust developers with complementary skills
 - **Parallelization Strategy**:
-  - Developer A: CLI/UX + XML Builder + Documentation
-  - Developer B: Data Generators + Validation Engine + Performance Optimization
+  loper A: CLI/UX + XML Builder + Documentation
+  loper B: Data Generators + Validation Engine + Performance Optimization
 
-**Option 2B: Full Configuration with XSD (Balanced)**
+#### Option 2B: Full Configuration with XSD (Balanced)
 
 - **Duration**: 2.2-3.6 weeks parallel development (11-18 person-days each)
 - **Timeline**: 3-4 weeks including XSD integration
@@ -72,13 +72,13 @@ The migration of OPNsense Config Faker from Python to Rust represents a strategi
 
 ### 8.3.3 Recommended Approach: Phased Delivery
 
-**Phase 1: Core Parity (Weeks 1-3)**
+#### Phase 1: Core Parity (Weeks 1-3)
 
 - Implement baseline configuration using two-developer approach
 - Deliverable: Full feature parity with Python implementation
 - Milestone: v0.4 completion per detailed milestone plan
 
-**Phase 2: Optional Enhancements (Weeks 4-5)**
+#### Phase 2: Optional Enhancements (Weeks 4-5)
 
 - Add XSD validation and advanced features based on initial feedback
 - Deliverable: Enhanced validation and compliance features
@@ -185,7 +185,7 @@ The migration investment pays for itself within **6-12 months** through:
 
 ## 8.6 Recommendation
 
-**Primary Recommendation: PROCEED with Phased Migration**
+### Primary Recommendation: PROCEED with Phased Migration
 
 Based on the comprehensive analysis, the migration to Rust is **strongly recommended** with the following approach:
 

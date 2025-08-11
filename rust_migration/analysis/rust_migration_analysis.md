@@ -95,16 +95,16 @@ python main.py csv --count 25 --output my-config.csv [--force]
 
 # XML Generation Mode (Direct)
 python main.py xml --base-config config.xml --count 25 [--output-dir output] \
-                   [--firewall-nr 1] [--opt-counter 6] [--force]
+    [--firewall-nr 1] [--opt-counter 6] [--force]
 
 # XML Generation Mode (From CSV)
 python main.py xml --base-config config.xml --csv-file my-config.csv \
-                   [--output-dir output] [--force]
+    [--output-dir output] [--force]
 ```
 
 **Data Flow Architecture:**
 
-```
+```text
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │ CLI Input       │───▶│ Data Generation  │───▶│ CSV Output      │
 │ - Count         │    │ Engine           │    │ - VLAN ID       │
@@ -330,7 +330,7 @@ The current architecture provides a solid foundation that meets most project req
 
 **Proposed Structure**:
 
-```
+```text
 src/
 ├── lib.rs                 # Library entry point and public API
 ├── cli/                   # Command-line interface module
@@ -564,7 +564,7 @@ impl ValidationEngine {
 
 ### High-Risk Areas
 
-**1. XML Processing Complexity (Risk: High)**
+#### 1. XML Processing Complexity (Risk: High)
 
 - **Challenge**: OPNsense XML configurations are complex with deep nesting and namespace handling
 - **Python Advantage**: lxml provides mature XPath and XML manipulation capabilities
@@ -575,7 +575,7 @@ impl ValidationEngine {
   - Consider `xml-rs` or `roxmltree` as fallback options if `quick-xml` proves insufficient
   - Budget 25% additional time for XML processing refinement
 
-**2. Performance vs Feature Parity Trade-offs (Risk: Medium-High)**
+#### 2. Performance vs Feature Parity Trade-offs (Risk: Medium-High)
 
 - **Challenge**: Rust performance optimizations might conflict with exact Python behavior replication
 - **Specific Concerns**:
@@ -587,7 +587,7 @@ impl ValidationEngine {
   - Create extensive integration test suite comparing Python vs Rust outputs
   - Document any unavoidable behavioral differences with clear justification
 
-**3. Ecosystem Maturity Gap (Risk: Medium)**
+#### 3. Ecosystem Maturity Gap (Risk: Medium)
 
 - **Challenge**: Python's mature ecosystem (Faker, lxml, Rich) has no direct Rust equivalent
 - **Specific Gaps**:
@@ -601,7 +601,7 @@ impl ValidationEngine {
 
 ### Medium-Risk Areas
 
-**4. Memory Management Complexity (Risk: Medium)**
+#### 4. Memory Management Complexity (Risk: Medium)
 
 - **Challenge**: Large XML document manipulation with Rust's ownership system
 - **Concerns**:
@@ -613,7 +613,7 @@ impl ValidationEngine {
   - Implement streaming XML processing for large configurations
   - Profile memory usage early and optimize hot paths
 
-**5. CLI User Experience Parity (Risk: Medium)**
+#### 5. CLI User Experience Parity (Risk: Medium)
 
 - **Challenge**: Replicating Python Rich's sophisticated terminal output in Rust
 - **Specific Features**:
@@ -627,7 +627,7 @@ impl ValidationEngine {
 
 ### Low-Risk Areas
 
-**6. Testing Infrastructure (Risk: Low)**
+#### 6. Testing Infrastructure (Risk: Low)
 
 - **Strength**: Rust's testing ecosystem is mature with excellent tooling
 - **Advantages**:
@@ -636,7 +636,7 @@ impl ValidationEngine {
   - Comprehensive benchmarking with `criterion`
 - **Approach**: Implement testing infrastructure early to catch regressions
 
-**7. CLI Argument Parsing (Risk: Low)**
+#### 7. CLI Argument Parsing (Risk: Low)
 
 - **Strength**: `clap` provides equivalent functionality to Python's `typer`
 - **Advantages**: Better error messages, shell completion generation, structured validation
@@ -808,7 +808,7 @@ just fmt                  # Format code
 
 # Sample generation tasks (aligned with F019-F025 requirements)
 just sample-csv           # Generate 10 VLANs in CSV format
-just sample-xml           # Generate 5 VLANs in XML format  
+just sample-xml           # Generate 5 VLANs in XML format
 just sample-repro         # Reproducible generation with seed
 
 # Performance validation (supports TR001-TR004 requirements)
@@ -852,7 +852,7 @@ validate-requirements:
     # Test F019: VLAN count control
     cargo run -- generate --count 25 --output req_test.csv
     [ $(wc -l < req_test.csv) -eq 26 ] && echo "✓ F019: VLAN count control" || echo "✗ F019 failed"
-    # Test F026: Unique VLAN IDs  
+    # Test F026: Unique VLAN IDs
     awk -F',' 'NR>1 {print $1}' req_test.csv | sort | uniq -d | wc -l | grep -q "^0$" && echo "✓ F026: Unique VLAN IDs" || echo "✗ F026 failed"
     rm -f req_test.csv
 ```

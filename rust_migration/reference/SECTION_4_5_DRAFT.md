@@ -121,7 +121,7 @@ criterion = { version = "0.5", features = ["html_reports"] }
 
 ---
 
-# Section 5: Development Effort Estimates
+## Section 5: Development Effort Estimates
 
 ## 5.1 Component-Level Estimates
 
