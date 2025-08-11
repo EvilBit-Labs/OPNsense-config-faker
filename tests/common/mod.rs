@@ -159,6 +159,7 @@ impl CliCommandBuilder {
 /// This helper removes:
 /// - ANSI color codes and escape sequences
 /// - Progress indicators and terminal control sequences
+/// - Temporary file paths (replaced with <TEMP_FILE> placeholder)
 /// - Normalizes different types of whitespace
 /// - Trims leading and trailing whitespace
 /// - Converts multiple consecutive whitespace to single spaces
@@ -186,9 +187,21 @@ pub fn normalize_output(text: &str) -> String {
     let progress_regex = Regex::new(r"[⠁⠂⠄⡀⢀⠠⠐⠈⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏▪▫]").unwrap();
     let without_progress = progress_regex.replace_all(&without_control, "");
 
+    // Normalize temporary file paths to stable placeholders
+    // First normalize full paths, then just filenames
+    let temp_path_pattern = r"/(?:var/folders|tmp)/[^\s]+\.(csv|xml|txt)";
+    let temp_path_regex = Regex::new(temp_path_pattern).unwrap();
+    let with_normalized_paths = temp_path_regex.replace_all(&without_progress, "<TEMP_FILE>");
+
+    // Also normalize just the filename parts for cases where only filename is shown
+    let temp_file_pattern = r"\b[a-zA-Z_][a-zA-Z0-9_]*_[A-Za-z0-9]{6}\.(csv|xml|txt)\b";
+    let temp_file_regex = Regex::new(temp_file_pattern).unwrap();
+    let with_normalized_filenames =
+        temp_file_regex.replace_all(&with_normalized_paths, "<TEMP_FILE>");
+
     // Normalize whitespace
     let whitespace_regex = Regex::new(r"\s+").unwrap();
-    let normalized = whitespace_regex.replace_all(&without_progress, " ");
+    let normalized = whitespace_regex.replace_all(&with_normalized_filenames, " ");
 
     // Trim and return
     normalized.trim().to_string()
@@ -330,7 +343,7 @@ pub trait TestOutputExt {
     /// Assert that stdout matches a regex pattern (after normalization)
     fn assert_stdout_matches(&self, pattern: &str) -> &Self;
 
-    /// Assert that stderr matches a regex pattern (after normalization)  
+    /// Assert that stderr matches a regex pattern (after normalization)
     fn assert_stderr_matches(&self, pattern: &str) -> &Self;
 
     /// Get normalized stdout

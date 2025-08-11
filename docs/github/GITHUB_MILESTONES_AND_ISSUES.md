@@ -317,7 +317,7 @@ pub trait TemplateEngine {
 
 ## Additional Milestones Structure
 
-*[Continue with similar detailed issue breakdowns for v0.3 through v1.0...]*
+_[Continue with similar detailed issue breakdowns for v0.3 through v1.0...]_
 
 ## AI Agent Guidelines
 

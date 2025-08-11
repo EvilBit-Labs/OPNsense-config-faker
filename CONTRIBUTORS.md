@@ -41,4 +41,4 @@ We extend our gratitude to:
 
 ---
 
-*This project maintains its own independent license while respectfully acknowledging the original inspiration.*
+_This project maintains its own independent license while respectfully acknowledging the original inspiration._

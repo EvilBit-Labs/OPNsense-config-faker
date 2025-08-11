@@ -33,7 +33,7 @@ fn test_dumb_terminal_compatibility() {
         "ANSI escape sequences found in TERM=dumb output"
     );
 
-    // But content should still be present  
+    // But content should still be present
     output.assert_vlan_generation_success(3);
 }
 
@@ -302,7 +302,7 @@ fn test_large_operation_completion() {
     );
 }
 
-/// Test concurrent execution compatibility  
+/// Test concurrent execution compatibility
 #[test]
 fn test_concurrent_execution_compatibility() {
     use std::sync::atomic::{AtomicUsize, Ordering};

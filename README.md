@@ -1,5 +1,9 @@
 # OPNsense Config Faker
 
+[![CI](https://github.com/EvilBit-Labs/OPNsense-config-faker/actions/workflows/ci.yml/badge.svg)](https://github.com/EvilBit-Labs/OPNsense-config-faker/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/EvilBit-Labs/OPNsense-config-faker/branch/main/graph/badge.svg)](https://codecov.io/gh/EvilBit-Labs/OPNsense-config-faker)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Generate realistic OPNsense firewall configurations for testing, training, and development. Create complete `config.xml` files with VLANs, interfaces, DHCP, NAT rules, firewall policies, and more using authentic network data.
 
 ## What This Tool Does
