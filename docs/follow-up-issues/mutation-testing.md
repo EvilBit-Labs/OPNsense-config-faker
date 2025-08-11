@@ -20,9 +20,11 @@ While we have achieved high code coverage (80%+ threshold), code coverage alone 
 
 ### cargo-mutants Integration
 
-```toml
-# Add to Cargo.toml [dev-dependencies]
-cargo-mutants = "25.2.2"
+cargo-mutants is a cargo plugin (binary) that should be installed via `cargo install` rather than added as a dependency:
+
+```bash
+# Install cargo-mutants as a cargo plugin (pinned version for reproducibility)
+cargo install cargo-mutants --version 25.3.1 --locked
 ```
 
 ### CI Integration
@@ -46,7 +48,7 @@ mutation-testing:
       uses: Swatinem/rust-cache@v2
 
     - name: Install cargo-mutants
-      run: cargo install cargo-mutants --locked
+      run: cargo install cargo-mutants --version 25.3.1 --locked
 
     - name: Run mutation tests
       run: |

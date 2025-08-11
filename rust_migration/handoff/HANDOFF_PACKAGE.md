@@ -119,7 +119,7 @@ This project implements a robust XML validation system designed for operator-cen
 
 - [ ] **Quality Requirements**
 
-  - [ ] 80%+ code coverage with unit tests
+  - [ ] 80% overall project coverage; 85% patch coverage
   - [ ] All linting checks pass (`cargo clippy -- -D warnings`)
   - [ ] Integration tests for all supported validation types
   - [ ] Performance benchmarks established
@@ -181,7 +181,7 @@ This project implements a robust XML validation system designed for operator-cen
 
 #### Development Metrics
 
-- **Code Quality**: Clippy warnings = 0, Test coverage ≥ 80%
+- **Code Quality**: Clippy warnings = 0, Test coverage ≥ 80% overall, ≥ 85% patch
 - **Performance**: Validation time < 2s for 1MB files
 - **Reliability**: Zero critical bugs in production
 
