@@ -103,7 +103,7 @@ cargo test --test snapshot_tests
 # Run CSV snapshot tests
 cargo test --test snapshot_csv
 
-# Run XML snapshot tests  
+# Run XML snapshot tests
 cargo test --test snapshot_xml
 
 # Run with environment normalization (recommended)

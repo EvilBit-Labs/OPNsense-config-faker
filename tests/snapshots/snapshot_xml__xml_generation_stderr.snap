@@ -2,4 +2,3 @@
 source: tests/snapshot_xml.rs
 expression: stderr
 ---
-

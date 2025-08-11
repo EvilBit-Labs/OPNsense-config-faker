@@ -59,9 +59,7 @@ fn python_script_available() -> bool {
 }
 
 /// Parse CSV file and extract headers and rows
-fn parse_csv_file(
-    file_path: &Path,
-) -> CsvParseResult {
+fn parse_csv_file(file_path: &Path) -> CsvParseResult {
     let content = std::fs::read_to_string(file_path)?;
     let mut lines = content.lines();
 
