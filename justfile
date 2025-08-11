@@ -124,7 +124,7 @@ coverage:
 coverage-ci:
     @echo "🔍 Running coverage for CI with >90% threshold..."
     cargo llvm-cov --all-features --workspace --lcov --fail-under-lines 90 --output-path lcov.info --ignore-run-fail
-    @echo "✅ Coverage report generated!"
+    @echo "✅ Coverage passed 90% threshold!"
 
 # Run coverage report in HTML format for local viewing
 coverage-html:
