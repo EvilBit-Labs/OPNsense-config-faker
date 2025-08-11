@@ -294,8 +294,6 @@ This project maintains high quality standards through comprehensive testing and 
 - **Linting**: Uses `cargo clippy -- -D warnings` policy (all warnings treated as errors)
 - **Documentation**: Complete testing guide available in [TESTING.md](TESTING.md)
 
-For detailed testing procedures, environment setup, and best practices, see [TESTING.md](TESTING.md).
-
 ## Support and Contributing
 
 - **Issues**: Report problems or request features via GitHub issues
