@@ -2,4 +2,4 @@
 source: tests/snapshot_tests.rs
 expression: output.normalized_stderr()
 ---
-Error: Config { message: "Output file '/var/folders/3h/qkcjw3h92rvftf_wjjr4_t5w0000gn/T/error_test_NzOTZ8.csv' already exists. Use --force to overwrite." }
+Error: Config { message: "Output file '/var/folders/3h/qkcjw3h92rvftf_wjjr4_t5w0000gn/T/error_test_yE38SW.csv' already exists. Use --force to overwrite." }
