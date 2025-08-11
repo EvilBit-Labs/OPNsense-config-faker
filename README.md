@@ -33,11 +33,11 @@ Generate realistic OPNsense firewall configurations for testing, training, and d
 git clone https://github.com/EvilBit-Labs/OPNsense-config-faker.git
 cd OPNsense-config-faker
 
-# Install dependencies
-uv sync
+# Build the project
+cargo build --release
 
 # Generate 25 OPNsense configurations
-python main.py xml --base-config legacy/opnsense/config-example.xml --count 25
+cargo run --release -- xml --base-config legacy/opnsense/config-example.xml --count 25
 ```
 
 ## Real-World Use Cases
@@ -67,19 +67,19 @@ python main.py xml --base-config legacy/opnsense/config-example.xml --count 25
 
 ### Requirements
 
-- Python 3.10+ (3.13 recommended)
-- UV package manager (recommended) or pip
-- xsdata-pydantic (for XSD model generation)
+- Rust 1.70+ (latest stable recommended)
+- Cargo package manager
 
 ### Quick Setup
 
 ```bash
-# Using UV (recommended)
-uv sync --extra dev
+# Clone and build
+git clone https://github.com/EvilBit-Labs/OPNsense-config-faker.git
+cd OPNsense-config-faker
+cargo build --release
 
-# Or using pip
-pip install faker typer rich lxml
-pip install xsdata-pydantic  # For XSD model generation
+# Install globally (optional)
+cargo install --path .
 ```
 
 ## Development Setup
@@ -100,8 +100,11 @@ cargo install just
 # Windows (using Chocolatey)
 choco install just
 
+
 # Or download directly
-curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash
+
+curl --proto '=https' --tlsv1.2 -sSf <https://just.systems/install.sh> | bash
+
 ```
 
 ### XSD Model Generation
@@ -143,27 +146,27 @@ just ci-check
 
 ```bash
 # Create 10 OPNsense configurations
-python main.py xml --base-config legacy/opnsense/config-example.xml --count 10
+cargo run --release -- xml --base-config legacy/opnsense/config-example.xml --count 10
 
 # Specify output directory
-python main.py xml --base-config config.xml --count 25 --output-dir ./my-configs
+cargo run --release -- xml --base-config config.xml --count 25 --output-dir ./my-configs
 
 # Generate CSV data only
-python main.py csv --count 50 --output network-data.csv
+cargo run --release -- csv --count 50 --output network-data.csv
 ```
 
 ### Advanced Scenarios
 
 ```bash
 # Generate configurations for a large enterprise (100 firewalls)
-python main.py xml --base-config config.xml --count 100 --output-dir enterprise-configs
+cargo run --release -- xml --base-config config.xml --count 100 --output-dir enterprise-configs
 
 # Create configurations with specific firewall settings
-python main.py xml --base-config config.xml --count 50 \
+cargo run --release -- xml --base-config config.xml --count 50 \
   --firewall-nr 3 --opt-counter 15
 
 # Use existing CSV data as input
-python main.py xml --base-config config.xml --csv-file my-network-data.csv
+cargo run --release -- xml --base-config config.xml --csv-file my-network-data.csv
 ```
 
 ### Interactive Mode
@@ -218,7 +221,7 @@ VLAN,IP Range,Description,WAN
 
 ```bash
 # Generate test configurations
-python main.py xml --base-config config.xml --count 50 --output-dir test-configs
+cargo run --release -- xml --base-config config.xml --count 50 --output-dir test-configs
 
 # Use with your automation tools
 ansible-playbook -i test-configs deploy-opnsense.yml
@@ -228,7 +231,7 @@ ansible-playbook -i test-configs deploy-opnsense.yml
 
 ```bash
 # Create diverse training scenarios
-python main.py xml --base-config config.xml --count 20 --output-dir training-configs
+cargo run --release -- xml --base-config config.xml --count 20 --output-dir training-configs
 
 # Deploy to training lab
 for config in training-configs/*.xml; do
@@ -240,7 +243,7 @@ done
 
 ```bash
 # Generate large configuration set
-python main.py xml --base-config config.xml --count 500 --output-dir load-test-configs
+cargo run --release -- xml --base-config config.xml --count 500 --output-dir load-test-configs
 
 # Test OPNsense performance with large configs
 ```
@@ -256,9 +259,9 @@ python main.py xml --base-config config.xml --count 500 --output-dir load-test-c
 
 ```bash
 # Command help
-python main.py --help
-python main.py xml --help
-python main.py csv --help
+cargo run --release -- --help
+cargo run --release -- xml --help
+cargo run --release -- csv --help
 
 # Interactive mode for guided usage
 ./run_generator.sh
@@ -266,7 +269,7 @@ python main.py csv --help
 
 ## Project Background
 
-This tool is based on the original work by Stefan Reichhard and the nett-media team, enhanced with modern Python practices and integrated functionality. It maintains compatibility with OPNsense while adding realistic data generation capabilities.
+This tool is based on the original work by Stefan Reichhard and the nett-media team, enhanced with modern Rust practices and integrated functionality. It maintains compatibility with OPNsense while adding realistic data generation capabilities.
 
 ## Roadmap
 

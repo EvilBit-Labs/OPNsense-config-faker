@@ -133,21 +133,6 @@ cargo insta test --accept --test snapshot_tests
 - Keep snapshots focused and readable
 - Update documentation when snapshot behavior changes
 
-### Python Compatibility Tests
-
-Test interoperability with Python components:
-
-```bash
-# Run Python compatibility tests
-cargo test --features python-compat
-
-# Run specific Python compatibility test
-cargo test --test python_compat --features python-compat
-
-# Run Python compatibility with verbose output
-cargo test --features python-compat -- --nocapture
-```
-
 ## Quality Assurance Workflow
 
 ### Local Development
@@ -271,7 +256,7 @@ TERM=dumb cargo test
 # - Prevents Rich library formatting in CLI output
 ```
 
-The Rich library (used in the Python components) automatically respects `TERM=dumb` to disable color output.
+The Rich library automatically respects `TERM=dumb` to disable color output.
 
 ### Deterministic Seeds
 

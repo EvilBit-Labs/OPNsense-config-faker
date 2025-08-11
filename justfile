@@ -302,5 +302,17 @@ info:
     @echo "Rust version: $(rustc --version)"
     @echo "Cargo version: $(cargo --version)"
     @echo "Project features:"
-    @cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].features | keys[]' 2>/dev/null || echo "  - python-compat"
-    @echo "  - slow-tests"
+    @cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].features | keys[]' 2>/dev/null || echo "  - slow-tests"
+
+# -----------------------------
+# 🐍 Python Removal Safety Checks
+# -----------------------------
+
+# Run Python removal safety checks
+python-safety-check:
+    @echo "🔍 Running Python removal safety checks..."
+    ./scripts/verify_removals.sh
+
+# Verify Python removal readiness (CI-friendly)
+python-removal-ready: python-safety-check
+    @echo "✅ Python removal safety checks passed!"
