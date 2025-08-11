@@ -278,11 +278,23 @@ For detailed development plans and upcoming features, see [ROADMAP.md](ROADMAP.m
 
 **Note**: This tool is specifically designed for OPNsense configurations. Supporting other platforms is not planned.
 
+## Quality Assurance
+
+This project maintains high quality standards through comprehensive testing and strict linting policies:
+
+- **Testing**: Comprehensive test suite with unit, integration, property-based, and snapshot tests
+- **Coverage**: Enforces 90% test coverage threshold
+- **Linting**: Uses `cargo clippy -- -D warnings` policy (all warnings treated as errors)
+- **Documentation**: Complete testing guide available in [TESTING.md](TESTING.md)
+
+For detailed testing procedures, environment setup, and best practices, see [TESTING.md](TESTING.md).
+
 ## Support and Contributing
 
 - **Issues**: Report problems or request features via GitHub issues
 - **Contributions**: Submit pull requests for improvements
 - **Documentation**: Help improve this README for other administrators
+- **Testing**: Follow the guidelines in [TESTING.md](TESTING.md) when contributing
 
 ## License
 
