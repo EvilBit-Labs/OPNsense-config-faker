@@ -19,43 +19,47 @@ impl ValidationEngine {
             unique_networks: HashSet::new(),
         }
     }
-    
+
     /// Validate a single VLAN configuration
     pub fn validate_config(&mut self, config: &VlanConfig) -> Result<()> {
         // Check VLAN ID uniqueness
         if !self.unique_vlan_ids.insert(config.vlan_id) {
             return Err(ConfigError::validation(format!(
-                "Duplicate VLAN ID: {}", config.vlan_id
+                "Duplicate VLAN ID: {}",
+                config.vlan_id
             )));
         }
-        
+
         // Check network uniqueness
         if !self.unique_networks.insert(config.ip_network.clone()) {
             return Err(ConfigError::validation(format!(
-                "Duplicate IP network: {}", config.ip_network
+                "Duplicate IP network: {}",
+                config.ip_network
             )));
         }
-        
+
         // Validate VLAN ID range
         if !(10..=4094).contains(&config.vlan_id) {
             return Err(ConfigError::validation(format!(
-                "VLAN ID {} is outside valid range 10-4094", config.vlan_id
+                "VLAN ID {} is outside valid range 10-4094",
+                config.vlan_id
             )));
         }
-        
+
         // Validate WAN assignment
         if !(1..=3).contains(&config.wan_assignment) {
             return Err(ConfigError::validation(format!(
-                "WAN assignment {} is outside valid range 1-3", config.wan_assignment
+                "WAN assignment {} is outside valid range 1-3",
+                config.wan_assignment
             )));
         }
-        
+
         // Validate IP network format
         self.validate_ip_network(&config.ip_network)?;
-        
+
         Ok(())
     }
-    
+
     /// Validate multiple configurations
     pub fn validate_configs(&mut self, configs: &[VlanConfig]) -> Result<()> {
         for config in configs {
@@ -63,7 +67,7 @@ impl ValidationEngine {
         }
         Ok(())
     }
-    
+
     /// Validate IP network format and RFC 1918 compliance
     fn validate_ip_network(&self, network: &str) -> Result<()> {
         // Check for expected format patterns
@@ -78,10 +82,10 @@ impl ValidationEngine {
                 "IP network '{network}' does not match expected format (should end with .x or .0/24)"
             )));
         }
-        
+
         Ok(())
     }
-    
+
     /// Validate network prefix for RFC 1918 compliance
     fn validate_network_prefix(&self, prefix: &str) -> Result<()> {
         let parts: Vec<&str> = prefix.split('.').collect();
@@ -90,25 +94,25 @@ impl ValidationEngine {
                 "Invalid network prefix format: {prefix}"
             )));
         }
-        
+
         // Parse octets
-        let first: u8 = parts[0].parse().map_err(|_| {
-            ConfigError::validation(format!("Invalid first octet: {}", parts[0]))
-        })?;
-        let second: u8 = parts[1].parse().map_err(|_| {
-            ConfigError::validation(format!("Invalid second octet: {}", parts[1]))
-        })?;
-        let third: u8 = parts[2].parse().map_err(|_| {
-            ConfigError::validation(format!("Invalid third octet: {}", parts[2]))
-        })?;
-        
+        let first: u8 = parts[0]
+            .parse()
+            .map_err(|_| ConfigError::validation(format!("Invalid first octet: {}", parts[0])))?;
+        let second: u8 = parts[1]
+            .parse()
+            .map_err(|_| ConfigError::validation(format!("Invalid second octet: {}", parts[1])))?;
+        let third: u8 = parts[2]
+            .parse()
+            .map_err(|_| ConfigError::validation(format!("Invalid third octet: {}", parts[2])))?;
+
         // Check RFC 1918 compliance
         match first {
             10 => {
                 // 10.0.0.0/8 - all values valid
                 if second == 0 && third == 0 {
                     return Err(ConfigError::validation(
-                        "Network 10.0.0.x is reserved".to_string()
+                        "Network 10.0.0.x is reserved".to_string(),
                     ));
                 }
             }
@@ -134,16 +138,16 @@ impl ValidationEngine {
                 )));
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// Reset validation state
     pub fn reset(&mut self) {
         self.unique_vlan_ids.clear();
         self.unique_networks.clear();
     }
-    
+
     /// Get count of validated configurations
     pub fn config_count(&self) -> usize {
         self.unique_vlan_ids.len()
@@ -163,10 +167,12 @@ mod tests {
     #[test]
     fn test_validation_engine() {
         let mut engine = ValidationEngine::new();
-        
-        let config1 = VlanConfig::new(100, "10.1.2.x".to_string(), "Test 1".to_string(), 1).unwrap();
-        let config2 = VlanConfig::new(200, "10.3.4.x".to_string(), "Test 2".to_string(), 2).unwrap();
-        
+
+        let config1 =
+            VlanConfig::new(100, "10.1.2.x".to_string(), "Test 1".to_string(), 1).unwrap();
+        let config2 =
+            VlanConfig::new(200, "10.3.4.x".to_string(), "Test 2".to_string(), 2).unwrap();
+
         assert!(engine.validate_config(&config1).is_ok());
         assert!(engine.validate_config(&config2).is_ok());
         assert_eq!(engine.config_count(), 2);
@@ -175,10 +181,12 @@ mod tests {
     #[test]
     fn test_duplicate_vlan_id() {
         let mut engine = ValidationEngine::new();
-        
-        let config1 = VlanConfig::new(100, "10.1.2.x".to_string(), "Test 1".to_string(), 1).unwrap();
-        let config2 = VlanConfig::new(100, "10.3.4.x".to_string(), "Test 2".to_string(), 2).unwrap();
-        
+
+        let config1 =
+            VlanConfig::new(100, "10.1.2.x".to_string(), "Test 1".to_string(), 1).unwrap();
+        let config2 =
+            VlanConfig::new(100, "10.3.4.x".to_string(), "Test 2".to_string(), 2).unwrap();
+
         assert!(engine.validate_config(&config1).is_ok());
         assert!(engine.validate_config(&config2).is_err());
     }
@@ -186,10 +194,12 @@ mod tests {
     #[test]
     fn test_duplicate_network() {
         let mut engine = ValidationEngine::new();
-        
-        let config1 = VlanConfig::new(100, "10.1.2.x".to_string(), "Test 1".to_string(), 1).unwrap();
-        let config2 = VlanConfig::new(200, "10.1.2.x".to_string(), "Test 2".to_string(), 2).unwrap();
-        
+
+        let config1 =
+            VlanConfig::new(100, "10.1.2.x".to_string(), "Test 1".to_string(), 1).unwrap();
+        let config2 =
+            VlanConfig::new(200, "10.1.2.x".to_string(), "Test 2".to_string(), 2).unwrap();
+
         assert!(engine.validate_config(&config1).is_ok());
         assert!(engine.validate_config(&config2).is_err());
     }
@@ -197,13 +207,13 @@ mod tests {
     #[test]
     fn test_rfc1918_validation() {
         let engine = ValidationEngine::new();
-        
+
         // Valid RFC 1918 networks
         assert!(engine.validate_network_prefix("10.1.2").is_ok());
         assert!(engine.validate_network_prefix("172.16.1").is_ok());
         assert!(engine.validate_network_prefix("172.31.255").is_ok());
         assert!(engine.validate_network_prefix("192.168.1").is_ok());
-        
+
         // Invalid networks
         assert!(engine.validate_network_prefix("1.1.1").is_err());
         assert!(engine.validate_network_prefix("172.15.1").is_err());
