@@ -242,7 +242,7 @@ The project will be delivered across 8 major milestones over approximately 12-16
 ### User Experience Metrics
 
 - **Error Clarity**: User-friendly error messages for all failure scenarios
-- **Feature Completeness**: Support for 90%+ of common OPNsense configuration patterns
+- **Feature Completeness**: Support for 80%+ of common OPNsense configuration patterns
 - **Reliability**: Zero data corruption or invalid configuration generation
 
 This phased approach ensures incremental value delivery while maintaining high quality standards and allowing for user feedback integration throughout the development process.

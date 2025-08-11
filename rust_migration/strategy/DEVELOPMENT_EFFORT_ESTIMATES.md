@@ -160,7 +160,7 @@ This document provides detailed development effort estimates for a network confi
 
 ### Definition of Done per Component
 
-- [ ] Unit tests with >90% coverage
+- [ ] Unit tests with >80% coverage
 - [ ] Integration tests for happy path and edge cases
 - [ ] Documentation with working examples
 - [ ] Clippy warnings addressed (`cargo clippy -- -D warnings`)

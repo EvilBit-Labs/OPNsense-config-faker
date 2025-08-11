@@ -290,7 +290,7 @@ For detailed development plans and upcoming features, see [ROADMAP.md](ROADMAP.m
 This project maintains high quality standards through comprehensive testing and strict linting policies:
 
 - **Testing**: Comprehensive test suite with unit, integration, property-based, and snapshot tests
-- **Coverage**: Enforces 90% test coverage threshold
+- **Coverage**: Enforces 80% test coverage threshold
 - **Linting**: Uses `cargo clippy -- -D warnings` policy (all warnings treated as errors)
 - **Documentation**: Complete testing guide available in [TESTING.md](TESTING.md)
 
