@@ -16,5 +16,11 @@ fn main() -> Result<()> {
         Commands::Completions { shell } => {
             opnsense_config_faker::cli::commands::completions::execute(shell)
         }
+        Commands::Csv(args) => {
+            opnsense_config_faker::cli::commands::deprecated::handle_deprecated_csv(args)
+        }
+        Commands::Xml(args) => {
+            opnsense_config_faker::cli::commands::deprecated::handle_deprecated_xml(args)
+        }
     }
 }
