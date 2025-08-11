@@ -68,11 +68,6 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           key: lint-${{ hashFiles('**/Cargo.toml') }}
-          cache-directories: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
 
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -109,11 +104,6 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           key: test-${{ hashFiles('**/Cargo.toml') }}
-          cache-directories: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
 
       - name: Run tests with coverage
         run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info --fail-under-lines 80
@@ -185,11 +175,6 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           key: bench-${{ hashFiles('**/Cargo.toml') }}
-          cache-directories: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
 
       - name: Run benchmarks
         run: cargo bench
