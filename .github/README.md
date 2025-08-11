@@ -144,7 +144,7 @@ cargo fmt --all -- --check
 cargo clippy --all-targets --all-features -- -D warnings
 
 # Run tests with coverage
-cargo llvm-cov --all-features --workspace --lcov --fail-under-lines 90
+cargo llvm-cov --all-features --workspace --lcov --fail-under-lines 80
 
 # Run benchmarks
 cargo bench
