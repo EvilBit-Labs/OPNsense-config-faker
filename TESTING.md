@@ -24,7 +24,7 @@ just qa
 
 When running in CI environments, the `TERM=dumb` environment variable is automatically respected by various tools to disable color output and interactive features:
 
-- **Rich Library**: Automatically respects `TERM="dumb"` to disable color output
+- **Rust Crates**: Libraries like `console`, `indicatif`, and `termcolor` respect `NO_COLOR`, `CARGO_TERM_COLOR`, and `TERM="dumb"` environment variables
 - **Cargo**: Respects terminal capabilities and adjusts output accordingly
 - **Test Output**: All test runners adapt to non-interactive terminal environments
 
@@ -68,7 +68,7 @@ Test CLI functionality with real command execution:
 
 ```bash
 # Run all integration tests
-cargo test --test '*' --all-features
+cargo test --tests --all-features
 
 # Run specific integration test file
 cargo test --test integration_cli
@@ -253,10 +253,10 @@ TERM=dumb cargo test
 # - Removes ANSI color codes from output
 # - Ensures consistent formatting across different terminals
 # - Required for reliable snapshot testing
-# - Prevents Rich library formatting in CLI output
+# - Prevents Rust crate color formatting in CLI output
 ```
 
-The Rich library automatically respects `TERM=dumb` to disable color output.
+Rust crates and Cargo automatically respect `TERM=dumb` to disable color output in non-interactive terminals.
 
 ### Deterministic Seeds
 
