@@ -7,7 +7,7 @@
 The Rust implementation is fully functional and production-ready:
 
 - **Core Features**: CSV generation, XML generation, VLAN configuration
-- **Testing**: 158 tests passing (33 unit, 18 integration, 12 property tests)
+- **Testing**: Total #[test] functions = 146, Property tests (proptest) = 5, Compatibility tests (heuristic) = 47, Snapshot tests (insta macros) = 0, CI fails if coverage < 90%
 - **CLI**: Unified `generate` command with backward compatibility
 - **Performance**: Benchmarked and optimized
 - **Quality**: Zero warnings, comprehensive error handling
