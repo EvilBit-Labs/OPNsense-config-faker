@@ -70,19 +70,19 @@ repos:
     hooks:
       - id: mdformat
         additional_dependencies:
-                - mdformat-gfm
-                - mdformat-admon
-                - mdformat-config
-                - mdformat-footnote
-                - mdformat-frontmatter
-                - mdformat-simple-breaks
-                - mdformat-tables
-                - mdformat-web
-                - mdformat-wikilink
-                - mdformat-ruff
-                - mdformat-gfm-alerts
-                - mdformat-rustfmt
-                - mdformat-toc
+          - mdformat-gfm
+          - mdformat-admon
+          - mdformat-config
+          - mdformat-footnote
+          - mdformat-frontmatter
+          - mdformat-simple-breaks
+          - mdformat-tables
+          - mdformat-web
+          - mdformat-wikilink
+          - mdformat-ruff
+          - mdformat-gfm-alerts
+          - mdformat-rustfmt
+          - mdformat-toc
   - repo: https://github.com/DavidAnson/markdownlint-cli2
     rev: v0.18.1
     hooks:
