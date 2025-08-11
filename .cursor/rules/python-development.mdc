@@ -1,8 +1,10 @@
 ---
-globs: **/*.py,**/pyproject.toml
+globs: **/*.py,**/pyproject.toml,legacy/**/*
 alwaysApply: false
 ---
-# Python Development Standards
+# Python Development Standards (Legacy Implementation)
+
+**Note**: This document applies only to the legacy Python implementation preserved in the `legacy/` directory and the Python-based XSD model generation tools. The primary project implementation is in Rust.
 
 ## Project Setup
 
