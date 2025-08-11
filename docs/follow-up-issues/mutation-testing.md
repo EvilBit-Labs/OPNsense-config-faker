@@ -190,19 +190,6 @@ just mutate-report     # Generate mutation testing report
 
 Add to `justfile`:
 
-```just
-# Run mutation testing
-mutate-test:
-    cargo mutants --no-shuffle --baseline=skip --timeout=300
-
-# Quick mutation testing for recent changes
-mutate-quick:
-    cargo mutants --no-shuffle --in-diff HEAD~1 --timeout=120
-
-# Generate mutation testing report
-mutate-report:
-    cargo mutants --no-shuffle --list-files | head -20
-```
 
 ## Success Criteria
 
