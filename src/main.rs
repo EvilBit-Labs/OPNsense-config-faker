@@ -10,11 +10,11 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     
     match cli.command {
-        Commands::Csv(args) => {
-            opnsense_config_faker::cli::commands::csv::execute(args)
+        Commands::Generate(args) => {
+            opnsense_config_faker::cli::commands::generate::execute(args)
         }
-        Commands::Xml(args) => {
-            opnsense_config_faker::cli::commands::xml::execute(args)
+        Commands::Completions { shell } => {
+            opnsense_config_faker::cli::commands::completions::execute(shell)
         }
     }
 }
