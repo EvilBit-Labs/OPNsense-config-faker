@@ -161,7 +161,7 @@ criterion = { version = "0.5", features = ["html_reports"] }
 - Basic XML generation (VLAN, Interface, DHCP, Rules, NAT, CARP, RADIUS)
 - Validation engine for data consistency
 - Performance optimization for TR001/TR002 compliance
-- Comprehensive test suite with >80% coverage
+- Comprehensive test suite with ≥90% coverage
 - Documentation and developer setup
 
 **Excluded from Parity-Only:**
@@ -244,7 +244,7 @@ criterion = { version = "0.5", features = ["html_reports"] }
 - **Scope Boundary**: No new features beyond current Python functionality unless explicitly specified in project requirements F001-F033
 - **Performance Requirements**: Must achieve minimum 3x performance improvement over Python baseline (TR001/TR002 compliance)
 - **Compatibility**: Generated configurations must pass OPNsense validation and maintain backward compatibility with existing CSV formats
-- **Quality Standards**: Maintain >80% test coverage with comprehensive property-based testing for data generation
+- **Quality Standards**: Maintain ≥90% test coverage with comprehensive property-based testing for data generation
 
 ### Risk Mitigation Assumptions
 
@@ -263,7 +263,7 @@ criterion = { version = "0.5", features = ["html_reports"] }
 
 ### Quality Targets
 
-- **Test Coverage**: >80% code coverage with unit, integration, and property-based tests
+- **Test Coverage**: ≥90% code coverage with unit, integration, and property-based tests
 - **Error Rate**: \<5% behavioral differences from Python implementation
 - **Validation**: 100% compatibility with existing OPNsense configurations
 - **Documentation**: Complete API documentation with working examples
