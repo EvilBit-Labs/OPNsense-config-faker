@@ -5,7 +5,7 @@
 //! and complete OPNsense XML configurations with realistic test data.
 //!
 //! # Features
-//! 
+//!
 //! - Generate realistic VLAN configurations with unique IDs (10-4094 range)
 //! - Create RFC 1918 compliant private IP networks
 //! - Export configurations as CSV or complete OPNsense XML
@@ -20,7 +20,7 @@
 //!
 //! // Generate 10 VLAN configurations
 //! let configs = generate_vlan_configurations(10, None, None)?;
-//! 
+//!
 //! // Each config has unique VLAN ID and IP network
 //! for config in &configs {
 //!     println!("VLAN {}: {}", config.vlan_id, config.ip_network);

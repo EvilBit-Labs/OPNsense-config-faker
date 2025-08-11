@@ -12,13 +12,13 @@ use std::path::Path;
 struct CsvRecord {
     #[serde(rename = "VLAN")]
     vlan_id: u16,
-    
+
     #[serde(rename = "IP Range")]
     ip_range: String,
-    
+
     #[serde(rename = "Beschreibung")]
     description: String,
-    
+
     #[serde(rename = "WAN")]
     wan_assignment: u8,
 }
@@ -52,13 +52,13 @@ impl From<CsvRecord> for VlanConfig {
 pub fn write_csv<P: AsRef<Path>>(configs: &[VlanConfig], path: P) -> Result<()> {
     let file = File::create(path)?;
     let mut writer = Writer::from_writer(file);
-    
+
     // Write header and records
     for config in configs {
         let record = CsvRecord::from(config);
         writer.serialize(record)?;
     }
-    
+
     writer.flush()?;
     Ok(())
 }
@@ -68,12 +68,12 @@ pub fn read_csv<P: AsRef<Path>>(path: P) -> Result<Vec<VlanConfig>> {
     let file = File::open(path)?;
     let mut reader = Reader::from_reader(file);
     let mut configs = Vec::new();
-    
+
     for result in reader.deserialize() {
         let record: CsvRecord = result?;
         configs.push(VlanConfig::from(record));
     }
-    
+
     Ok(configs)
 }
 
@@ -88,14 +88,14 @@ mod tests {
             VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN 100".to_string(), 1).unwrap(),
             VlanConfig::new(200, "10.3.4.x".to_string(), "Test VLAN 200".to_string(), 2).unwrap(),
         ];
-        
+
         // Write to temporary file
         let temp_file = NamedTempFile::new().unwrap();
         write_csv(&original_configs, temp_file.path()).unwrap();
-        
+
         // Read back from file
         let read_configs = read_csv(temp_file.path()).unwrap();
-        
+
         assert_eq!(original_configs.len(), read_configs.len());
         for (original, read) in original_configs.iter().zip(read_configs.iter()) {
             assert_eq!(original.vlan_id, read.vlan_id);
@@ -104,22 +104,18 @@ mod tests {
             assert_eq!(original.wan_assignment, read.wan_assignment);
         }
     }
-    
+
     #[test]
     fn test_csv_record_conversion() {
-        let config = VlanConfig::new(
-            100,
-            "10.1.2.x".to_string(),
-            "Test VLAN 100".to_string(),
-            1,
-        ).unwrap();
-        
+        let config =
+            VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN 100".to_string(), 1).unwrap();
+
         let record = CsvRecord::from(&config);
         assert_eq!(record.vlan_id, 100);
         assert_eq!(record.ip_range, "10.1.2.x");
         assert_eq!(record.description, "Test VLAN 100");
         assert_eq!(record.wan_assignment, 1);
-        
+
         let converted_config = VlanConfig::from(record);
         assert_eq!(config.vlan_id, converted_config.vlan_id);
         assert_eq!(config.ip_network, converted_config.ip_network);
