@@ -52,7 +52,7 @@ fn bench_vlan_generation(c: &mut Criterion) {
     c.bench_function("rfc1918_validation_100", |b| {
         let mut generator = VlanGenerator::new(Some(42));
         let configs = generator.generate_batch(100).unwrap();
-        
+
         b.iter(|| {
             for config in &configs {
                 let _result = black_box(config.validate_rfc1918());

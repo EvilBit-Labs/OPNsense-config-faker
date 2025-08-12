@@ -111,11 +111,17 @@ impl VlanConfig {
         }
 
         // Convert network to string format for compatibility
-        let ip_network = format!("{}.x", network.network().octets().iter()
-            .take(3)
-            .map(|octet| octet.to_string())
-            .collect::<Vec<_>>()
-            .join("."));
+        let ip_network = format!(
+            "{}.x",
+            network
+                .network()
+                .octets()
+                .iter()
+                .take(3)
+                .map(|octet| octet.to_string())
+                .collect::<Vec<_>>()
+                .join(".")
+        );
 
         Ok(Self {
             vlan_id,
@@ -273,24 +279,24 @@ impl VlanGenerator {
     /// Generate a batch of VLAN configurations
     pub fn generate_batch(&mut self, count: usize) -> Result<Vec<VlanConfig>> {
         let mut configs = Vec::with_capacity(count);
-        
+
         for _ in 0..count {
             let config = self.generate_single()?;
             configs.push(config);
         }
-        
+
         Ok(configs)
     }
 
     /// Generate a batch of VLAN configurations with enhanced validation
     pub fn generate_batch_enhanced(&mut self, count: usize) -> VlanResult<Vec<VlanConfig>> {
         let mut configs = Vec::with_capacity(count);
-        
+
         for _ in 0..count {
             let config = self.generate_single_enhanced()?;
             configs.push(config);
         }
-        
+
         Ok(configs)
     }
 
@@ -576,8 +582,7 @@ mod tests {
             let result = VlanConfig::new(100, invalid_network.to_string(), "Test".to_string(), 1);
             assert!(
                 result.is_err(),
-                "Network format '{}' should be invalid",
-                invalid_network
+                "Network format '{invalid_network}' should be invalid"
             );
             assert!(matches!(
                 result.unwrap_err(),
@@ -799,7 +804,7 @@ mod tests {
             let config = VlanConfig::new(
                 vlan_id,
                 network.to_string(),
-                format!("Test VLAN {}", vlan_id),
+                format!("Test VLAN {vlan_id}"),
                 wan,
             )
             .unwrap();
@@ -906,7 +911,8 @@ mod tests {
             network,
             "Test Department VLAN 100".to_string(),
             Some(2),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(config.vlan_id, 100);
         assert_eq!(config.ip_network, "10.1.2.x");
@@ -919,29 +925,16 @@ mod tests {
         let network = "10.1.2.0/24".parse::<Ipv4Network>().unwrap();
 
         // Invalid VLAN ID
-        assert!(VlanConfig::new_with_network(
-            9,
-            network,
-            "Test".to_string(),
-            Some(1)
-        ).is_err());
+        assert!(VlanConfig::new_with_network(9, network, "Test".to_string(), Some(1)).is_err());
 
         // Invalid WAN assignment
-        assert!(VlanConfig::new_with_network(
-            100,
-            network,
-            "Test".to_string(),
-            Some(4)
-        ).is_err());
+        assert!(VlanConfig::new_with_network(100, network, "Test".to_string(), Some(4)).is_err());
 
         // Non-RFC 1918 network
         let public_network = "8.8.8.0/24".parse::<Ipv4Network>().unwrap();
-        assert!(VlanConfig::new_with_network(
-            100,
-            public_network,
-            "Test".to_string(),
-            Some(1)
-        ).is_err());
+        assert!(
+            VlanConfig::new_with_network(100, public_network, "Test".to_string(), Some(1)).is_err()
+        );
     }
 
     #[test]
@@ -950,7 +943,8 @@ mod tests {
         let network = config.as_ipv4_network().unwrap();
         assert_eq!(network.to_string(), "10.1.2.0/24");
 
-        let config2 = VlanConfig::new(200, "192.168.1.0/24".to_string(), "Test".to_string(), 1).unwrap();
+        let config2 =
+            VlanConfig::new(200, "192.168.1.0/24".to_string(), "Test".to_string(), 1).unwrap();
         let network2 = config2.as_ipv4_network().unwrap();
         assert_eq!(network2.to_string(), "192.168.1.0/24");
     }
@@ -961,10 +955,12 @@ mod tests {
         let config1 = VlanConfig::new(100, "10.1.2.x".to_string(), "Test".to_string(), 1).unwrap();
         assert!(config1.validate_rfc1918().is_ok());
 
-        let config2 = VlanConfig::new(200, "172.16.1.x".to_string(), "Test".to_string(), 1).unwrap();
+        let config2 =
+            VlanConfig::new(200, "172.16.1.x".to_string(), "Test".to_string(), 1).unwrap();
         assert!(config2.validate_rfc1918().is_ok());
 
-        let config3 = VlanConfig::new(300, "192.168.1.x".to_string(), "Test".to_string(), 1).unwrap();
+        let config3 =
+            VlanConfig::new(300, "192.168.1.x".to_string(), "Test".to_string(), 1).unwrap();
         assert!(config3.validate_rfc1918().is_ok());
     }
 
@@ -1024,7 +1020,7 @@ mod tests {
         let dept_names = crate::generator::departments::all_departments();
         let description_parts: Vec<&str> = config.description.split_whitespace().collect();
         assert!(description_parts.len() >= 3); // Dept + "VLAN" + ID
-        
+
         let department = description_parts[0];
         assert!(dept_names.contains(&department));
     }
@@ -1032,7 +1028,7 @@ mod tests {
     #[test]
     fn test_rfc1918_network_generation() {
         let mut generator = VlanGenerator::new(Some(42));
-        
+
         for _ in 0..20 {
             let config = generator.generate_single_enhanced().unwrap();
             let network = config.as_ipv4_network().unwrap();
@@ -1044,10 +1040,10 @@ mod tests {
     fn test_generator_compatibility() {
         // Test that both old and new methods work
         let mut generator = VlanGenerator::new(Some(42));
-        
+
         let old_config = generator.generate_single().unwrap();
         let new_config = generator.generate_single_enhanced().unwrap();
-        
+
         // Both should meet basic requirements
         assert!((10..=4094).contains(&old_config.vlan_id));
         assert!((10..=4094).contains(&new_config.vlan_id));
@@ -1057,21 +1053,21 @@ mod tests {
     #[test]
     fn test_memory_efficiency() {
         let mut generator = VlanGenerator::new(Some(42));
-        
+
         // Generate large batch to test memory efficiency
         let configs = generator.generate_batch_enhanced(100).unwrap();
         assert_eq!(configs.len(), 100);
-        
+
         // Verify all are unique and valid
         let mut vlan_ids = HashSet::new();
         let mut networks = HashSet::new();
-        
+
         for config in &configs {
             assert!(vlan_ids.insert(config.vlan_id));
             assert!(networks.insert(&config.ip_network));
             assert!(config.validate_rfc1918().is_ok());
         }
-        
+
         assert_eq!(vlan_ids.len(), 100);
         assert_eq!(networks.len(), 100);
     }
@@ -1079,26 +1075,26 @@ mod tests {
     #[test]
     fn test_enhanced_public_api() {
         use crate::generator::vlan::generate_vlan_configurations_enhanced;
-        
+
         let configs = generate_vlan_configurations_enhanced(5, Some(42), None).unwrap();
         assert_eq!(configs.len(), 5);
-        
+
         // Verify all configs are RFC 1918 compliant
         for config in &configs {
             assert!(config.validate_rfc1918().is_ok());
             assert!((10..=4094).contains(&config.vlan_id));
             assert!((1..=3).contains(&config.wan_assignment));
         }
-        
+
         // Verify uniqueness
         let mut vlan_ids = HashSet::new();
         let mut networks = HashSet::new();
-        
+
         for config in &configs {
             assert!(vlan_ids.insert(config.vlan_id));
             assert!(networks.insert(&config.ip_network));
         }
-        
+
         assert_eq!(vlan_ids.len(), 5);
         assert_eq!(networks.len(), 5);
     }
