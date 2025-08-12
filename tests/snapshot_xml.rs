@@ -291,5 +291,5 @@ fn extract_xml_section(xml_content: &str, section_name: &str) -> String {
         }
     }
 
-    format!("Section '{}' not found", section_name)
+    format!("Section '{section_name}' not found")
 }

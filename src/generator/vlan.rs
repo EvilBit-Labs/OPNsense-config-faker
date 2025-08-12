@@ -1,9 +1,14 @@
 //! VLAN configuration generation
 
-use crate::model::ConfigError;
+use crate::generator::departments;
+use crate::model::{ConfigError, VlanError, VlanResult};
+use crate::utils::rfc1918;
 use crate::Result;
 use indicatif::ProgressBar;
+use ipnetwork::Ipv4Network;
 use rand::prelude::*;
+use rand::{RngCore, SeedableRng};
+use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
@@ -82,6 +87,71 @@ impl VlanConfig {
         })
     }
 
+    /// Create a new VLAN configuration with enhanced validation
+    pub fn new_with_network(
+        vlan_id: u16,
+        network: Ipv4Network,
+        description: String,
+        wan_assignment: Option<u8>,
+    ) -> VlanResult<Self> {
+        // Validate VLAN ID range
+        if !(10..=4094).contains(&vlan_id) {
+            return Err(VlanError::InvalidVlanId(vlan_id));
+        }
+
+        // Validate WAN assignment
+        let wan = wan_assignment.unwrap_or(1);
+        if !(1..=3).contains(&wan) {
+            return Err(VlanError::InvalidWanAssignment(wan));
+        }
+
+        // Validate RFC 1918 compliance
+        if !rfc1918::is_rfc1918_network(&network) {
+            return Err(VlanError::NonRfc1918Network(network.to_string()));
+        }
+
+        // Convert network to string format for compatibility
+        let ip_network = format!(
+            "{}.x",
+            network
+                .network()
+                .octets()
+                .iter()
+                .take(3)
+                .map(|octet| octet.to_string())
+                .collect::<Vec<_>>()
+                .join(".")
+        );
+
+        Ok(Self {
+            vlan_id,
+            ip_network,
+            description,
+            wan_assignment: wan,
+        })
+    }
+
+    /// Get the network as an Ipv4Network if possible
+    pub fn as_ipv4_network(&self) -> VlanResult<Ipv4Network> {
+        if let Some(base) = self.ip_network.strip_suffix(".x") {
+            let network_str = format!("{base}.0/24");
+            rfc1918::validate_rfc1918_network_string(&network_str)
+        } else if let Some(base) = self.ip_network.strip_suffix(".0/24") {
+            let network_str = format!("{base}.0/24");
+            rfc1918::validate_rfc1918_network_string(&network_str)
+        } else {
+            Err(VlanError::network_parsing(format!(
+                "Cannot parse network format: {}",
+                self.ip_network
+            )))
+        }
+    }
+
+    /// Validate that this configuration is RFC 1918 compliant
+    pub fn validate_rfc1918(&self) -> VlanResult<()> {
+        self.as_ipv4_network().map(|_| ())
+    }
+
     /// Get the subnet mask for this VLAN (always /24 for compatibility)
     pub fn subnet_mask(&self) -> &'static str {
         "255.255.255.0"
@@ -130,20 +200,35 @@ impl VlanConfig {
     }
 }
 
-/// VLAN configuration generator
+/// VLAN configuration generator with enhanced RFC 1918 compliance
 pub struct VlanGenerator {
-    rng: StdRng,
+    rng: Box<dyn RngCore>,
     used_vlan_ids: HashSet<u16>,
     used_networks: HashSet<String>,
 }
 
 impl VlanGenerator {
-    /// Create a new generator with optional seed
+    /// Create a new generator with optional seed using ChaCha8Rng
     pub fn new(seed: Option<u64>) -> Self {
-        let rng = if let Some(seed) = seed {
-            StdRng::seed_from_u64(seed)
+        let rng: Box<dyn RngCore> = if let Some(seed) = seed {
+            Box::new(ChaCha8Rng::seed_from_u64(seed))
         } else {
-            StdRng::from_entropy()
+            Box::new(ChaCha8Rng::from_entropy())
+        };
+
+        Self {
+            rng,
+            used_vlan_ids: HashSet::new(),
+            used_networks: HashSet::new(),
+        }
+    }
+
+    /// Create a new generator with StdRng for compatibility
+    pub fn new_with_std_rng(seed: Option<u64>) -> Self {
+        let rng: Box<dyn RngCore> = if let Some(seed) = seed {
+            Box::new(StdRng::seed_from_u64(seed))
+        } else {
+            Box::new(StdRng::from_entropy())
         };
 
         Self {
@@ -163,13 +248,56 @@ impl VlanGenerator {
         // Generate unique IP network
         let ip_network = self.generate_unique_ip_network(MAX_ATTEMPTS)?;
 
-        // Generate description
+        // Generate description using new department constants
         let description = self.generate_description(vlan_id);
 
         // Generate WAN assignment
         let wan_assignment = self.rng.gen_range(1..=3);
 
         VlanConfig::new(vlan_id, ip_network, description, wan_assignment)
+    }
+
+    /// Generate a single VLAN configuration with enhanced validation
+    pub fn generate_single_enhanced(&mut self) -> VlanResult<VlanConfig> {
+        const MAX_ATTEMPTS: usize = 1000;
+
+        // Generate unique VLAN ID
+        let vlan_id = self.generate_unique_vlan_id_enhanced(MAX_ATTEMPTS)?;
+
+        // Generate unique RFC 1918 network
+        let network = self.generate_unique_rfc1918_network(MAX_ATTEMPTS)?;
+
+        // Generate description using new department constants
+        let description = self.generate_description_enhanced(vlan_id);
+
+        // Generate WAN assignment
+        let wan_assignment = Some(self.rng.gen_range(1..=3));
+
+        VlanConfig::new_with_network(vlan_id, network, description, wan_assignment)
+    }
+
+    /// Generate a batch of VLAN configurations
+    pub fn generate_batch(&mut self, count: usize) -> Result<Vec<VlanConfig>> {
+        let mut configs = Vec::with_capacity(count);
+
+        for _ in 0..count {
+            let config = self.generate_single()?;
+            configs.push(config);
+        }
+
+        Ok(configs)
+    }
+
+    /// Generate a batch of VLAN configurations with enhanced validation
+    pub fn generate_batch_enhanced(&mut self, count: usize) -> VlanResult<Vec<VlanConfig>> {
+        let mut configs = Vec::with_capacity(count);
+
+        for _ in 0..count {
+            let config = self.generate_single_enhanced()?;
+            configs.push(config);
+        }
+
+        Ok(configs)
     }
 
     /// Generate unique VLAN ID
@@ -182,6 +310,18 @@ impl VlanGenerator {
         }
 
         Err(ConfigError::resource_exhausted("VLAN IDs"))
+    }
+
+    /// Generate unique VLAN ID with enhanced error handling
+    fn generate_unique_vlan_id_enhanced(&mut self, max_attempts: usize) -> VlanResult<u16> {
+        for _ in 0..max_attempts {
+            let vlan_id = self.rng.gen_range(10..=4094);
+            if self.used_vlan_ids.insert(vlan_id) {
+                return Ok(vlan_id);
+            }
+        }
+
+        Err(VlanError::VlanIdExhausted)
     }
 
     /// Generate unique RFC 1918 private IP network
@@ -200,7 +340,28 @@ impl VlanGenerator {
         Err(ConfigError::resource_exhausted("IP networks"))
     }
 
-    /// Generate department-based description
+    /// Generate unique RFC 1918 network using ipnetwork types
+    fn generate_unique_rfc1918_network(&mut self, max_attempts: usize) -> VlanResult<Ipv4Network> {
+        for _ in 0..max_attempts {
+            // Prefer Class A networks for larger address space
+            let network = if self.rng.gen_bool(0.8) {
+                rfc1918::generate_random_class_a_network(&mut self.rng)
+            } else if self.rng.gen_bool(0.6) {
+                rfc1918::generate_random_class_b_network(&mut self.rng)
+            } else {
+                rfc1918::generate_random_class_c_network(&mut self.rng)
+            };
+
+            let network_key = network.to_string();
+            if self.used_networks.insert(network_key) {
+                return Ok(network);
+            }
+        }
+
+        Err(VlanError::NetworkExhausted)
+    }
+
+    /// Generate department-based description using legacy constants
     fn generate_description(&mut self, vlan_id: u16) -> String {
         const DEPARTMENTS: &[&str] = &[
             "Sales",
@@ -224,19 +385,46 @@ impl VlanGenerator {
         let department = DEPARTMENTS[self.rng.gen_range(0..DEPARTMENTS.len())];
         format!("{department} VLAN {vlan_id}")
     }
+
+    /// Generate department-based description using new constants
+    fn generate_description_enhanced(&mut self, vlan_id: u16) -> String {
+        let department = departments::random_department(&mut self.rng);
+        format!("{department} VLAN {vlan_id}")
+    }
 }
 
-/// Generate multiple VLAN configurations
+/// Generate multiple VLAN configurations using legacy StdRng for compatibility
 pub fn generate_vlan_configurations(
     count: u16,
     seed: Option<u64>,
     progress_bar: Option<&ProgressBar>,
 ) -> Result<Vec<VlanConfig>> {
-    let mut generator = VlanGenerator::new(seed);
+    let mut generator = VlanGenerator::new_with_std_rng(seed);
     let mut configs = Vec::with_capacity(count as usize);
 
     for i in 0..count {
         let config = generator.generate_single()?;
+        configs.push(config);
+
+        if let Some(pb) = progress_bar {
+            pb.set_position(i as u64 + 1);
+        }
+    }
+
+    Ok(configs)
+}
+
+/// Generate multiple VLAN configurations using enhanced ChaCha8Rng
+pub fn generate_vlan_configurations_enhanced(
+    count: u16,
+    seed: Option<u64>,
+    progress_bar: Option<&ProgressBar>,
+) -> VlanResult<Vec<VlanConfig>> {
+    let mut generator = VlanGenerator::new(seed);
+    let mut configs = Vec::with_capacity(count as usize);
+
+    for i in 0..count {
+        let config = generator.generate_single_enhanced()?;
         configs.push(config);
 
         if let Some(pb) = progress_bar {
@@ -394,8 +582,7 @@ mod tests {
             let result = VlanConfig::new(100, invalid_network.to_string(), "Test".to_string(), 1);
             assert!(
                 result.is_err(),
-                "Network format '{}' should be invalid",
-                invalid_network
+                "Network format '{invalid_network}' should be invalid"
             );
             assert!(matches!(
                 result.unwrap_err(),
@@ -617,7 +804,7 @@ mod tests {
             let config = VlanConfig::new(
                 vlan_id,
                 network.to_string(),
-                format!("Test VLAN {}", vlan_id),
+                format!("Test VLAN {vlan_id}"),
                 wan,
             )
             .unwrap();
@@ -712,5 +899,203 @@ mod tests {
                 config.ip_network
             );
         }
+    }
+
+    // ===== Enhanced functionality tests =====
+
+    #[test]
+    fn test_vlan_config_new_with_network() {
+        let network = "10.1.2.0/24".parse::<Ipv4Network>().unwrap();
+        let config = VlanConfig::new_with_network(
+            100,
+            network,
+            "Test Department VLAN 100".to_string(),
+            Some(2),
+        )
+        .unwrap();
+
+        assert_eq!(config.vlan_id, 100);
+        assert_eq!(config.ip_network, "10.1.2.x");
+        assert_eq!(config.description, "Test Department VLAN 100");
+        assert_eq!(config.wan_assignment, 2);
+    }
+
+    #[test]
+    fn test_vlan_config_new_with_network_validation() {
+        let network = "10.1.2.0/24".parse::<Ipv4Network>().unwrap();
+
+        // Invalid VLAN ID
+        assert!(VlanConfig::new_with_network(9, network, "Test".to_string(), Some(1)).is_err());
+
+        // Invalid WAN assignment
+        assert!(VlanConfig::new_with_network(100, network, "Test".to_string(), Some(4)).is_err());
+
+        // Non-RFC 1918 network
+        let public_network = "8.8.8.0/24".parse::<Ipv4Network>().unwrap();
+        assert!(
+            VlanConfig::new_with_network(100, public_network, "Test".to_string(), Some(1)).is_err()
+        );
+    }
+
+    #[test]
+    fn test_vlan_config_as_ipv4_network() {
+        let config = VlanConfig::new(100, "10.1.2.x".to_string(), "Test".to_string(), 1).unwrap();
+        let network = config.as_ipv4_network().unwrap();
+        assert_eq!(network.to_string(), "10.1.2.0/24");
+
+        let config2 =
+            VlanConfig::new(200, "192.168.1.0/24".to_string(), "Test".to_string(), 1).unwrap();
+        let network2 = config2.as_ipv4_network().unwrap();
+        assert_eq!(network2.to_string(), "192.168.1.0/24");
+    }
+
+    #[test]
+    fn test_vlan_config_validate_rfc1918() {
+        // Valid RFC 1918 networks
+        let config1 = VlanConfig::new(100, "10.1.2.x".to_string(), "Test".to_string(), 1).unwrap();
+        assert!(config1.validate_rfc1918().is_ok());
+
+        let config2 =
+            VlanConfig::new(200, "172.16.1.x".to_string(), "Test".to_string(), 1).unwrap();
+        assert!(config2.validate_rfc1918().is_ok());
+
+        let config3 =
+            VlanConfig::new(300, "192.168.1.x".to_string(), "Test".to_string(), 1).unwrap();
+        assert!(config3.validate_rfc1918().is_ok());
+    }
+
+    #[test]
+    fn test_vlan_generator_enhanced() {
+        let mut generator = VlanGenerator::new(Some(42));
+        let config = generator.generate_single_enhanced().unwrap();
+
+        // Verify all enhanced invariants
+        assert!((10..=4094).contains(&config.vlan_id));
+        assert!((1..=3).contains(&config.wan_assignment));
+        assert!(config.validate_rfc1918().is_ok());
+        assert!(!config.description.is_empty());
+    }
+
+    #[test]
+    fn test_vlan_generator_batch_enhanced() {
+        let mut generator = VlanGenerator::new(Some(42));
+        let configs = generator.generate_batch_enhanced(10).unwrap();
+        assert_eq!(configs.len(), 10);
+
+        // Check uniqueness
+        let mut vlan_ids = HashSet::new();
+        let mut networks = HashSet::new();
+
+        for config in &configs {
+            assert!(vlan_ids.insert(config.vlan_id));
+            assert!(networks.insert(&config.ip_network));
+            assert!(config.validate_rfc1918().is_ok());
+        }
+    }
+
+    #[test]
+    fn test_vlan_generator_with_chacha_rng() {
+        let mut gen1 = VlanGenerator::new(Some(12345));
+        let mut gen2 = VlanGenerator::new(Some(12345));
+
+        // Same seed should produce same sequence with ChaCha8Rng
+        let config1 = gen1.generate_single().unwrap();
+        let config2 = gen2.generate_single().unwrap();
+
+        assert_eq!(config1.vlan_id, config2.vlan_id);
+        assert_eq!(config1.ip_network, config2.ip_network);
+        assert_eq!(config1.wan_assignment, config2.wan_assignment);
+    }
+
+    #[test]
+    fn test_department_descriptions_enhanced() {
+        let mut generator = VlanGenerator::new(Some(42));
+        let config = generator.generate_single_enhanced().unwrap();
+
+        // Should use the enhanced department list
+        assert!(config.description.contains("VLAN"));
+        assert!(config.description.contains(&config.vlan_id.to_string()));
+
+        // Should be one of the valid departments
+        let dept_names = crate::generator::departments::all_departments();
+        let description_parts: Vec<&str> = config.description.split_whitespace().collect();
+        assert!(description_parts.len() >= 3); // Dept + "VLAN" + ID
+
+        let department = description_parts[0];
+        assert!(dept_names.contains(&department));
+    }
+
+    #[test]
+    fn test_rfc1918_network_generation() {
+        let mut generator = VlanGenerator::new(Some(42));
+
+        for _ in 0..20 {
+            let config = generator.generate_single_enhanced().unwrap();
+            let network = config.as_ipv4_network().unwrap();
+            assert!(crate::utils::rfc1918::is_rfc1918_network(&network));
+        }
+    }
+
+    #[test]
+    fn test_generator_compatibility() {
+        // Test that both old and new methods work
+        let mut generator = VlanGenerator::new(Some(42));
+
+        let old_config = generator.generate_single().unwrap();
+        let new_config = generator.generate_single_enhanced().unwrap();
+
+        // Both should meet basic requirements
+        assert!((10..=4094).contains(&old_config.vlan_id));
+        assert!((10..=4094).contains(&new_config.vlan_id));
+        assert!(old_config.vlan_id != new_config.vlan_id); // Should be unique
+    }
+
+    #[test]
+    fn test_memory_efficiency() {
+        let mut generator = VlanGenerator::new(Some(42));
+
+        // Generate large batch to test memory efficiency
+        let configs = generator.generate_batch_enhanced(100).unwrap();
+        assert_eq!(configs.len(), 100);
+
+        // Verify all are unique and valid
+        let mut vlan_ids = HashSet::new();
+        let mut networks = HashSet::new();
+
+        for config in &configs {
+            assert!(vlan_ids.insert(config.vlan_id));
+            assert!(networks.insert(&config.ip_network));
+            assert!(config.validate_rfc1918().is_ok());
+        }
+
+        assert_eq!(vlan_ids.len(), 100);
+        assert_eq!(networks.len(), 100);
+    }
+
+    #[test]
+    fn test_enhanced_public_api() {
+        use crate::generator::vlan::generate_vlan_configurations_enhanced;
+
+        let configs = generate_vlan_configurations_enhanced(5, Some(42), None).unwrap();
+        assert_eq!(configs.len(), 5);
+
+        // Verify all configs are RFC 1918 compliant
+        for config in &configs {
+            assert!(config.validate_rfc1918().is_ok());
+            assert!((10..=4094).contains(&config.vlan_id));
+            assert!((1..=3).contains(&config.wan_assignment));
+        }
+
+        // Verify uniqueness
+        let mut vlan_ids = HashSet::new();
+        let mut networks = HashSet::new();
+
+        for config in &configs {
+            assert!(vlan_ids.insert(config.vlan_id));
+            assert!(networks.insert(&config.ip_network));
+        }
+
+        assert_eq!(vlan_ids.len(), 5);
+        assert_eq!(networks.len(), 5);
     }
 }
