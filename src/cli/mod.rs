@@ -43,10 +43,10 @@ pub enum Commands {
         #[arg(value_enum)]
         shell: Shell,
     },
-    /// [DEPRECATED] Use 'generate --format csv' instead
+    /// DEPRECATED: Use 'generate --format csv' instead
     #[command(hide = true)]
     Csv(CsvArgs),
-    /// [DEPRECATED] Use 'generate --format xml' instead
+    /// DEPRECATED: Use 'generate --format xml' instead
     #[command(hide = true)]
     Xml(XmlArgs),
 }

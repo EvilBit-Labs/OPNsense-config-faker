@@ -77,6 +77,92 @@ pub fn read_csv<P: AsRef<Path>>(path: P) -> Result<Vec<VlanConfig>> {
     Ok(configs)
 }
 
+/// Read VLAN configurations from a CSV file with enhanced validation
+pub fn read_csv_validated<P: AsRef<Path>>(path: P) -> Result<Vec<VlanConfig>> {
+    let file = File::open(path)?;
+    let mut reader = Reader::from_reader(file);
+    let mut configs = Vec::new();
+    let mut line_number = 1; // Start at 1 for header
+
+    for result in reader.deserialize() {
+        line_number += 1;
+        let record: CsvRecord = result.map_err(|e| {
+            crate::model::ConfigError::validation(format!(
+                "CSV parsing error at line {line_number}: {e}"
+            ))
+        })?;
+
+        // Validate the converted VlanConfig
+        let config = VlanConfig::from(record);
+
+        // Additional validation for CSV-loaded data
+        if config.vlan_id < 10 || config.vlan_id > 4094 {
+            return Err(crate::model::ConfigError::validation(format!(
+                "Invalid VLAN ID {} at line {line_number}: must be between 10 and 4094",
+                config.vlan_id
+            )));
+        }
+
+        if config.wan_assignment < 1 || config.wan_assignment > 3 {
+            return Err(crate::model::ConfigError::validation(format!(
+                "Invalid WAN assignment {} at line {line_number}: must be between 1 and 3",
+                config.wan_assignment
+            )));
+        }
+
+        // Validate IP network format
+        if !config.ip_network.ends_with(".x") && !config.ip_network.ends_with(".0/24") {
+            return Err(crate::model::ConfigError::validation(format!(
+                "Invalid IP network format '{}' at line {line_number}: must end with '.x' or '.0/24'",
+                config.ip_network
+            )));
+        }
+
+        configs.push(config);
+    }
+
+    Ok(configs)
+}
+
+/// Read VLAN configurations from CSV with streaming for large files
+pub fn read_csv_streaming<P: AsRef<Path>, F>(path: P, mut callback: F) -> Result<usize>
+where
+    F: FnMut(VlanConfig) -> Result<()>,
+{
+    let file = File::open(path)?;
+    let mut reader = Reader::from_reader(file);
+    let mut count = 0;
+
+    for result in reader.deserialize() {
+        let record: CsvRecord = result?;
+        let config = VlanConfig::from(record);
+        callback(config)?;
+        count += 1;
+    }
+
+    Ok(count)
+}
+
+/// Write VLAN configurations to CSV with streaming for large datasets
+pub fn write_csv_streaming<P, I>(configs: I, path: P) -> Result<usize>
+where
+    I: Iterator<Item = VlanConfig>,
+    P: AsRef<Path>,
+{
+    let file = File::create(path)?;
+    let mut writer = Writer::from_writer(file);
+    let mut count = 0;
+
+    for config in configs {
+        let record = CsvRecord::from(&config);
+        writer.serialize(record)?;
+        count += 1;
+    }
+
+    writer.flush()?;
+    Ok(count)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -132,5 +218,243 @@ mod tests {
         let content = std::fs::read_to_string(tf.path()).unwrap();
         let first_line = content.lines().next().unwrap();
         assert_eq!(first_line, "VLAN,IP Range,Beschreibung,WAN");
+    }
+
+    #[test]
+    fn test_csv_validated_reading() {
+        let configs = vec![
+            VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN 100".to_string(), 1).unwrap(),
+            VlanConfig::new(200, "10.3.4.x".to_string(), "Test VLAN 200".to_string(), 2).unwrap(),
+        ];
+
+        // Write to temporary file
+        let temp_file = NamedTempFile::new().unwrap();
+        write_csv(&configs, temp_file.path()).unwrap();
+
+        // Read back using validated reader
+        let read_configs = read_csv_validated(temp_file.path()).unwrap();
+
+        assert_eq!(configs.len(), read_configs.len());
+        for (original, read) in configs.iter().zip(read_configs.iter()) {
+            assert_eq!(original.vlan_id, read.vlan_id);
+            assert_eq!(original.ip_network, read.ip_network);
+            assert_eq!(original.description, read.description);
+            assert_eq!(original.wan_assignment, read.wan_assignment);
+        }
+    }
+
+    #[test]
+    fn test_csv_validated_reading_invalid_vlan_id() {
+        // Create a CSV with invalid VLAN ID
+        let temp_file = NamedTempFile::new().unwrap();
+        std::fs::write(
+            temp_file.path(),
+            "VLAN,IP Range,Beschreibung,WAN\n5,10.1.2.x,Invalid VLAN,1\n",
+        )
+        .unwrap();
+
+        let result = read_csv_validated(temp_file.path());
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("Invalid VLAN ID 5"));
+        assert!(error_msg.contains("line 2"));
+    }
+
+    #[test]
+    fn test_csv_validated_reading_invalid_wan() {
+        // Create a CSV with invalid WAN assignment
+        let temp_file = NamedTempFile::new().unwrap();
+        std::fs::write(
+            temp_file.path(),
+            "VLAN,IP Range,Beschreibung,WAN\n100,10.1.2.x,Test VLAN,5\n",
+        )
+        .unwrap();
+
+        let result = read_csv_validated(temp_file.path());
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("Invalid WAN assignment 5"));
+        assert!(error_msg.contains("line 2"));
+    }
+
+    #[test]
+    fn test_csv_validated_reading_invalid_ip_format() {
+        // Create a CSV with invalid IP network format
+        let temp_file = NamedTempFile::new().unwrap();
+        std::fs::write(
+            temp_file.path(),
+            "VLAN,IP Range,Beschreibung,WAN\n100,10.1.2.1,Test VLAN,1\n",
+        )
+        .unwrap();
+
+        let result = read_csv_validated(temp_file.path());
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("Invalid IP network format"));
+        assert!(error_msg.contains("line 2"));
+    }
+
+    #[test]
+    fn test_csv_streaming_read() {
+        let configs = vec![
+            VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN 100".to_string(), 1).unwrap(),
+            VlanConfig::new(200, "10.3.4.x".to_string(), "Test VLAN 200".to_string(), 2).unwrap(),
+            VlanConfig::new(300, "10.5.6.x".to_string(), "Test VLAN 300".to_string(), 3).unwrap(),
+        ];
+
+        // Write to temporary file
+        let temp_file = NamedTempFile::new().unwrap();
+        write_csv(&configs, temp_file.path()).unwrap();
+
+        // Read back using streaming
+        let mut read_configs = Vec::new();
+        let count = read_csv_streaming(temp_file.path(), |config| {
+            read_configs.push(config);
+            Ok(())
+        })
+        .unwrap();
+
+        assert_eq!(count, 3);
+        assert_eq!(configs.len(), read_configs.len());
+        for (original, read) in configs.iter().zip(read_configs.iter()) {
+            assert_eq!(original.vlan_id, read.vlan_id);
+            assert_eq!(original.ip_network, read.ip_network);
+            assert_eq!(original.description, read.description);
+            assert_eq!(original.wan_assignment, read.wan_assignment);
+        }
+    }
+
+    #[test]
+    fn test_csv_streaming_write() {
+        let configs = vec![
+            VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN 100".to_string(), 1).unwrap(),
+            VlanConfig::new(200, "10.3.4.x".to_string(), "Test VLAN 200".to_string(), 2).unwrap(),
+            VlanConfig::new(300, "10.5.6.x".to_string(), "Test VLAN 300".to_string(), 3).unwrap(),
+        ];
+
+        // Write using streaming
+        let temp_file = NamedTempFile::new().unwrap();
+        let count = write_csv_streaming(configs.clone().into_iter(), temp_file.path()).unwrap();
+
+        assert_eq!(count, 3);
+
+        // Read back and verify
+        let read_configs = read_csv(temp_file.path()).unwrap();
+        assert_eq!(configs.len(), read_configs.len());
+        for (original, read) in configs.iter().zip(read_configs.iter()) {
+            assert_eq!(original.vlan_id, read.vlan_id);
+            assert_eq!(original.ip_network, read.ip_network);
+            assert_eq!(original.description, read.description);
+            assert_eq!(original.wan_assignment, read.wan_assignment);
+        }
+    }
+
+    #[test]
+    fn test_utf8_support() {
+        let configs = vec![
+            VlanConfig::new(
+                100,
+                "10.1.2.x".to_string(),
+                "Büro VLAN 100 - Ümlaut Test".to_string(),
+                1,
+            )
+            .unwrap(),
+            VlanConfig::new(
+                200,
+                "10.3.4.x".to_string(),
+                "Sales VLAN 200 - 日本語テスト".to_string(),
+                2,
+            )
+            .unwrap(),
+            VlanConfig::new(
+                300,
+                "10.5.6.x".to_string(),
+                "Réseau VLAN 300 - Français".to_string(),
+                3,
+            )
+            .unwrap(),
+        ];
+
+        // Write to temporary file
+        let temp_file = NamedTempFile::new().unwrap();
+        write_csv(&configs, temp_file.path()).unwrap();
+
+        // Read back and verify UTF-8 characters are preserved
+        let read_configs = read_csv(temp_file.path()).unwrap();
+        assert_eq!(configs.len(), read_configs.len());
+        for (original, read) in configs.iter().zip(read_configs.iter()) {
+            assert_eq!(original.vlan_id, read.vlan_id);
+            assert_eq!(original.ip_network, read.ip_network);
+            assert_eq!(original.description, read.description);
+            assert_eq!(original.wan_assignment, read.wan_assignment);
+        }
+
+        // Verify the file content contains UTF-8 characters
+        let content = std::fs::read_to_string(temp_file.path()).unwrap();
+        assert!(content.contains("Büro"));
+        assert!(content.contains("Ümlaut"));
+        assert!(content.contains("日本語テスト"));
+        assert!(content.contains("Réseau"));
+        assert!(content.contains("Français"));
+    }
+
+    #[test]
+    fn test_python_csv_compatibility() {
+        // Test reading the existing Python-generated CSV file
+        let python_csv_path = "test_python.csv";
+
+        if std::path::Path::new(python_csv_path).exists() {
+            let result = read_csv(python_csv_path);
+            assert!(
+                result.is_ok(),
+                "Should be able to read Python-generated CSV"
+            );
+
+            let configs = result.unwrap();
+            assert!(!configs.is_empty(), "Should have configurations");
+
+            // Verify all configurations are valid
+            for config in &configs {
+                assert!((10..=4094).contains(&config.vlan_id));
+                assert!((1..=3).contains(&config.wan_assignment));
+                assert!(
+                    config.ip_network.ends_with(".x") || config.ip_network.ends_with(".0/24"),
+                    "IP network should end with .x or .0/24"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_large_dataset_memory_efficiency() {
+        // Test with a moderately large dataset to verify memory efficiency
+        let configs: Vec<_> = (0..1000)
+            .map(|i| {
+                VlanConfig::new(
+                    (i % 4085) as u16 + 10,
+                    format!("10.{}.{}.x", (i % 254) + 1, ((i / 254) % 254) + 1),
+                    format!("Test VLAN {}", i),
+                    ((i % 3) + 1) as u8,
+                )
+                .unwrap()
+            })
+            .collect();
+
+        // Write using streaming
+        let temp_file = NamedTempFile::new().unwrap();
+        let write_count =
+            write_csv_streaming(configs.clone().into_iter(), temp_file.path()).unwrap();
+        assert_eq!(write_count, 1000);
+
+        // Read using streaming to avoid loading all into memory at once
+        let mut read_count = 0;
+        let stream_count = read_csv_streaming(temp_file.path(), |_config| {
+            read_count += 1;
+            Ok(())
+        })
+        .unwrap();
+
+        assert_eq!(stream_count, 1000);
+        assert_eq!(read_count, 1000);
     }
 }

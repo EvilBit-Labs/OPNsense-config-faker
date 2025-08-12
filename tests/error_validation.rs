@@ -36,7 +36,7 @@ fn test_resource_exhaustion_vlan_ids_exceed_maximum() {
                 "Expected VLAN IDs resource exhaustion"
             );
         }
-        other => panic!("Expected ConfigError::ResourceExhausted, got: {:?}", other),
+        other => panic!("Expected ConfigError::ResourceExhausted, got: {other:?}"),
     }
 }
 
@@ -98,14 +98,10 @@ fn test_resource_exhaustion_ip_networks() {
         Err(ConfigError::ResourceExhausted { resource }) => {
             assert!(
                 resource.contains("IP networks") || resource.contains("VLAN IDs"),
-                "Expected IP networks or VLAN IDs resource exhaustion, got: {}",
-                resource
+                "Expected IP networks or VLAN IDs resource exhaustion, got: {resource}"
             );
         }
-        Err(other) => panic!(
-            "Expected success or ResourceExhausted error, got: {:?}",
-            other
-        ),
+        Err(other) => panic!("Expected success or ResourceExhausted error, got: {other:?}"),
     }
 }
 
@@ -159,8 +155,7 @@ fn test_invalid_output_file_permissions_without_force() {
         combined_output.contains("Use --force to overwrite")
             || combined_output.contains("Permission denied")
             || combined_output.contains("already exists"),
-        "Expected actionable error message about overwriting or permissions, got: {}",
-        combined_output
+        "Expected actionable error message about overwriting or permissions, got: {combined_output}"
     );
 }
 
@@ -216,8 +211,7 @@ fn test_invalid_output_directory_permissions() {
                     || combined_output.contains("cannot create")
                     || combined_output.contains("denied")
                     || combined_output.contains("failed"),
-                "Expected permission error message, got: {}",
-                combined_output
+                "Expected permission error message, got: {combined_output}"
             );
         } else {
             // If it succeeded, it might be because the environment doesn't enforce read-only permissions
@@ -277,8 +271,7 @@ fn test_nonexistent_output_directory_created() {
             combined_output.contains("No such file or directory")
                 || combined_output.contains("cannot create")
                 || combined_output.contains("Path does not exist"),
-            "Expected directory creation error, got: {}",
-            combined_output
+            "Expected directory creation error, got: {combined_output}"
         );
     }
 }
@@ -316,8 +309,7 @@ fn test_invalid_base_xml_file_not_found() {
             || combined_output.contains("not found")
             || combined_output.contains("ConfigNotFound")
             || combined_output.contains("<TEMP_FILE>"),
-        "Expected clear error about missing base config file, got: {}",
-        combined_output
+        "Expected clear error about missing base config file, got: {combined_output}"
     );
 }
 
@@ -353,8 +345,7 @@ fn test_malformed_base_xml_content() {
             || combined_output.contains("template")
             || combined_output.contains("not appear to be valid")
             || combined_output.contains("processing failed"),
-        "Expected clear error about invalid XML template, got: {}",
-        combined_output
+        "Expected clear error about invalid XML template, got: {combined_output}"
     );
 }
 
@@ -369,8 +360,7 @@ fn test_xml_template_direct_validation() {
     if let Err(ConfigError::XmlTemplate { message }) = result {
         assert!(
             message.contains("does not appear to be valid XML"),
-            "Expected specific XML validation error message, got: {}",
-            message
+            "Expected specific XML validation error message, got: {message}"
         );
     } else {
         panic!("Expected ConfigError::XmlTemplate, got a different result");
@@ -433,9 +423,7 @@ fn test_vlan_config_invalid_ip_network_formats() {
         let result = VlanConfig::new(100, network.to_string(), "Test".to_string(), 1);
         assert!(
             result.is_err(),
-            "Should fail for invalid network '{}' ({})",
-            network,
-            description
+            "Should fail for invalid network '{network}' ({description})"
         );
 
         match result.unwrap_err() {
@@ -443,15 +431,10 @@ fn test_vlan_config_invalid_ip_network_formats() {
                 assert!(
                     message.contains("IP network")
                         && message.contains("does not match expected format"),
-                    "Expected specific IP network validation error for '{}', got: {}",
-                    network,
-                    message
+                    "Expected specific IP network validation error for '{network}', got: {message}"
                 );
             }
-            other => panic!(
-                "Expected ConfigError::Validation for '{}', got: {:?}",
-                network, other
-            ),
+            other => panic!("Expected ConfigError::Validation for '{network}', got: {other:?}"),
         }
     }
 }
@@ -473,8 +456,7 @@ fn test_vlan_config_valid_ip_network_formats() {
         let result = VlanConfig::new(100, network.to_string(), "Test".to_string(), 1);
         assert!(
             result.is_ok(),
-            "Should succeed for valid network '{}'",
-            network
+            "Should succeed for valid network '{network}'"
         );
 
         let config = result.unwrap();
@@ -502,11 +484,10 @@ fn test_gateway_ip_derivation_errors() {
             assert!(
                 message.contains("Cannot derive gateway from IP network")
                     && message.contains("invalid.network.format"),
-                "Expected specific gateway derivation error, got: {}",
-                message
+                "Expected specific gateway derivation error, got: {message}"
             );
         }
-        other => panic!("Expected ConfigError::Validation, got: {:?}", other),
+        other => panic!("Expected ConfigError::Validation, got: {other:?}"),
     }
 }
 
@@ -530,11 +511,10 @@ fn test_dhcp_range_derivation_errors() {
             assert!(
                 message.contains("Cannot derive DHCP range from IP network")
                     && message.contains("corrupted.format"),
-                "Expected specific DHCP range derivation error, got: {}",
-                message
+                "Expected specific DHCP range derivation error, got: {message}"
             );
         }
-        other => panic!("Expected ConfigError::Validation, got: {:?}", other),
+        other => panic!("Expected ConfigError::Validation, got: {other:?}"),
     }
 
     // Test DHCP range end derivation fails
@@ -549,11 +529,10 @@ fn test_dhcp_range_derivation_errors() {
             assert!(
                 message.contains("Cannot derive DHCP range from IP network")
                     && message.contains("corrupted.format"),
-                "Expected specific DHCP range derivation error, got: {}",
-                message
+                "Expected specific DHCP range derivation error, got: {message}"
             );
         }
-        other => panic!("Expected ConfigError::Validation, got: {:?}", other),
+        other => panic!("Expected ConfigError::Validation, got: {other:?}"),
     }
 }
 
@@ -569,8 +548,7 @@ fn test_error_messages_are_actionable_and_stable() {
     let error_msg = result.unwrap_err().to_string();
     assert!(
         error_msg.contains("VLAN ID 5 is outside valid range 10-4094"),
-        "VLAN ID error should be specific and actionable: {}",
-        error_msg
+        "VLAN ID error should be specific and actionable: {error_msg}"
     );
 
     // 2. WAN assignment validation error
@@ -579,8 +557,7 @@ fn test_error_messages_are_actionable_and_stable() {
     let error_msg = result.unwrap_err().to_string();
     assert!(
         error_msg.contains("WAN assignment 5 is outside valid range 1-3"),
-        "WAN assignment error should be specific and actionable: {}",
-        error_msg
+        "WAN assignment error should be specific and actionable: {error_msg}"
     );
 
     // 3. IP network format validation error
@@ -589,8 +566,7 @@ fn test_error_messages_are_actionable_and_stable() {
     let error_msg = result.unwrap_err().to_string();
     assert!(
         error_msg.contains("IP network 'invalid.format' does not match expected format"),
-        "IP network error should be specific and actionable: {}",
-        error_msg
+        "IP network error should be specific and actionable: {error_msg}"
     );
 
     // 4. Resource exhaustion error
@@ -599,8 +575,7 @@ fn test_error_messages_are_actionable_and_stable() {
     let error_msg = result.unwrap_err().to_string();
     assert!(
         error_msg.contains("Resource exhaustion: VLAN IDs"),
-        "Resource exhaustion error should be clear: {}",
-        error_msg
+        "Resource exhaustion error should be clear: {error_msg}"
     );
 
     // 5. XML template validation error
@@ -610,8 +585,7 @@ fn test_error_messages_are_actionable_and_stable() {
         let error_msg = error.to_string();
         assert!(
             error_msg.contains("XML template error: Base content does not appear to be valid XML"),
-            "XML template error should be specific: {}",
-            error_msg
+            "XML template error should be specific: {error_msg}"
         );
     } else {
         panic!("Expected error from XmlTemplate::new");
@@ -645,8 +619,7 @@ fn test_cli_error_propagation_csv_format() {
         combined_output.contains("invalid value") || // clap validation message
         combined_output.contains("not in") || // clap range message
         combined_output.contains("4090 is not in"), // specific clap message
-        "Expected resource exhaustion or CLI validation error message, got: {}",
-        combined_output
+        "Expected resource exhaustion or CLI validation error message, got: {combined_output}"
     );
 }
 
@@ -681,8 +654,7 @@ fn test_cli_error_propagation_xml_format() {
         combined_output.contains("XML")
             || combined_output.contains("template")
             || combined_output.contains("not appear to be valid"),
-        "Expected XML validation error message, got: {}",
-        combined_output
+        "Expected XML validation error message, got: {combined_output}"
     );
 }
 
@@ -709,8 +681,7 @@ fn test_missing_required_arguments_generate_command() {
         combined_output.contains("Output file path is required")
             || combined_output.contains("--output")
             || combined_output.contains("required"),
-        "Expected error about missing output file, got: {}",
-        combined_output
+        "Expected error about missing output file, got: {combined_output}"
     );
 
     // Test XML format without base config
@@ -735,8 +706,7 @@ fn test_missing_required_arguments_generate_command() {
         combined_output.contains("Base configuration file is required")
             || combined_output.contains("--base-config")
             || combined_output.contains("required"),
-        "Expected error about missing base config, got: {}",
-        combined_output
+        "Expected error about missing base config, got: {combined_output}"
     );
 }
 
@@ -769,8 +739,7 @@ fn test_conflicting_arguments() {
         combined_output.contains("Either --count or --csv-file") ||
         combined_output.contains("invalid value '0'") || // clap validation
         combined_output.contains("not in 1.."), // clap range validation
-        "Expected error about invalid count or missing arguments, got: {}",
-        combined_output
+        "Expected error about invalid count or missing arguments, got: {combined_output}"
     );
 }
 
@@ -828,7 +797,6 @@ fn test_concurrent_error_scenarios() {
         error_msg.contains("VLAN ID 5 is outside valid range")
             || error_msg.contains("IP network 'invalid.network'")
             || error_msg.contains("WAN assignment 0 is outside valid range"),
-        "Should report one of the validation errors clearly: {}",
-        error_msg
+        "Should report one of the validation errors clearly: {error_msg}"
     );
 }
