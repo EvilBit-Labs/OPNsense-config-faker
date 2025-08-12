@@ -94,7 +94,7 @@ pub fn read_csv_validated<P: AsRef<Path>>(path: P) -> Result<Vec<VlanConfig>> {
 
         // Validate the converted VlanConfig
         let config = VlanConfig::from(record);
-        
+
         // Additional validation for CSV-loaded data
         if config.vlan_id < 10 || config.vlan_id > 4094 {
             return Err(crate::model::ConfigError::validation(format!(
@@ -102,7 +102,7 @@ pub fn read_csv_validated<P: AsRef<Path>>(path: P) -> Result<Vec<VlanConfig>> {
                 config.vlan_id
             )));
         }
-        
+
         if config.wan_assignment < 1 || config.wan_assignment > 3 {
             return Err(crate::model::ConfigError::validation(format!(
                 "Invalid WAN assignment {} at line {line_number}: must be between 1 and 3",
@@ -402,14 +402,17 @@ mod tests {
     fn test_python_csv_compatibility() {
         // Test reading the existing Python-generated CSV file
         let python_csv_path = "test_python.csv";
-        
+
         if std::path::Path::new(python_csv_path).exists() {
             let result = read_csv(python_csv_path);
-            assert!(result.is_ok(), "Should be able to read Python-generated CSV");
-            
+            assert!(
+                result.is_ok(),
+                "Should be able to read Python-generated CSV"
+            );
+
             let configs = result.unwrap();
             assert!(!configs.is_empty(), "Should have configurations");
-            
+
             // Verify all configurations are valid
             for config in &configs {
                 assert!((10..=4094).contains(&config.vlan_id));
@@ -439,7 +442,8 @@ mod tests {
 
         // Write using streaming
         let temp_file = NamedTempFile::new().unwrap();
-        let write_count = write_csv_streaming(configs.clone().into_iter(), temp_file.path()).unwrap();
+        let write_count =
+            write_csv_streaming(configs.clone().into_iter(), temp_file.path()).unwrap();
         assert_eq!(write_count, 1000);
 
         // Read using streaming to avoid loading all into memory at once
