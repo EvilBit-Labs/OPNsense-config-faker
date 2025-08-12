@@ -35,7 +35,7 @@ ipnet = "2.9"
 ipnetwork = "0.20"
 
 # Random data generation
-rand = { version = "0.8", features = ["small_rng"] }
+rand = { version = "0.9", features = ["small_rng"] }
 rand_chacha = "0.3"
 uuid = { version = "1.10", features = ["v4", "serde"] }
 
@@ -69,7 +69,7 @@ assert_cmd = "2.0"
 proptest = "1.4"
 
 # Benchmarking
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.7", features = ["html_reports"] }
 
 # Test utilities
 pretty_assertions = "1.4"
