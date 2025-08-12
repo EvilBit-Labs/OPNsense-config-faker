@@ -27,18 +27,15 @@ fn assert_no_ansi_escapes(output: &str) {
 
     assert!(
         !ansi_regex.is_match(output),
-        "Found ANSI color codes in output: {}",
-        output
+        "Found ANSI color codes in output: {output}"
     );
     assert!(
         !control_regex.is_match(output),
-        "Found ANSI control sequences in output: {}",
-        output
+        "Found ANSI control sequences in output: {output}"
     );
     assert!(
         !progress_regex.is_match(output),
-        "Found progress spinner characters in output: {}",
-        output
+        "Found progress spinner characters in output: {output}"
     );
 }
 
@@ -190,8 +187,7 @@ fn test_generate_csv_with_force() {
         normalized.contains("Generated 3 VLAN configurations")
             || normalized.contains("3 VLAN configurations")
             || (normalized.contains("Configurations: 3") && normalized.contains("Summary")),
-        "Expected success message about generating 3 VLANs, got: {}",
-        normalized
+        "Expected success message about generating 3 VLANs, got: {normalized}"
     );
 
     // Verify file was overwritten
@@ -230,8 +226,7 @@ fn test_generate_csv_without_force_fails() {
     assert!(
         combined_output.contains("already exists")
             || combined_output.contains("Use --force to overwrite"),
-        "Expected overwrite error message, got: {}",
-        combined_output
+        "Expected overwrite error message, got: {combined_output}"
     );
 
     // Verify no ANSI escapes
@@ -255,8 +250,7 @@ fn test_generate_csv_missing_output_fails() {
     assert!(
         combined_output.contains("Output file path is required")
             || combined_output.contains("required") && combined_output.contains("output"),
-        "Expected output file error message, got: {}",
-        combined_output
+        "Expected output file error message, got: {combined_output}"
     );
 
     // Verify no ANSI escapes
@@ -291,8 +285,7 @@ fn test_generate_xml_with_base_config() {
         normalized.contains("XML configurations generated")
             || normalized.contains("configurations generated")
             || normalized.contains("Summary"),
-        "Expected success message about XML generation, got: {}",
-        normalized
+        "Expected success message about XML generation, got: {normalized}"
     );
 
     // Verify XML files were created
@@ -321,8 +314,7 @@ fn test_generate_xml_missing_base_config_fails() {
     assert!(
         combined_output.contains("Base configuration file is required")
             || combined_output.contains("required") && combined_output.contains("base-config"),
-        "Expected base config error message, got: {}",
-        combined_output
+        "Expected base config error message, got: {combined_output}"
     );
 
     // Verify no ANSI escapes
@@ -352,8 +344,7 @@ fn test_generate_xml_nonexistent_base_config_fails() {
             || combined_output.contains("No such file")
             || combined_output.contains("does not exist")
             || combined_output.contains("ConfigNotFound"),
-        "Expected file not found error, got: {}",
-        combined_output
+        "Expected file not found error, got: {combined_output}"
     );
 
     // Verify no ANSI escapes

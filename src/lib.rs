@@ -32,6 +32,7 @@ pub mod cli;
 pub mod generator;
 pub mod io;
 pub mod model;
+pub mod utils;
 pub mod validate;
 pub mod xml;
 

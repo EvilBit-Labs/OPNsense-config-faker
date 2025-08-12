@@ -236,8 +236,7 @@ fn test_error_handling_compatibility() {
             || normalized_stderr.contains("cannot create")
             || normalized_stderr.contains("Permission denied")
             || normalized_stderr.contains("Invalid parameter"),
-        "Expected file error message not found: {}",
-        normalized_stderr
+        "Expected file error message not found: {normalized_stderr}"
     );
 }
 
@@ -316,7 +315,7 @@ fn test_concurrent_execution_compatibility() {
     for i in 0..4 {
         let success_count_clone = Arc::clone(&success_count);
         let handle = thread::spawn(move || {
-            let temp_dir = create_temp_dir(&format!("concurrent_test_{}_", i));
+            let temp_dir = create_temp_dir(&format!("concurrent_test_{i}_"));
             let output_file = temp_dir.path().join("concurrent_output.csv");
 
             let result = cli_command()
