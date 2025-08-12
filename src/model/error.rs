@@ -37,6 +37,26 @@ pub enum ConfigError {
     #[error("XML template error: {message}")]
     XmlTemplate { message: String },
 
+    /// XML parsing failed during event processing (renamed to avoid conflict)
+    #[error("XML event parsing failed: {message}")]
+    XmlEventParsing { message: String },
+
+    /// XML injection point not found
+    #[error("XML injection point not found: {selector}")]
+    XmlInjectionPointNotFound { selector: String },
+
+    /// XML schema validation failed
+    #[error("XML schema validation failed: {errors:?}")]
+    XmlSchemaValidation { errors: Vec<String> },
+
+    /// XML memory limit exceeded during processing
+    #[error("XML memory limit exceeded: {current}MB > {limit}MB")]
+    XmlMemoryLimitExceeded { current: usize, limit: usize },
+
+    /// XML namespace processing error
+    #[error("XML namespace error: {message}")]
+    XmlNamespace { message: String },
+
     /// Configuration file not found
     #[error("Configuration file not found: {path}")]
     ConfigNotFound { path: String },
@@ -95,6 +115,37 @@ impl ConfigError {
     pub fn resource_exhausted<S: Into<String>>(resource: S) -> Self {
         Self::ResourceExhausted {
             resource: resource.into(),
+        }
+    }
+
+    /// Create a new XML injection point not found error
+    pub fn xml_injection_point_not_found<S: Into<String>>(selector: S) -> Self {
+        Self::XmlInjectionPointNotFound {
+            selector: selector.into(),
+        }
+    }
+
+    /// Create a new XML schema validation error
+    pub fn xml_schema_validation(errors: Vec<String>) -> Self {
+        Self::XmlSchemaValidation { errors }
+    }
+
+    /// Create a new XML memory limit exceeded error
+    pub fn xml_memory_limit_exceeded(current: usize, limit: usize) -> Self {
+        Self::XmlMemoryLimitExceeded { current, limit }
+    }
+
+    /// Create a new XML event parsing error
+    pub fn xml_event_parsing<S: Into<String>>(message: S) -> Self {
+        Self::XmlEventParsing {
+            message: message.into(),
+        }
+    }
+
+    /// Create a new XML namespace error
+    pub fn xml_namespace<S: Into<String>>(message: S) -> Self {
+        Self::XmlNamespace {
+            message: message.into(),
         }
     }
 }
