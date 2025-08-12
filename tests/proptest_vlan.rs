@@ -124,23 +124,20 @@ fn validate_ip_derivations(configs: &[VlanConfig]) -> Result<(), String> {
         // Verify gateway IP format
         if !gateway_ip.starts_with(network_prefix) {
             return Err(format!(
-                "Gateway IP '{}' is not within network prefix '{}'",
-                gateway_ip, network_prefix
+                "Gateway IP '{gateway_ip}' is not within network prefix '{network_prefix}'"
             ));
         }
 
         // Verify DHCP range format
         if !dhcp_start.starts_with(network_prefix) {
             return Err(format!(
-                "DHCP start IP '{}' is not within network prefix '{}'",
-                dhcp_start, network_prefix
+                "DHCP start IP '{dhcp_start}' is not within network prefix '{network_prefix}'"
             ));
         }
 
         if !dhcp_end.starts_with(network_prefix) {
             return Err(format!(
-                "DHCP end IP '{}' is not within network prefix '{}'",
-                dhcp_end, network_prefix
+                "DHCP end IP '{dhcp_end}' is not within network prefix '{network_prefix}'"
             ));
         }
 
@@ -169,22 +166,19 @@ fn validate_ip_derivations(configs: &[VlanConfig]) -> Result<(), String> {
         // Verify all octets are within valid range
         if gateway_last == 0 || gateway_last == 255 {
             return Err(format!(
-                "Gateway IP last octet {} is not valid for host addressing",
-                gateway_last
+                "Gateway IP last octet {gateway_last} is not valid for host addressing"
             ));
         }
 
         if dhcp_start_last == 0 || dhcp_start_last == 255 {
             return Err(format!(
-                "DHCP start IP last octet {} is not valid for host addressing",
-                dhcp_start_last
+                "DHCP start IP last octet {dhcp_start_last} is not valid for host addressing"
             ));
         }
 
         if dhcp_end_last == 0 || dhcp_end_last == 255 {
             return Err(format!(
-                "DHCP end IP last octet {} is not valid for host addressing",
-                dhcp_end_last
+                "DHCP end IP last octet {dhcp_end_last} is not valid for host addressing"
             ));
         }
     }
