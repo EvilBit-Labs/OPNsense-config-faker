@@ -57,7 +57,7 @@ slow-tests = []
 
 [dev-dependencies]
 # Testing framework
-rstest = "0.21"
+rstest = "0.26"
 
 # Temporary files for testing
 tempfile = "3.8"
