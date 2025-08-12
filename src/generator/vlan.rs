@@ -387,17 +387,38 @@ impl VlanGenerator {
     }
 }
 
-/// Generate multiple VLAN configurations
+/// Generate multiple VLAN configurations using legacy StdRng for compatibility
 pub fn generate_vlan_configurations(
     count: u16,
     seed: Option<u64>,
     progress_bar: Option<&ProgressBar>,
 ) -> Result<Vec<VlanConfig>> {
-    let mut generator = VlanGenerator::new(seed);
+    let mut generator = VlanGenerator::new_with_std_rng(seed);
     let mut configs = Vec::with_capacity(count as usize);
 
     for i in 0..count {
         let config = generator.generate_single()?;
+        configs.push(config);
+
+        if let Some(pb) = progress_bar {
+            pb.set_position(i as u64 + 1);
+        }
+    }
+
+    Ok(configs)
+}
+
+/// Generate multiple VLAN configurations using enhanced ChaCha8Rng
+pub fn generate_vlan_configurations_enhanced(
+    count: u16,
+    seed: Option<u64>,
+    progress_bar: Option<&ProgressBar>,
+) -> VlanResult<Vec<VlanConfig>> {
+    let mut generator = VlanGenerator::new(seed);
+    let mut configs = Vec::with_capacity(count as usize);
+
+    for i in 0..count {
+        let config = generator.generate_single_enhanced()?;
         configs.push(config);
 
         if let Some(pb) = progress_bar {
@@ -1053,5 +1074,32 @@ mod tests {
         
         assert_eq!(vlan_ids.len(), 100);
         assert_eq!(networks.len(), 100);
+    }
+
+    #[test]
+    fn test_enhanced_public_api() {
+        use crate::generator::vlan::generate_vlan_configurations_enhanced;
+        
+        let configs = generate_vlan_configurations_enhanced(5, Some(42), None).unwrap();
+        assert_eq!(configs.len(), 5);
+        
+        // Verify all configs are RFC 1918 compliant
+        for config in &configs {
+            assert!(config.validate_rfc1918().is_ok());
+            assert!((10..=4094).contains(&config.vlan_id));
+            assert!((1..=3).contains(&config.wan_assignment));
+        }
+        
+        // Verify uniqueness
+        let mut vlan_ids = HashSet::new();
+        let mut networks = HashSet::new();
+        
+        for config in &configs {
+            assert!(vlan_ids.insert(config.vlan_id));
+            assert!(networks.insert(&config.ip_network));
+        }
+        
+        assert_eq!(vlan_ids.len(), 5);
+        assert_eq!(networks.len(), 5);
     }
 }
