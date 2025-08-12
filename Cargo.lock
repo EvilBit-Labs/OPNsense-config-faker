@@ -290,7 +290,6 @@ dependencies = [
  "encode_unicode",
  "libc",
  "once_cell",
- "unicode-width",
  "windows-sys 0.59.0",
 ]
 
@@ -797,7 +796,7 @@ dependencies = [
  "chrono",
  "clap",
  "clap_complete",
- "console 0.15.11",
+ "console 0.16.0",
  "criterion",
  "csv",
  "indicatif",
