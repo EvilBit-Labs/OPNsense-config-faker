@@ -3,7 +3,7 @@
 /// Standard department names for generating realistic VLAN descriptions
 pub const DEPARTMENTS: &[&str] = &[
     "Sales",
-    "IT", 
+    "IT",
     "HR",
     "Finance",
     "Marketing",
@@ -47,9 +47,9 @@ mod tests {
 
     #[test]
     fn test_department_constants() {
-        assert!(!DEPARTMENTS.is_empty());
+        // Test that we have departments defined
         assert!(DEPARTMENTS.len() >= 16); // At least the original departments
-        
+
         // Verify specific departments from the issue are included
         assert!(DEPARTMENTS.contains(&"Sales"));
         assert!(DEPARTMENTS.contains(&"IT"));
@@ -73,7 +73,7 @@ mod tests {
     #[test]
     fn test_random_department() {
         let mut rng = ChaCha8Rng::seed_from_u64(42);
-        
+
         // Generate several random departments
         for _ in 0..20 {
             let dept = random_department(&mut rng);
@@ -86,7 +86,7 @@ mod tests {
     fn test_random_department_deterministic() {
         let mut rng1 = ChaCha8Rng::seed_from_u64(12345);
         let mut rng2 = ChaCha8Rng::seed_from_u64(12345);
-        
+
         // Same seed should produce same sequence
         for _ in 0..10 {
             let dept1 = random_department(&mut rng1);

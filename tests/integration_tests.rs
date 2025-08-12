@@ -47,8 +47,7 @@ fn test_csv_generation_new_format() {
         normalized.contains("Generated 5 VLAN configurations")
             || normalized.contains("5 VLAN configurations")
             || (normalized.contains("Configurations: 5") && normalized.contains("Summary")),
-        "Expected success message about generating 5 VLANs, got: {}",
-        normalized
+        "Expected success message about generating 5 VLANs, got: {normalized}"
     );
 
     // Verify file was created
