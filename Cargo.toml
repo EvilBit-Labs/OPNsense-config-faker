@@ -69,7 +69,7 @@ assert_cmd = "2.0"
 proptest = "1.4"
 
 # Benchmarking
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.7", features = ["html_reports"] }
 
 # Test utilities
 pretty_assertions = "1.4"
