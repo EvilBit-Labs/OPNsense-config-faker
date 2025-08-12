@@ -419,9 +419,7 @@ impl TestOutputExt for TestOutput {
         let normalized = self.normalized_stdout();
         assert!(
             normalized.contains(expected),
-            "Expected stdout to contain '{}'\nActual normalized stdout: '{}'",
-            expected,
-            normalized
+            "Expected stdout to contain '{expected}'\nActual normalized stdout: '{normalized}'"
         );
         self
     }
@@ -430,9 +428,7 @@ impl TestOutputExt for TestOutput {
         let normalized = self.normalized_stderr();
         assert!(
             normalized.contains(expected),
-            "Expected stderr to contain '{}'\nActual normalized stderr: '{}'",
-            expected,
-            normalized
+            "Expected stderr to contain '{expected}'\nActual normalized stderr: '{normalized}'"
         );
         self
     }
@@ -442,9 +438,7 @@ impl TestOutputExt for TestOutput {
         let normalized = self.normalized_stdout();
         assert!(
             regex.is_match(&normalized),
-            "Expected stdout to match pattern '{}'\nActual normalized stdout: '{}'",
-            pattern,
-            normalized
+            "Expected stdout to match pattern '{pattern}'\nActual normalized stdout: '{normalized}'"
         );
         self
     }
@@ -454,9 +448,7 @@ impl TestOutputExt for TestOutput {
         let normalized = self.normalized_stderr();
         assert!(
             regex.is_match(&normalized),
-            "Expected stderr to match pattern '{}'\nActual normalized stderr: '{}'",
-            pattern,
-            normalized
+            "Expected stderr to match pattern '{pattern}'\nActual normalized stderr: '{normalized}'"
         );
         self
     }
@@ -481,16 +473,14 @@ impl TestOutputExt for TestOutput {
             "configurations"
         };
 
-        let old_format = format!("Generated {} VLAN {}", count, singular);
-        let count_check = format!("{} VLAN {}", count, singular);
+        let old_format = format!("Generated {count} VLAN {singular}");
+        let count_check = format!("{count} VLAN {singular}");
         let summary_check = normalized.contains("Summary")
-            && normalized.contains(&format!("Configurations: {}", count));
+            && normalized.contains(&format!("Configurations: {count}"));
 
         assert!(
             normalized.contains(&old_format) || normalized.contains(&count_check) || summary_check,
-            "Expected success message about generating {} VLANs, got: {}",
-            count,
-            normalized
+            "Expected success message about generating {count} VLANs, got: {normalized}"
         );
         self
     }
