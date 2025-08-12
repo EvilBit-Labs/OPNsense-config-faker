@@ -50,7 +50,7 @@ chrono = { version = "0.4", features = ["serde"] }
 indicatif = "0.18"
 
 # Terminal styling
-console = "0.15"
+console = "0.16"
 
 [features]
 slow-tests = []
