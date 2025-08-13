@@ -1,0 +1,322 @@
+---
+globs: **/*.md,**/*.rs,**/justfile,**/Cargo.toml
+alwaysApply: false
+---
+
+# Development Workflow for OPNsense-config-faker
+
+## Pre-Development Checklist
+
+Before making any changes:
+
+- [ ] Review `README.md` and `ROADMAP.md` for context
+- [ ] Check existing code patterns in similar components
+- [ ] Verify network configuration validity of planned changes
+- [ ] Ensure changes align with CLI usability goals
+
+## Implementation Workflow
+
+### 1. Code Development
+
+```bash
+# Start with fresh environment
+just format
+just lint
+
+# Implement changes following Rust patterns
+# - Use Result<T, E> for error handling
+# - Add comprehensive /// documentation
+# - Follow CLI command patterns with clap
+# - Implement network-aware data generation
+```
+
+### 2. Testing Requirements
+
+```bash
+# Unit tests (required for all new code)
+cargo test --lib
+
+# Integration tests
+cargo test --test integration_tests
+
+# Property-based testing for network configurations
+just test-property
+
+# CLI testing with assert_cmd
+cargo test --test cli_tests
+
+# Benchmark performance for data generation
+just bench
+```
+
+### 3. Quality Assurance
+
+```bash
+# Code quality gates
+just format-check
+just lint                # cargo clippy -- -D warnings
+just coverage           # >80% threshold required
+
+# Comprehensive CI validation
+just ci-check           # Full CI equivalent
+```
+
+## Code Review Checklist
+
+### Network Configuration Review
+
+- [ ] **Valid Network Ranges**: Generated IPs use realistic, non-conflicting ranges
+- [ ] **VLAN ID Validity**: VLAN IDs are within valid range (1-4094)
+- [ ] **MAC Address Standards**: Generated MACs follow IEEE standards
+- [ ] **XML Schema Compliance**: Generated XML validates against OPNsense schema
+- [ ] **Network Logic**: Generated configurations follow logical networking patterns
+
+### Rust Code Review
+
+- [ ] **Zero warnings**: `cargo clippy -- -D warnings` passes
+- [ ] **Error handling**: All `Result` types properly handled with `?` operator
+- [ ] **Documentation**: All public items have `///` documentation
+- [ ] **Testing**: Unit tests for logic, integration tests for CLI operations
+- [ ] **Type safety**: Leverages Rust's type system for network data validation
+
+### CLI Design Review
+
+- [ ] **Command Consistency**: Follows established clap patterns
+- [ ] **User Experience**: Clear help messages and error reporting
+- [ ] **Output Formats**: Supports multiple output formats (XML, CSV, JSON)
+- [ ] **Progress Indicators**: Uses indicatif for long operations
+- [ ] **Input Validation**: Proper validation of CLI arguments
+
+## Testing Strategy
+
+### Unit Tests
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_vlan_id_generation() {
+        let vlan = generate_vlan_config(100);
+        assert!(vlan.id >= 1 && vlan.id <= 4094);
+        assert!(!vlan.name.is_empty());
+    }
+
+    #[test]
+    fn test_ip_address_validity() {
+        let network = generate_network_range("192.168.0.0/24");
+        assert!(network.is_valid());
+        assert_eq!(network.prefix_len(), 24);
+    }
+}
+```
+
+### Integration Tests
+
+```rust
+#[tokio::test]
+async fn test_xml_generation_end_to_end() {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let output_path = temp_dir.path().join("test_config.xml");
+    
+    let mut cmd = Command::cargo_bin("opnsense-config-faker").unwrap();
+    cmd.arg("generate")
+        .arg("vlan")
+        .arg("--count").arg("10")
+        .arg("--output").arg(&output_path);
+    
+    cmd.assert().success();
+    
+    let content = std::fs::read_to_string(&output_path).unwrap();
+    assert!(content.contains("<vlans>"));
+    assert!(validate_xml_schema(&content));
+}
+```
+
+### Property-Based Tests
+
+```rust
+use proptest::prelude::*;
+
+proptest! {
+    #[test]
+    fn test_vlan_generation_properties(
+        count in 1..100u32,
+        base_id in 1..4000u16
+    ) {
+        let vlans = generate_vlans(count, base_id);
+        prop_assert_eq!(vlans.len(), count as usize);
+        
+        for vlan in &vlans {
+            prop_assert!(vlan.id >= 1 && vlan.id <= 4094);
+            prop_assert!(!vlan.name.is_empty());
+        }
+        
+        // Ensure no duplicate VLAN IDs
+        let mut ids: Vec<_> = vlans.iter().map(|v| v.id).collect();
+        ids.sort();
+        ids.dedup();
+        prop_assert_eq!(ids.len(), vlans.len());
+    }
+}
+```
+
+### CLI Tests
+
+```rust
+use assert_cmd::prelude::*;
+use predicates::prelude::*;
+
+#[test]
+fn test_help_command() {
+    let mut cmd = Command::cargo_bin("opnsense-config-faker").unwrap();
+    cmd.arg("--help");
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Generate network configuration test data"));
+}
+
+#[test]
+fn test_invalid_vlan_count() {
+    let mut cmd = Command::cargo_bin("opnsense-config-faker").unwrap();
+    cmd.arg("generate")
+        .arg("vlan")
+        .arg("--count").arg("0");
+    
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("Count must be greater than 0"));
+}
+```
+
+## Performance Guidelines
+
+### Data Generation Operations
+
+- Use efficient random number generation with `rand_chacha`
+- Implement streaming for large configuration generation
+- Use memory-efficient data structures for bulk operations
+- Profile memory usage with benchmarks
+
+### CLI Performance
+
+- Minimize startup time with lazy initialization
+- Use progress bars for operations taking >1 second
+- Implement incremental output for large datasets
+- Optimize XML serialization with `quick-xml` streaming
+
+## Documentation Standards
+
+### Code Documentation
+
+```rust
+/// Generates realistic VLAN configuration data for OPNsense testing.
+///
+/// This function creates VLAN configurations with valid IDs, descriptive names,
+/// and appropriate network settings that can be imported into OPNsense for
+/// testing network scenarios.
+///
+/// # Arguments
+///
+/// * `count` - Number of VLANs to generate (must be 1-4094)
+/// * `base_id` - Starting VLAN ID for sequential generation
+/// * `include_descriptions` - Whether to include descriptive text
+///
+/// # Returns
+///
+/// Returns `Ok(Vec<VlanConfig>)` containing valid VLAN configurations, or an error
+/// if the parameters would result in invalid VLAN IDs or network conflicts.
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// - `count` is 0 or would cause VLAN ID overflow
+/// - `base_id` + `count` exceeds maximum VLAN ID (4094)
+/// - Network range calculation fails
+///
+/// # Network Validity
+///
+/// - All VLAN IDs are within IEEE 802.1Q standard range (1-4094)
+/// - Generated network ranges avoid common conflicts
+/// - MAC addresses follow IEEE OUI standards
+/// - XML output validates against OPNsense configuration schema
+///
+/// # Examples
+///
+/// ```rust
+/// use opnsense_config_faker::generators::generate_vlans;
+///
+/// let vlans = generate_vlans(10, 100, true)?;
+/// assert_eq!(vlans.len(), 10);
+/// assert!(vlans[0].id >= 100 && vlans[0].id < 110);
+/// ```
+///
+/// # Performance
+///
+/// Generation time scales linearly with count:
+/// - Small datasets (<100 VLANs): ~10ms
+/// - Medium datasets (100-1000 VLANs): 10-100ms  
+/// - Large datasets (>1000 VLANs): 100ms-1s
+pub fn generate_vlans(count: u32, base_id: u16, include_descriptions: bool) -> Result<Vec<VlanConfig>> {
+    // Implementation...
+}
+```
+
+### Error Messages
+
+- Include context about what operation failed
+- Provide actionable suggestions for resolution
+- Use appropriate log levels with structured output
+
+```rust
+#[derive(Error, Debug)]
+pub enum ConfigGenerationError {
+    #[error("Invalid VLAN count: {count}. Must be between 1 and {max}")]
+    InvalidVlanCount { count: u32, max: u32 },
+
+    #[error("VLAN ID {id} would exceed maximum (4094). Reduce count or base_id")]
+    VlanIdOverflow { id: u16 },
+    
+    #[error("XML generation failed: {source}")]
+    XmlGenerationFailed {
+        #[source]
+        source: quick_xml::Error,
+    },
+}
+```
+
+## Final Checklist
+
+Before reporting completion:
+
+- [ ] All tests pass (`just test`)
+- [ ] Benchmarks show acceptable performance (`just bench`)
+- [ ] Code coverage >80% (`just coverage`)
+- [ ] No clippy warnings (`just lint`)
+- [ ] Documentation updated for new features
+- [ ] Generated configurations validate against OPNsense schema
+- [ ] CLI help and error messages are clear and actionable
+
+## Common Pitfalls to Avoid
+
+### Network Configuration Pitfalls
+
+- ❌ Generating conflicting IP ranges
+- ❌ Using reserved or invalid VLAN IDs
+- ❌ Creating malformed MAC addresses
+- ❌ Generating XML that doesn't validate against schema
+
+### Rust Pitfalls
+
+- ❌ Ignoring clippy warnings
+- ❌ Using `.unwrap()` in production code
+- ❌ Missing error handling with `?` operator
+- ❌ Inadequate testing coverage
+
+### CLI Design Pitfalls
+
+- ❌ Inconsistent command patterns
+- ❌ Poor error messages without suggestions
+- ❌ Missing progress indicators for slow operations
+- ❌ Inadequate input validation

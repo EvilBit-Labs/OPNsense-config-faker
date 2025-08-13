@@ -1,0 +1,431 @@
+---
+globs: **/*.md,**/*.rs,src/**/*
+alwaysApply: false
+---
+
+# Documentation Standards for OPNsense-config-faker
+
+## General Documentation Principles
+
+- **Clarity First**: Use clear, concise language that network professionals can understand
+- **Practical Examples**: Include working code examples for all features and APIs
+- **Consistency**: Maintain consistent tone, terminology, and formatting across all documentation
+- **Completeness**: Document both the "what" and the "why" behind design decisions
+- **Maintenance**: Update documentation with every code change that affects public APIs
+
+## Documentation Structure
+
+### README.md Structure
+
+The project README should follow this structure for optimal user experience:
+
+```markdown
+# OPNsense Config Faker
+
+## Project Description
+- Clear explanation of purpose: generating realistic OPNsense test configurations
+- Target audience: network administrators, security professionals, testing teams
+- Key benefits: realistic test data, schema compliance, CLI usability
+
+## Origin and Attribution
+- Proper credit to original nett-media/opnsense-config-generator project
+- Clear guidance on when to use upstream vs this project
+- Licensing information and contributor acknowledgments
+
+## Quick Start (Under 5 Minutes)
+- Installation command
+- Basic usage example
+- Expected output sample
+- Link to more detailed documentation
+
+## Installation
+- Prerequisites (Rust, system dependencies)
+- Platform-specific instructions (Windows, macOS, Linux)
+- Development setup for contributors
+- Verification steps
+
+## Usage
+- Command-line interface documentation
+- Common usage patterns
+- Configuration options
+- Output format explanations
+
+## Generated Data Format
+- VLAN configuration structure
+- XML schema compliance
+- CSV format for intermediate processing
+- Network address allocation patterns
+
+## Customization and Extension
+- Configuration options
+- Adding new network configuration types
+- Extending existing generators
+- Plugin/extension points
+
+## Roadmap and Development
+- Current feature status
+- Planned enhancements
+- Known limitations
+- Contributing guidelines
+```
+
+### Code Documentation Standards
+
+#### Rust Documentation
+
+Use comprehensive `///` doc comments for all public APIs:
+
+```rust
+/// Generates realistic VLAN configurations for OPNsense testing environments.
+///
+/// This generator creates VLAN configurations that comply with IEEE 802.1Q standards
+/// and can be directly imported into OPNsense firewalls. All generated configurations
+/// use RFC 1918 private address spaces and avoid common network conflicts.
+///
+/// # Arguments
+///
+/// * `count` - Number of VLAN configurations to generate (1-4094)
+/// * `base_id` - Starting VLAN ID for sequential generation (optional)
+/// * `base_network` - Base network range for subnet allocation (optional)
+/// * `departments` - Department categories to use for naming (optional)
+///
+/// # Returns
+///
+/// Returns `Ok(Vec<VlanConfig>)` containing valid VLAN configurations, or
+/// `ConfigGenerationError` if parameters would result in invalid configurations.
+///
+/// # Errors
+///
+/// This function returns an error in the following cases:
+/// - `count` is 0 or would cause VLAN ID overflow beyond 4094
+/// - `base_id` is provided but is 0, >4094, or would cause overflow with count
+/// - `base_network` is provided but is not a valid RFC 1918 private network
+/// - Generated configurations would create network address conflicts
+///
+/// # Network Standards Compliance
+///
+/// - All VLAN IDs are within IEEE 802.1Q standard range (1-4094)
+/// - Network ranges use only RFC 1918 private address spaces
+/// - Generated subnets are non-overlapping and properly calculated
+/// - XML output validates against OPNsense configuration schema
+///
+/// # Examples
+///
+/// Generate 10 VLANs with default settings:
+///
+/// ```rust
+/// use opnsense_config_faker::generators::VlanGenerator;
+///
+/// let mut generator = VlanGenerator::new(None);
+/// let vlans = generator.generate_batch(10)?;
+/// assert_eq!(vlans.len(), 10);
+/// assert!(vlans.iter().all(|v| v.id >= 1 && v.id <= 4094));
+/// ```
+///
+/// Generate VLANs with specific base configuration:
+///
+/// ```rust
+/// use opnsense_config_faker::generators::VlanGenerator;
+/// use ipnet::IpNet;
+///
+/// let mut generator = VlanGenerator::new(Some(42)); // Deterministic seed
+/// let base_network: IpNet = "192.168.100.0/24".parse()?;
+///
+/// let vlans = generator.generate_with_config(
+///     5,                    // count
+///     Some(200),           // base_id
+///     Some(base_network),  // base_network
+/// )?;
+///
+/// assert_eq!(vlans.len(), 5);
+/// assert_eq!(vlans[0].id, 200);
+/// assert!(vlans[0].network.to_string().starts_with("192.168."));
+/// ```
+///
+/// # Performance Characteristics
+///
+/// Generation performance scales linearly with count:
+/// - Small datasets (<100 VLANs): 10-50ms
+/// - Medium datasets (100-1000 VLANs): 50-500ms
+/// - Large datasets (>1000 VLANs): 500ms-2s
+///
+/// Memory usage is approximately 500 bytes per VLAN configuration.
+///
+/// # See Also
+///
+/// - [`VlanConfig`] for individual VLAN configuration structure
+/// - [`ConfigGenerationError`] for possible error conditions
+/// - [`validate_vlan_config`] for configuration validation
+pub fn generate_vlan_batch(
+    count: u32,
+    base_id: Option<u16>,
+    base_network: Option<IpNet>,
+    departments: Option<&[&str]>,
+) -> Result<Vec<VlanConfig>, ConfigGenerationError> {
+    // Implementation...
+}
+```
+
+#### CLI Documentation
+
+Provide comprehensive help text for CLI commands:
+
+```rust
+use clap::{Args, Parser, Subcommand};
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+#[command(name = "opnsense-config-faker")]
+#[command(about = "Generate realistic network configuration test data for OPNsense")]
+#[command(long_about = "
+OPNsense Config Faker generates realistic firewall configurations for testing,
+training, and development purposes. All generated configurations comply with
+IEEE networking standards and OPNsense XML schema requirements.
+
+The tool creates VLAN configurations, interface settings, firewall rules, and
+other network elements with realistic but fake data that can be safely imported
+into OPNsense test environments.
+
+Examples:
+  # Generate 25 VLAN configurations
+  opnsense-config-faker generate vlans --count 25 --output vlans.xml
+
+  # Generate with specific starting VLAN ID
+  opnsense-config-faker generate vlans --count 10 --base-id 500 --output config.xml
+
+  # Generate multiple configuration types
+  opnsense-config-faker generate interfaces --count 12 --format csv --output interfaces.csv
+
+For more information, visit: https://github.com/EvilBit-Labs/OPNsense-config-faker
+")]
+pub struct Cli {
+    #[command(subcommand)]
+    pub command: Commands,
+
+    /// Enable verbose output with detailed generation information
+    #[arg(short, long)]
+    pub verbose: bool,
+}
+
+#[derive(Args)]
+pub struct VlanArgs {
+    /// Number of VLAN configurations to generate
+    ///
+    /// Must be between 1 and 4094. Large values (>1000) may take several
+    /// seconds to generate and validate.
+    #[arg(short, long, default_value_t = 10, value_parser = clap::value_parser!(u32).range(1..=4094))]
+    pub count: u32,
+
+    /// Base VLAN ID for sequential generation
+    ///
+    /// If provided, VLAN IDs will start from this value and increment
+    /// sequentially. Must be between 1 and 4094, and base_id + count
+    /// must not exceed 4094.
+    #[arg(short, long, value_parser = clap::value_parser!(u16).range(1..=4094))]
+    pub base_id: Option<u16>,
+
+    /// Output file path for generated configuration
+    ///
+    /// If not provided, output will be written to stdout. The file format
+    /// is determined by the --format option.
+    #[arg(short, long)]
+    pub output: Option<PathBuf>,
+
+    /// Include detailed descriptions for each VLAN
+    ///
+    /// When enabled, each VLAN will include a description field with
+    /// realistic department and usage information.
+    #[arg(long)]
+    pub include_descriptions: bool,
+}
+```
+
+### Error Message Documentation
+
+Design error messages to be actionable and informative:
+
+```rust
+impl std::fmt::Display for ConfigGenerationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ConfigGenerationError::InvalidVlanId { id, max } => {
+                write!(f,
+                    "Invalid VLAN ID: {}. VLAN IDs must be between 1 and {}.\n\n\
+                    Suggestions:\n\
+                    • Use --base-id with a value between 1 and {}\n\
+                    • Reduce --count to fit within the valid range\n\
+                    • Check that base_id + count does not exceed {}",
+                    id, max, max, max
+                )
+            }
+            ConfigGenerationError::NetworkRangeConflict { range1, range2 } => {
+                write!(f,
+                    "Network range conflict: {} conflicts with {}.\n\n\
+                    Suggestions:\n\
+                    • Use --base-network to specify a different base network range\n\
+                    • Reduce --count to require fewer subnets\n\
+                    • Use larger subnet masks (smaller prefix length) for more address space",
+                    range1, range2
+                )
+            }
+            _ => write!(f, "{}", self),
+        }
+    }
+}
+```
+
+### User-Facing Documentation
+
+#### Command Line Help
+
+Provide clear, actionable help text:
+
+- **Clear descriptions** for all arguments and options
+- **Practical examples** showing common usage patterns
+- **Expected output formats** and file structure
+- **Performance guidance** for large datasets
+- **Error resolution** suggestions
+
+#### Output Format Documentation
+
+Document all supported output formats clearly:
+
+```markdown
+## Output Formats
+
+### XML Format (Default)
+
+The XML format produces OPNsense-compatible configuration files that can be
+directly imported into OPNsense firewalls:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<opnsense>
+  <vlans>
+    <vlan>
+      <if>em0</if>
+      <tag>100</tag>
+      <descr>IT_VLAN_0100</descr>
+      <vlanif>em0_vlan100</vlanif>
+    </vlan>
+  </vlans>
+</opnsense>
+```
+
+### CSV Format
+
+CSV format is useful for data analysis and intermediate processing:
+
+```csv
+VLAN,IP Range,Beschreibung,WAN
+100,192.168.100.0/24,IT_VLAN_0100,1
+101,192.168.101.0/24,Sales_VLAN_0101,1
+```
+
+### JSON Format
+
+JSON format provides structured data for programmatic processing:
+
+```json
+{
+  "vlans": [
+    {
+      "id": 100,
+      "name": "IT_VLAN_0100",
+      "interface": "em0",
+      "network": "192.168.100.0/24",
+      "description": "IT Department VLAN"
+    }
+  ]
+}
+```
+
+```
+
+## Legacy Documentation Guidelines
+
+### Upstream Attribution
+
+Always provide clear attribution and guidance:
+
+```markdown
+## Origin and Attribution
+
+This project builds upon the excellent work of the
+[nett-media/opnsense-config-generator](https://github.com/nett-media/opnsense-config-generator)
+project. We gratefully acknowledge their contribution to the OPNsense community.
+
+### When to Use This Project vs. Upstream
+
+- **Use this project** when you need realistic test data for security tools,
+  training environments, or development testing
+- **Use the upstream project** for actual OPNsense configuration management
+  and production deployments
+
+### Licensing and Attribution
+
+This project preserves the original licensing terms and maintains proper
+attribution to the upstream authors. See [LICENSE](LICENSE) for details.
+```
+
+### Legacy Code Documentation
+
+Document the relationship with legacy Python code:
+
+```rust
+//! Legacy compatibility and XSD integration module.
+//!
+//! This module provides compatibility with the original Python-based
+//! implementation while transitioning to the new Rust-based architecture.
+//!
+//! ## Legacy Python Code
+//!
+//! The `legacy/` directory contains the original Python implementation
+//! for reference purposes only. This code should not be modified or
+//! used in the primary application flow.
+//!
+//! ## XSD Model Generation
+//!
+//! Generated Python models in `opnsense/models/` are created from the
+//! XSD schema and should never be manually edited. Use `just generate-models`
+//! to regenerate these files when the schema changes.
+```
+
+## Maintenance and Review Process
+
+### Documentation Review Schedule
+
+- **Quarterly review** of all user-facing documentation
+- **Immediate updates** for new features and API changes
+- **Annual review** of architectural documentation and examples
+- **Continuous validation** that all code examples work correctly
+
+### Documentation Quality Checklist
+
+- [ ] All public APIs have comprehensive `///` doc comments
+- [ ] CLI help text is clear and includes examples
+- [ ] Error messages provide actionable guidance
+- [ ] Code examples are tested and work correctly
+- [ ] Links and references are valid and current
+- [ ] Screenshots and diagrams are up to date
+- [ ] Performance characteristics are documented
+- [ ] Security considerations are explained
+
+### Documentation Testing
+
+```rust
+// Ensure all documentation examples are tested
+#[cfg(doctest)]
+mod documentation_tests {
+    // This ensures that all code examples in documentation
+    // are compiled and tested as part of the test suite
+}
+
+#[test]
+fn test_readme_examples_work() {
+    // Test that examples in README.md actually work
+    // This can be automated using tools like `cargo-readme`
+}
+```
+
+This comprehensive documentation framework ensures that users can quickly understand, install, and effectively use the OPNsense-config-faker tool while maintaining proper attribution to the original work.

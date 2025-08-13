@@ -1,0 +1,362 @@
+---
+globs: **/*.rs,**/Cargo.toml
+alwaysApply: false
+---
+
+# Rust Testing Standards for OPNsense-config-faker
+
+## Testing Philosophy
+
+- **Network Validity First**: All tests must verify the technical correctness of generated configurations
+- **Comprehensive Coverage**: >80% test coverage with `cargo llvm-cov`
+- **Multiple Testing Strategies**: Use unit, integration, property-based, and CLI tests
+- **Zero Warnings**: All test code must pass `cargo clippy -- -D warnings`
+
+## Test Organization
+
+### Test Categories
+
+```text
+├── Unit Tests (src/)
+│   ├── #[cfg(test)] mod tests in each module
+│   ├── Test individual functions and data structures
+│   └── Use rstest for parameterized tests
+├── Integration Tests (tests/)
+│   ├── CLI end-to-end tests with assert_cmd
+│   ├── File generation and output validation tests
+│   └── Cross-module interaction tests
+├── Property-Based Tests (tests/)
+│   ├── Use proptest to validate network configuration properties
+│   └── Test edge cases and boundary conditions of data generation
+├── Benchmarks (benches/)
+│   ├── Data generation performance (VLANs, rules, etc.)
+│   ├── XML/CSV serialization speed
+│   └── Memory usage optimization
+└── Doc Tests
+    └── Examples in /// documentation for public APIs
+```
+
+### Test File Naming
+
+- Unit tests: `#[cfg(test)]` modules in source files
+- Integration tests: `tests/integration_*.rs`
+- CLI tests: `tests/cli_*.rs`
+- Property tests: `tests/property_*.rs`
+- Benchmarks: `benches/*.rs`
+
+## Unit Testing Standards
+
+### Test Structure
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::*;
+
+    #[rstest]
+    #[case(1, true)]
+    #[case(4094, true)]
+    #[case(0, false)]
+    #[case(4095, false)]
+    fn test_vlan_id_is_valid(#[case] id: u16, #[case] should_be_valid: bool) {
+        let result = validate_vlan_id(id);
+        assert_eq!(result.is_ok(), should_be_valid);
+    }
+
+    #[test]
+    fn test_error_handling() {
+        let invalid_input = 0;
+        let result = validate_vlan_id(invalid_input);
+        assert!(result.is_err());
+        assert_matches!(result.unwrap_err(), ConfigGenerationError::InvalidVlanId { id: 0 });
+    }
+}
+```
+
+### Table-Driven Tests with rstest
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::*;
+
+    #[rstest]
+    #[case("192.168.0.0/24", true)]
+    #[case("10.0.0.0/8", true)]
+    #[case("300.0.0.0/24", false)]
+    #[case("192.168.0.0/33", false)]
+    #[case("invalid-ip", false)]
+    fn test_ip_network_parsing(#[case] network: &str, #[case] should_parse: bool) {
+        let result = network.parse::<IpNet>();
+        assert_eq!(result.is_ok(), should_parse);
+    }
+}
+```
+
+## Integration Testing with assert_cmd
+
+### CLI Command Tests
+
+```rust
+// tests/cli_vlan_generation.rs
+use assert_cmd::prelude::*;
+use predicates::prelude::*;
+use std::process::Command;
+use tempfile::tempdir;
+
+#[test]
+fn test_vlan_generation_command_success() {
+    let temp_dir = tempdir().unwrap();
+    let output_path = temp_dir.path().join("vlans.xml");
+
+    let mut cmd = Command::cargo_bin("opnsense-config-faker").unwrap();
+    cmd.arg("generate")
+        .arg("vlan")
+        .arg("--count").arg("20")
+        .arg("--base-id").arg("500")
+        .arg("--output").arg(&output_path);
+
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Successfully generated 20 VLANs"));
+
+    // Verify output file was created and is valid
+    assert!(output_path.exists());
+    let content = std::fs::read_to_string(&output_path).unwrap();
+    assert!(content.contains("<vlans>"));
+    assert!(content.contains("id=\"500\""));
+    assert!(content.contains("id=\"519\""));
+    // assert!(validate_opnsense_schema(&content).is_ok());
+}
+
+#[test]
+fn test_vlan_generation_invalid_count() {
+    let mut cmd = Command::cargo_bin("opnsense-config-faker").unwrap();
+    cmd.arg("generate")
+        .arg("vlan")
+        .arg("--count").arg("5000");
+
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("VLAN ID would exceed maximum (4094)"));
+}
+```
+
+### File Output Validation
+
+```rust
+// tests/integration_output_validation.rs
+use assert_fs::prelude::*;
+use predicates::prelude::*;
+
+#[test]
+fn test_csv_output_format() {
+    let temp_dir = assert_fs::TempDir::new().unwrap();
+    let output_file = temp_dir.child("interfaces.csv");
+
+    let mut cmd = Command::cargo_bin("opnsense-config-faker").unwrap();
+    cmd.arg("generate")
+        .arg("interfaces")
+        .arg("--count").arg("5")
+        .arg("--format").arg("csv")
+        .arg("--output").arg(output_file.path());
+
+    cmd.assert().success();
+
+    output_file.assert(predicate::path::exists());
+    output_file.assert(predicate::str::contains("name,interface,description,ip_address"));
+    output_file.assert(predicate::str::is_match(r"^em\d+,.*$").unwrap().count(5));
+}
+```
+
+## Property-Based Testing with proptest
+
+### Network Configuration Properties
+
+```rust
+// tests/property_network_generation.rs
+use proptest::prelude::*;
+use opnsense_config_faker::generators::*;
+
+proptest! {
+    #[test]
+    fn test_vlan_generation_does_not_panic(
+        count in 1..100u32,
+        base_id in 1..4000u16
+    ) {
+        let _ = generate_vlan_config(count, base_id);
+    }
+
+    #[test]
+    fn test_vlan_id_is_always_in_range(
+        count in 1..100u32,
+        base_id in 1..4000u16
+    ) {
+        let vlans = generate_vlan_config(count, base_id).unwrap();
+        
+        prop_assert!(vlans.iter().all(|v| v.id >= 1 && v.id <= 4094));
+    }
+    
+    #[test]
+    fn test_no_duplicate_vlan_ids_are_generated(
+        count in 1..100u32,
+        base_id in 1..4000u16
+    ) {
+        let vlans = generate_vlan_config(count, base_id).unwrap();
+        let mut ids: Vec<_> = vlans.iter().map(|v| v.id).collect();
+        let initial_len = ids.len();
+        ids.sort();
+        ids.dedup();
+        prop_assert_eq!(initial_len, ids.len());
+    }
+
+    #[test]
+    fn test_ip_address_generation_is_valid(
+        prefix_len in 8..31u8
+    ) {
+        let network = generate_random_ipv4_network(prefix_len).unwrap();
+        prop_assert!(network.prefix_len() == prefix_len);
+    }
+}
+```
+
+## Performance Testing and Benchmarks
+
+### Benchmark Structure
+
+```rust
+// benches/vlan_generation.rs
+use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use opnsense_config_faker::generators::*;
+
+fn bench_vlan_generation(c: &mut Criterion) {
+    let mut group = c.benchmark_group("VLAN Generation");
+
+    for count in [10, 100, 1000, 5000].iter() {
+        group.bench_with_input(
+            BenchmarkId::from_parameter(count),
+            count,
+            |b, &count| {
+                b.iter(|| generate_vlan_config(black_box(count), 100));
+            }
+        );
+    }
+    group.finish();
+}
+
+fn bench_xml_serialization(c: &mut Criterion) {
+    let vlans = generate_vlan_config(1000, 100).unwrap();
+    let mut group = c.benchmark_group("XML Serialization");
+
+    group.bench_function("Serialize 1000 VLANs", |b| {
+        b.iter(|| serialize_to_xml(black_box(&vlans)));
+    });
+    group.finish();
+}
+
+criterion_group!(benches, bench_vlan_generation, bench_xml_serialization);
+criterion_main!(benches);
+```
+
+## Test Data and Fixtures
+
+### Test Data Generation
+
+```rust
+// tests/common/mod.rs
+use opnsense_config_faker::models::*;
+
+pub fn create_test_vlan_config(id: u16) -> VlanConfig {
+    VlanConfig::new(
+        id,
+        format!("TestVLAN{}", id),
+        "em0".to_string(),
+        "192.168.1.0/24".parse().unwrap(),
+    ).unwrap()
+}
+
+pub fn create_test_firewall_rule(name: &str) -> FirewallRule {
+    FirewallRule {
+        name: name.to_string(),
+        action: "pass".to_string(),
+        interface: "lan".to_string(),
+        protocol: "tcp".to_string(),
+        source: "any".to_string(),
+        destination: "any".to_string(),
+        enabled: true,
+    }
+}
+```
+
+## Testing Commands
+
+### Essential Test Commands
+
+```bash
+# Run all tests
+just test
+
+# Run unit tests only
+cargo test --lib
+
+# Run integration and property tests
+cargo test --tests
+
+# Run specific CLI test
+cargo test --test cli_vlan_generation
+
+# Run property-based tests
+just test-property
+
+# Generate coverage report
+just coverage
+just coverage-html
+
+# Run benchmarks
+cargo bench
+
+# Test with different feature flags
+cargo test --no-default-features
+cargo test --all-features
+```
+
+### CI Test Commands
+
+```bash
+# CI-friendly test execution
+cargo test --all-features --verbose -- --nocapture
+
+# Test with race detection (if applicable)
+cargo test --all-features -- --test-threads=1
+
+# Coverage with threshold enforcement
+cargo llvm-cov --all-features --workspace --lcov --fail-under-lines 80
+```
+
+## Test Quality Standards
+
+### Test Requirements
+
+- **Comprehensive**: Test happy path, error cases, and edge conditions
+- **Isolated**: Tests should not depend on external services
+- **Deterministic**: Tests must produce consistent results
+- **Fast**: Unit tests should complete in milliseconds
+- **Readable**: Tests should clearly state their purpose and expectations
+
+### Common Testing Patterns
+
+- Use `Result<(), Box<dyn std::error::Error>>` for test functions
+- Test both `Ok` and `Err` cases for functions returning `Result`
+- Use `assert_matches!` for pattern matching in tests
+- Use `tempfile` and `assert_fs` for temporary files and directories
+- Mock external dependencies appropriately
+- Use property-based testing to find unexpected edge cases
+
+### Test Coverage Goals
+
+- **Unit Tests**: >90% coverage for data generation logic
+- **Integration Tests**: Cover all CLI commands and output formats
+- **Property Tests**: Validate all generated network configuration models
+- **Performance Tests**: Establish baseline metrics for key operations

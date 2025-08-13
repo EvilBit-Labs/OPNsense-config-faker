@@ -1,0 +1,342 @@
+---
+globs: opnsense/models/**/*,**/*.xml,**/*.xsd,**/justfile
+alwaysApply: false
+---
+
+# XSD Model Generation Guide for OPNsense-config-faker
+
+## ⚠️ CRITICAL WARNING ⚠️
+
+**The `opnsense/models/` directory contains GENERATED CODE that must NEVER be manually edited.**
+
+- **✅ DO**: Regenerate models using `just generate-models` or xsdata commands
+- **✅ DO**: Extend generated models in separate files if customization is needed
+- **✅ DO**: Use the generated models for validation and type safety
+- **❌ NEVER**: Manually edit any file in `opnsense/models/`
+- **❌ NEVER**: Commit manual changes to generated model files
+- **❌ NEVER**: Import generated Python models in Rust code
+
+**All manual edits will be lost during model regeneration!**
+
+## Overview and Integration Strategy
+
+This project uses [xsdata-pydantic](https://xsdata-pydantic.readthedocs.io/en/latest/codegen/) to generate type-safe Pydantic models from the OPNsense XSD schema. These models serve primarily for:
+
+1. **Schema validation** during development
+2. **Reference implementation** for Rust model creation
+3. **Testing and verification** of generated XML output
+4. **Legacy Python tooling** for XSD processing
+
+The **primary implementation** uses hand-written Rust models in `src/models/` that mirror the XSD structure but leverage Rust's type system and performance characteristics.
+
+## Key Files and Structure
+
+```text
+/
+├── opnsense-config.xsd           # The authoritative XSD schema file
+├── opnsense/models/              # Generated Python models (DO NOT EDIT)
+│   ├── __init__.py               # Generated package init
+│   ├── config.py                 # Generated OPNsense configuration models
+│   └── ...                       # Other generated model files
+├── src/models/                   # Hand-written Rust models (EDIT HERE)
+│   ├── mod.rs                    # Rust model module definitions
+│   ├── vlan.rs                   # Rust VLAN configuration model
+│   ├── interface.rs              # Rust interface configuration model
+│   └── ...                       # Other Rust model files
+└── xsdata-config.xml             # XSD generation configuration
+```
+
+## XSD Model Generation Process
+
+### 1. Install xsdata-pydantic
+
+```bash
+# Install via uv (preferred)
+uv add xsdata-pydantic
+
+# Or via pip if uv is not available
+pip install xsdata-pydantic
+```
+
+### 2. Generate Models Using Just
+
+```bash
+# Primary command - uses predefined configuration
+just generate-models
+
+# Verify XSD tooling is available
+just verify-xsd
+
+# Clean generated models (if needed)
+just clean-models
+```
+
+### 3. Manual Generation Command
+
+```bash
+# Direct xsdata command with optimal settings
+xsdata opnsense-config.xsd \
+    --output pydantic \
+    --package opnsense.models \
+    --structure-style single-package \
+    --config xsdata-config.xml
+```
+
+### 4. XSD Generation Configuration
+
+Create/update `xsdata-config.xml` for consistent generation:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Config xmlns="http://pypi.org/project/xsdata" version="22.3">
+  <Output maxLineLength="100">
+    <Package>opnsense.models</Package>
+    <Format repr="true" eq="true" order="false" unsafeHash="false" frozen="false" slots="true" kwOnly="true">pydantic</Format>
+    <Structure>single-package</Structure>
+    <DocstringStyle>reStructuredText</DocstringStyle>
+    <RelativeImports>false</RelativeImports>
+  </Output>
+  <Conventions>
+    <ClassName case="pascalCase" safePrefix="type"/>
+    <FieldName case="snakeCase" safePrefix="value"/>
+    <ModuleName case="snakeCase" safePrefix="mod"/>
+    <PackageName case="snakeCase" safePrefix="pkg"/>
+  </Conventions>
+  <Extensions>
+    <Extension type="pydantic">
+      <Config>
+        <Field>
+          <Default>pydantic.Field</Default>
+          <DefaultFactory>pydantic.Field(default_factory=...)</DefaultFactory>
+        </Field>
+      </Config>
+    </Extension>
+  </Extensions>
+</Config>
+```
+
+## Usage Patterns
+
+### 1. Import Generated Models (Python Only)
+
+```python
+# For Python-based XSD validation and tooling
+from opnsense.models import Opnsense, System, Interfaces, Vlans
+```
+
+### 2. Create and Validate Configuration (Python)
+
+```python
+# Example of using generated models for validation
+config = Opnsense(
+    system=System(
+        hostname="test-fw",
+        domain="local"
+    ),
+    interfaces=Interfaces(
+        interface=[
+            Interface(
+                if_="em0",
+                descr="LAN",
+                enable=True,
+                ipaddr="192.168.1.1",
+                subnet="24"
+            )
+        ]
+    ),
+    vlans=Vlans(
+        vlan=[
+            Vlan(
+                vlanif="em0_vlan100",
+                if_="em0",
+                tag="100",
+                descr="IT_VLAN"
+            )
+        ]
+    )
+)
+
+# Pydantic validation happens automatically
+assert config.model_validate(config)
+
+# Serialize to XML (if xsdata XML serialization is configured)
+xml_string = config.to_xml()
+```
+
+### 3. Mirror Structure in Rust Models
+
+```rust
+// src/models/vlan.rs - Hand-written Rust equivalent
+use serde::{Deserialize, Serialize};
+use ipnet::IpNet;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct VlanConfig {
+    /// VLAN interface identifier (e.g., "em0_vlan100")
+    pub vlanif: String,
+
+    /// Parent interface (e.g., "em0")
+    #[serde(rename = "if")]
+    pub interface: String,
+
+    /// VLAN tag (1-4094)
+    pub tag: u16,
+
+    /// VLAN description
+    #[serde(rename = "descr")]
+    pub description: String,
+
+    /// Whether the VLAN is enabled
+    #[serde(default = "default_true")]
+    pub enable: bool,
+
+    /// Optional IP configuration
+    pub ipaddr: Option<std::net::IpAddr>,
+    pub subnet: Option<u8>,
+}
+
+fn default_true() -> bool { true }
+
+impl VlanConfig {
+    /// Create a new VLAN configuration with validation
+    pub fn new(
+        interface: String,
+        tag: u16,
+        description: String
+    ) -> Result<Self, ConfigGenerationError> {
+        if tag == 0 || tag > 4094 {
+            return Err(ConfigGenerationError::InvalidVlanId {
+                id: tag,
+                max: 4094
+            });
+        }
+
+        Ok(Self {
+            vlanif: format!("{}_vlan{}", interface, tag),
+            interface,
+            tag,
+            description,
+            enable: true,
+            ipaddr: None,
+            subnet: None,
+        })
+    }
+}
+```
+
+## Integration with Build System
+
+### Justfile Tasks
+
+```makefile
+# Generate XSD models
+generate-models:
+    xsdata opnsense-config.xsd \
+        --output pydantic \
+        --package opnsense.models \
+        --structure-style single-package \
+        --config xsdata-config.xml
+    @echo "✅ XSD models generated successfully"
+
+# Verify XSD tooling is available
+verify-xsd:
+    @command -v xsdata >/dev/null 2>&1 || (echo "❌ xsdata not found. Run: uv add xsdata-pydantic" && exit 1)
+    @echo "✅ XSD tooling verified"
+
+# Clean generated models
+clean-models:
+    rm -rf opnsense/models/
+    @echo "🧹 Generated models cleaned"
+
+# Validate generated XML against XSD
+validate-xml FILE:
+    xmllint --schema opnsense-config.xsd {{FILE}} --noout
+    @echo "✅ XML validation passed"
+```
+
+### Integration with CI/CD
+
+```yaml
+# .github/workflows/ci.yml excerpt
+- name: Verify XSD Models are Up to Date
+  run: |
+    just generate-models
+    git diff --exit-code opnsense/models/ || (
+      echo "❌ Generated models are out of date"
+      echo "Run 'just generate-models' and commit the changes"
+      exit 1
+    )
+
+- name: Validate Sample XML Output
+  run: |
+    cargo run -- generate vlans --count 5 --output sample.xml
+    just validate-xml sample.xml
+```
+
+## Key Benefits
+
+- **Type Safety**: Compile-time validation of configuration structure in Python
+- **Schema Compliance**: Perfect adherence to OPNsense XSD schema
+- **IDE Support**: Full IntelliSense and autocomplete for Python development
+- **Validation**: Built-in Pydantic validation with XSD constraints
+- **Reference Implementation**: Guide for creating equivalent Rust models
+- **XML Validation**: Ability to validate generated XML against the schema
+
+## Development Workflow
+
+### When XSD Schema Changes
+
+1. **Update** `opnsense-config.xsd` with new schema
+2. **Regenerate** Python models: `just generate-models`
+3. **Update** corresponding Rust models in `src/models/`
+4. **Test** both Python and Rust implementations
+5. **Commit** both XSD and generated model changes
+
+### When Adding New Features
+
+1. **Check** if XSD supports the new feature
+2. **Generate** models to understand the structure
+3. **Implement** Rust equivalents with proper validation
+4. **Test** generated XML validates against XSD
+5. **Update** documentation and examples
+
+## Testing Integration
+
+```rust
+// tests/xsd_validation.rs
+use std::process::Command;
+
+#[test]
+fn test_generated_xml_validates_against_xsd() {
+    // Generate sample configuration
+    let config = generate_sample_opnsense_config();
+    let xml = serialize_to_xml(&config).unwrap();
+
+    // Write to temporary file
+    let temp_file = "/tmp/test_config.xml";
+    std::fs::write(temp_file, xml).unwrap();
+
+    // Validate against XSD using xmllint
+    let output = Command::new("xmllint")
+        .args(&["--schema", "opnsense-config.xsd", temp_file, "--noout"])
+        .output()
+        .expect("Failed to run xmllint");
+
+    assert!(output.status.success(),
+        "XML validation failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+```
+
+## Best Practices
+
+1. **Always regenerate** models when XSD changes
+2. **Use generated models** as reference for Rust implementations
+3. **Test XML output** against XSD schema in CI/CD
+4. **Never manually edit** generated Python models
+5. **Keep XSD schema** as the single source of truth
+6. **Document deviations** between Python and Rust models
+7. **Use validation** in both Python and Rust implementations
+
+This approach ensures type safety, schema compliance, and maintainability while leveraging the strengths of both Python (XSD tooling) and Rust (performance and safety) ecosystems.

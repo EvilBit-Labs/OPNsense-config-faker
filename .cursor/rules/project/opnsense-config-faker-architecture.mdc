@@ -1,0 +1,158 @@
+---
+alwaysApply: true
+---
+
+# OPNsense-config-faker Architecture and Project Rules
+
+## Project Mission and Scope
+
+**Primary Function**: Generate OPNsense firewall configuration in XML format using randomly generated, but valid, data. These configurations are used to test various security tools and services that parse and validate OPNsense XML configurations.
+
+**Single Platform Focus**: OPNsense firewall configuration generation only - not a general network configuration tool. This functionality may come in the future, but is not the primary focus of this project at this time.
+
+## Core Philosophy
+
+- **Framework-First Principle**: Always prefer built-in functionality from frameworks like Clap and Serde over custom or "clever" solutions. Trust the framework's serialization, validation, and CLI mechanisms.
+- **Operator-Centric Design**: Projects are built for operators, by operators. This means prioritizing workflows that are efficient, auditable, and functional in contested or airgapped environments.
+- **Realistic Data Generation**: Generate RFC-compliant network configurations that mirror real-world OPNsense deployments.
+
+## Project Structure and Layout
+
+The project follows a structured Rust layout with clear separation of concerns:
+
+```text
+/
+├── src/
+│   ├── cli/               # Command line interface (Clap)
+│   ├── generators/        # Core data generation logic
+│   ├── models/            # Data models and structures (Rust)
+│   ├── validators/        # Configuration validation
+│   ├── serializers/       # XML/CSV/JSON output serialization
+│   └── lib.rs             # Library entry point
+├── tests/                 # Integration tests
+├── benches/               # Performance benchmarks
+├── legacy/                # Original Python implementation (reference)
+├── opnsense/models/       # Generated Python models from XSD (do not edit)
+├── justfile               # Task runner configuration
+└── Cargo.toml             # Project metadata and dependencies
+```
+
+## Technology Stack Integration
+
+| Layer        | Technology                                    | Notes                                             |
+| ------------ | -------------------------------------------- | ------------------------------------------------- |
+| **Language** | Rust 2021 Edition                           | Modern Rust with idiomatic patterns.             |
+| **CLI**      | Clap v4 with derive macros                  | For clean, user-friendly command-line interfaces. |
+| **Serialization** | Serde with XML/CSV/JSON support        | For data interchange and file I/O.               |
+| **XML**      | quick-xml for high-performance XML          | For OPNsense XML configuration handling.         |
+| **Networking** | ipnet, ipnetwork for IP handling           | For realistic network range generation.           |
+| **Random**   | rand with ChaCha8Rng                        | For deterministic, high-quality random data.     |
+| **Testing**  | rstest, proptest, criterion                  | For comprehensive testing and benchmarking.      |
+| **CI/CD**    | GitHub Actions                              | For automated testing, linting, and releases.    |
+| **Tooling**  | `cargo` for deps, `just` for task running   | `cargo clippy` and `cargo fmt` for quality.      |
+
+## Architecture Patterns
+
+- **Command Pattern**: CLI commands encapsulated as discrete operations
+- **Service Pattern**: Data generation logic encapsulated in service modules
+- **Factory Pattern**: Configuration generators with pluggable strategies
+- **Validator Pattern**: Network configuration validation and verification
+- **Strategy Pattern**: Pluggable algorithms for different output formats
+- **Error Chaining**: Comprehensive error context through the call stack
+
+## OPNsense-Specific Requirements
+
+### Data Generation Principles
+
+- **Realistic Data**: Generate RFC-compliant network configurations that mirror real-world deployments
+- **OPNsense Schema Compliance**: All XML output must validate against OPNsense configuration schema
+- **Unique Values**: Ensure no duplicate VLAN IDs (1-4094 range) or conflicting IP ranges
+- **Configurable**: Allow users to specify count, output format, and other parameters
+- **Consistent**: Maintain consistent data patterns across generated records
+
+### Network Configuration Standards
+
+#### VLAN Configuration
+
+- Valid VLAN ID range: 1-4094 (IEEE 802.1Q standard)
+- Ensure uniqueness within each generated dataset
+- Use realistic distribution, not purely random
+- Generate descriptive names combining department + VLAN ID
+
+#### IP Address Management
+
+- Use only RFC 1918 private address spaces:
+  - 10.0.0.0/8 (Class A: 10.0.0.0 - 10.255.255.255)
+  - 172.16.0.0/12 (Class B: 172.16.0.0 - 172.31.255.255)
+  - 192.168.0.0/16 (Class C: 192.168.0.0 - 192.168.255.255)
+- Ensure no duplicate networks in single generation
+- Use proper subnet calculations and avoid conflicts
+
+#### Organizational Data
+
+- Use realistic department names:
+  - Technical: IT, Engineering, DevOps, Security
+  - Business: Sales, Marketing, Finance, HR
+  - Operations: Support, Admin, Operations
+  - Special: Guest, Lab, Test
+
+### Legacy Code Management
+
+- **⚠️ CRITICAL**: Never manually edit files in `opnsense/models/` - they are generated from XSD
+- Use `just generate-models` or xsdata commands to regenerate models when schema changes
+- Generated model files should be committed to version control but never manually modified
+- **Rust Models**: Use hand-written Rust models in `src/models/` for new implementation
+- **Legacy Respect**: Preserve attribution to original nett-media/opnsense-config-generator work
+
+## Usage Examples
+
+```bash
+# Primary use case - Generate OPNsense XML configuration
+cargo run -- generate vlans --count 25 --output config.xml
+
+# Generate multiple configuration types
+cargo run -- generate firewall --rules 50 --output rules.xml
+cargo run -- generate interfaces --count 12 --output interfaces.xml
+
+# Generate CSV for intermediate processing
+cargo run -- generate vlans --count 25 --format csv --output vlans.csv
+
+# Use existing CSV file for XML generation (advanced usage)
+cargo run -- generate xml --input vlans.csv --output config.xml
+
+# Performance benchmarking
+cargo bench
+
+# Quality checks
+just ci-check
+```
+
+## Performance and Security Requirements
+
+- **Memory-efficient processing** for large configuration sets (1000+ VLANs)
+- **Streaming I/O** for handling large datasets without memory exhaustion
+- **Benchmark-driven optimization** with regression detection using criterion
+- **Cross-platform compatibility** (Windows, macOS, Linux)
+- **No telemetry**: No external network calls or data collection
+- **Offline operation**: Full functionality without internet connectivity
+- **Input validation**: Comprehensive validation of all inputs
+- **Memory safety**: Rust's memory safety guarantees prevent common vulnerabilities
+
+## Future Roadmap Considerations
+
+- Enhanced OPNsense configuration elements (additional modules, more realistic data)
+- Configuration validation and consistency checking for OPNsense configs
+- Enhanced XML template system for different OPNsense versions
+- Improved realistic data generation for OPNsense-specific features
+- Performance optimization through benchmarking and profiling
+
+**Note**: Supporting other platforms or output formats beyond OPNsense XML is explicitly NOT a feature goal at this time.
+
+## Key Project Reminders
+
+1. **Single Platform Focus**: This tool is exclusively for OPNsense firewall configurations
+2. **Rust Implementation**: Core functionality is implemented in Rust with modern patterns
+3. **Legacy Respect**: Preserve attribution to original work and don't modify generated legacy code
+4. **Quality First**: Zero warnings policy, comprehensive testing, performance benchmarking
+5. **Operator-Centric**: Build for network operators who need reliable, offline-capable tools
+6. **Network Validity**: Every generated configuration must be technically correct and realistic
