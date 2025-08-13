@@ -1,5 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use opnsense_config_faker::generator::vlan::{generate_vlan_configurations, VlanGenerator};
+use std::hint::black_box;
 
 fn bench_vlan_generation(c: &mut Criterion) {
     c.bench_function("generate_10_vlans", |b| {
