@@ -113,7 +113,7 @@ impl OPNsenseConfigBuilder {
     pub fn build(mut self) -> XMLResult<String> {
         // Load template
         let template = self.load_template()?;
-        
+
         // Create injector and add components
         let mut injector = XMLInjector::new(template);
         let components = std::mem::take(&mut self.components);
@@ -125,15 +125,17 @@ impl OPNsenseConfigBuilder {
         let validation = injector.validate_injections();
         if !validation.is_valid {
             return Err(XMLError::schema_validation(
-                validation.errors.into_iter()
+                validation
+                    .errors
+                    .into_iter()
                     .map(|e| crate::xml::error::ValidationError::error("component", e))
-                    .collect()
+                    .collect(),
             ));
         }
 
         // Generate events
         let events = injector.inject_components()?;
-        
+
         // Validate output events
         self.validate_events(&events)?;
 
@@ -147,7 +149,7 @@ impl OPNsenseConfigBuilder {
     pub fn build_streaming<W: Write>(mut self, writer: W) -> XMLResult<()> {
         // Load template
         let template = self.load_template()?;
-        
+
         // Create injector and add components
         let mut injector = XMLInjector::new(template);
         let components = std::mem::take(&mut self.components);
@@ -313,7 +315,7 @@ impl OPNsenseConfigBuilder {
         for rule in &self.validation_rules {
             if !(rule.validator)(events)? {
                 return Err(XMLError::schema_validation(vec![
-                    crate::xml::error::ValidationError::error(&rule.name, &rule.description)
+                    crate::xml::error::ValidationError::error(&rule.name, &rule.description),
                 ]));
             }
         }
@@ -350,40 +352,40 @@ mod tests {
 
     #[test]
     fn test_add_component() {
-        let config = VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
+        let config =
+            VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
         let generator = VlanGenerator::new(config);
-        
-        let builder = OPNsenseConfigBuilder::new()
-            .add_component(generator);
-        
+
+        let builder = OPNsenseConfigBuilder::new().add_component(generator);
+
         assert_eq!(builder.components.len(), 1);
     }
 
     #[test]
     fn test_memory_estimation() {
-        let config = VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
+        let config =
+            VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
         let generator = VlanGenerator::new(config);
-        
-        let builder = OPNsenseConfigBuilder::new()
-            .add_component(generator);
-        
+
+        let builder = OPNsenseConfigBuilder::new().add_component(generator);
+
         let estimate = builder.estimate_memory_usage();
         assert!(estimate > 0);
     }
 
     #[test]
     fn test_build_with_default_template() {
-        let config = VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
+        let config =
+            VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
         let generator = VlanGenerator::new(config);
-        
-        let builder = OPNsenseConfigBuilder::new()
-            .add_component(generator);
-        
+
+        let builder = OPNsenseConfigBuilder::new().add_component(generator);
+
         let result = builder.build();
         assert!(result.is_ok());
         let xml = result.unwrap();
         println!("Generated XML: {}", xml); // Debug output
-        // The current implementation generates XML events, not the full template
+                                            // The current implementation generates XML events, not the full template
         assert!(!xml.is_empty());
     }
 
@@ -395,10 +397,9 @@ mod tests {
             memory_limit_mb: 64,
             streaming_threshold_mb: 20,
         };
-        
-        let builder = OPNsenseConfigBuilder::new()
-            .with_output_config(config.clone());
-        
+
+        let builder = OPNsenseConfigBuilder::new().with_output_config(config.clone());
+
         assert_eq!(builder.output_config.memory_limit_mb, 64);
         assert_eq!(builder.output_config.streaming_threshold_mb, 20);
     }

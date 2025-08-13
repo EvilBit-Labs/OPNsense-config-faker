@@ -12,4 +12,4 @@ pub use builder::OPNsenseConfigBuilder;
 pub use engine::XMLEngine;
 pub use generator::{ComponentType, XMLGenerator};
 pub use injection::XMLInjector;
-pub use template::{XmlTemplate, escape_xml_string};
+pub use template::{escape_xml_string, XmlTemplate};
