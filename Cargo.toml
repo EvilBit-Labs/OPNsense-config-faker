@@ -52,8 +52,18 @@ indicatif = "0.18"
 # Terminal styling
 console = "0.16"
 
+# Performance optimization dependencies
+rayon = { version = "1.8", optional = true }                # Data parallelism
+tokio = { version = "1.0", features = ["full"] }            # Async runtime
+bumpalo = "3.14"                                             # Arena allocation
+lru = "0.12"                                                 # Template caching
+rustc-hash = "1.1"                                           # Faster hashing
+smallvec = "1.11"                                            # Stack-allocated vectors
+xmlwriter = "0.1"                                            # Streaming XML writing
+
 [features]
 slow-tests = []
+rayon = ["dep:rayon"]
 
 [dev-dependencies]
 # Testing framework
@@ -70,6 +80,9 @@ proptest = "1.4"
 
 # Benchmarking
 criterion = { version = "0.7", features = ["html_reports"] }
+
+# Performance profiling 
+pprof = { version = "0.13", features = ["criterion", "flamegraph"] }
 
 # Test utilities
 pretty_assertions = "1.4"
@@ -88,6 +101,10 @@ harness = false
 
 [[bench]]
 name = "csv_operations"
+harness = false
+
+[[bench]]
+name = "performance_benchmarks"
 harness = false
 
 [profile.release]
