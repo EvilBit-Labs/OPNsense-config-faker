@@ -37,7 +37,7 @@ impl fmt::Display for ComponentType {
             ComponentType::Firewall => write!(f, "Firewall"),
             ComponentType::Carp => write!(f, "CARP"),
             ComponentType::Radius => write!(f, "RADIUS"),
-            ComponentType::Custom(name) => write!(f, "Custom({})", name),
+            ComponentType::Custom(name) => write!(f, "Custom({name})"),
         }
     }
 }
@@ -206,7 +206,9 @@ impl VlanGenerator {
 
         // Network configuration
         events.push(Event::Start(BytesStart::new("subnet")));
-        events.push(Event::Text(BytesText::new(&self.config.ip_network).into_owned()));
+        events.push(Event::Text(
+            BytesText::new(&self.config.ip_network).into_owned(),
+        ));
         events.push(Event::End(BytesEnd::new("subnet")));
 
         // Gateway IP if available
@@ -229,20 +231,20 @@ impl VlanGenerator {
 
     /// Generate DHCP server configuration events
     fn generate_dhcp_events(&self) -> XMLResult<Vec<Event<'static>>> {
-        let mut events = Vec::new();
-
-        // Start DHCP element
-        events.push(Event::Start(BytesStart::new("dhcp")));
-
-        // Enable DHCP
-        events.push(Event::Start(BytesStart::new("enable")));
-        events.push(Event::Text(BytesText::new("1").into_owned()));
-        events.push(Event::End(BytesEnd::new("enable")));
+        let mut events = vec![
+            // Start DHCP element
+            Event::Start(BytesStart::new("dhcp")),
+            // Enable DHCP
+            Event::Start(BytesStart::new("enable")),
+            Event::Text(BytesText::new("1").into_owned()),
+            Event::End(BytesEnd::new("enable")),
+        ];
 
         // DHCP range
-        if let (Ok(start), Ok(end)) = (self.config.dhcp_range_start(), self.config.dhcp_range_end()) {
+        if let (Ok(start), Ok(end)) = (self.config.dhcp_range_start(), self.config.dhcp_range_end())
+        {
             events.push(Event::Start(BytesStart::new("range")));
-            
+
             events.push(Event::Start(BytesStart::new("from")));
             events.push(Event::Text(BytesText::new(&start).into_owned()));
             events.push(Event::End(BytesEnd::new("from")));
@@ -294,12 +296,18 @@ impl XMLGenerator for VlanGenerator {
 
         // Validate VLAN ID range
         if !(10..=4094).contains(&self.config.vlan_id) {
-            errors.push(format!("VLAN ID {} is outside valid range 10-4094", self.config.vlan_id));
+            errors.push(format!(
+                "VLAN ID {} is outside valid range 10-4094",
+                self.config.vlan_id
+            ));
         }
 
         // Validate WAN assignment
         if !(1..=3).contains(&self.config.wan_assignment) {
-            errors.push(format!("WAN assignment {} is outside valid range 1-3", self.config.wan_assignment));
+            errors.push(format!(
+                "WAN assignment {} is outside valid range 1-3",
+                self.config.wan_assignment
+            ));
         }
 
         // Validate IP network format
@@ -313,10 +321,10 @@ impl XMLGenerator for VlanGenerator {
         }
 
         // Check DHCP range generation
-        if self.options.include_dhcp {
-            if self.config.dhcp_range_start().is_err() || self.config.dhcp_range_end().is_err() {
-                warnings.push("Cannot generate DHCP range from network format".to_string());
-            }
+        if self.options.include_dhcp
+            && (self.config.dhcp_range_start().is_err() || self.config.dhcp_range_end().is_err())
+        {
+            warnings.push("Cannot generate DHCP range from network format".to_string());
         }
 
         if errors.is_empty() {
@@ -329,15 +337,23 @@ impl XMLGenerator for VlanGenerator {
     fn memory_estimate(&self) -> usize {
         // Base VLAN configuration: ~512 bytes
         let base_size = 512;
-        
+
         // Additional for DHCP: ~256 bytes
         let dhcp_size = if self.options.include_dhcp { 256 } else { 0 };
-        
+
         // Additional for firewall rules: ~1024 bytes per rule
-        let firewall_size = if self.options.include_firewall_rules { 1024 } else { 0 };
-        
+        let firewall_size = if self.options.include_firewall_rules {
+            1024
+        } else {
+            0
+        };
+
         // Additional for NAT rules: ~512 bytes per rule
-        let nat_size = if self.options.include_nat_rules { 512 } else { 0 };
+        let nat_size = if self.options.include_nat_rules {
+            512
+        } else {
+            0
+        };
 
         base_size + dhcp_size + firewall_size + nat_size
     }
@@ -391,7 +407,10 @@ mod tests {
     #[test]
     fn test_component_type_display() {
         assert_eq!(ComponentType::Vlan.to_string(), "VLAN");
-        assert_eq!(ComponentType::Custom("Test".to_string()).to_string(), "Custom(Test)");
+        assert_eq!(
+            ComponentType::Custom("Test".to_string()).to_string(),
+            "Custom(Test)"
+        );
     }
 
     #[test]
@@ -407,14 +426,16 @@ mod tests {
 
     #[test]
     fn test_vlan_generator_creation() {
-        let config = VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
+        let config =
+            VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
         let generator = VlanGenerator::new(config);
         assert_eq!(generator.component_type(), ComponentType::Vlan);
     }
 
     #[test]
     fn test_vlan_generator_validation() {
-        let config = VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
+        let config =
+            VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
         let generator = VlanGenerator::new(config);
         let validation = generator.validate_requirements();
         assert!(validation.is_valid);
@@ -422,16 +443,17 @@ mod tests {
 
     #[test]
     fn test_vlan_generator_validation_errors() {
-        let config = VlanConfig::new(5000, "invalid".to_string(), "Test VLAN".to_string(), 5).unwrap_or_else(|_| {
-            // Create a config that will pass initial creation but fail XML validation
-            VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap()
-        });
-        
+        let config = VlanConfig::new(5000, "invalid".to_string(), "Test VLAN".to_string(), 5)
+            .unwrap_or_else(|_| {
+                // Create a config that will pass initial creation but fail XML validation
+                VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap()
+            });
+
         // Manually create an invalid config for testing
         let mut generator = VlanGenerator::new(config);
         generator.config.vlan_id = 5000; // Invalid VLAN ID
         generator.config.wan_assignment = 5; // Invalid WAN assignment
-        
+
         let validation = generator.validate_requirements();
         assert!(!validation.is_valid);
         assert!(!validation.errors.is_empty());
@@ -439,7 +461,8 @@ mod tests {
 
     #[test]
     fn test_vlan_generator_memory_estimate() {
-        let config = VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
+        let config =
+            VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
         let generator = VlanGenerator::new(config);
         let estimate = generator.memory_estimate();
         assert!(estimate > 0);
@@ -448,11 +471,12 @@ mod tests {
 
     #[test]
     fn test_vlan_generator_events_generation() {
-        let config = VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
+        let config =
+            VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
         let generator = VlanGenerator::new(config);
         let events = generator.generate_events().unwrap();
         assert!(!events.is_empty());
-        
+
         // Check that we have start and end events
         let has_start = events.iter().any(|e| matches!(e, Event::Start(_)));
         let has_end = events.iter().any(|e| matches!(e, Event::End(_)));
@@ -470,21 +494,23 @@ mod tests {
 
     #[test]
     fn test_vlan_generator_with_options() {
-        let config = VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
+        let config =
+            VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
         let options = VlanGeneratorOptions {
             include_dhcp: true,
             include_firewall_rules: true,
             ..Default::default()
         };
         let generator = VlanGenerator::with_options(config, options);
-        
+
         let memory_estimate = generator.memory_estimate();
         assert!(memory_estimate > 512); // Should be larger with DHCP and firewall
     }
 
     #[test]
     fn test_vlan_generator_supports_streaming() {
-        let config = VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
+        let config =
+            VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
         let generator = VlanGenerator::new(config);
         assert!(generator.supports_streaming());
     }

@@ -1,13 +1,14 @@
 //! XML injection mechanisms for structured event injection
 
-use crate::xml::error::{XMLError, XMLResult};
-use crate::xml::generator::XMLGenerator;
 use crate::xml::engine::XMLTemplate;
+use crate::xml::error::XMLResult;
+use crate::xml::generator::XMLGenerator;
 use quick_xml::events::Event;
 use std::collections::HashMap;
 
 /// XML injector for combining templates with generated components
 pub struct XMLInjector {
+    #[allow(dead_code)]
     template: XMLTemplate,
     generators: Vec<Box<dyn XMLGenerator>>,
     injection_mappings: HashMap<String, String>,
@@ -30,13 +31,14 @@ impl XMLInjector {
 
     /// Add injection mapping
     pub fn add_mapping<K: Into<String>, V: Into<String>>(&mut self, selector: K, target: V) {
-        self.injection_mappings.insert(selector.into(), target.into());
+        self.injection_mappings
+            .insert(selector.into(), target.into());
     }
 
     /// Inject components into template
     pub fn inject_components(&mut self) -> XMLResult<Vec<Event<'static>>> {
         let mut result_events = Vec::new();
-        
+
         // For now, just combine events from all generators
         for generator in &self.generators {
             let events = generator.generate_events()?;
@@ -86,8 +88,8 @@ pub struct ValidationResult {
 mod tests {
     use super::*;
     use crate::generator::VlanConfig;
+    use crate::xml::engine::TemplateMetadata;
     use crate::xml::generator::VlanGenerator;
-    use crate::xml::engine::{XMLEngine, TemplateMetadata};
     use std::collections::HashMap;
 
     #[test]
@@ -119,11 +121,11 @@ mod tests {
             },
         );
         let mut injector = XMLInjector::new(template);
-        
+
         let config = VlanConfig::new(100, "10.1.2.x".to_string(), "Test".to_string(), 1).unwrap();
         let generator = VlanGenerator::new(config);
         injector.add_generator(Box::new(generator));
-        
+
         assert_eq!(injector.generators.len(), 1);
     }
 
@@ -140,11 +142,11 @@ mod tests {
             },
         );
         let mut injector = XMLInjector::new(template);
-        
+
         let config = VlanConfig::new(100, "10.1.2.x".to_string(), "Test".to_string(), 1).unwrap();
         let generator = VlanGenerator::new(config);
         injector.add_generator(Box::new(generator));
-        
+
         let result = injector.inject_components();
         assert!(result.is_ok());
     }
@@ -162,11 +164,11 @@ mod tests {
             },
         );
         let mut injector = XMLInjector::new(template);
-        
+
         let config = VlanConfig::new(100, "10.1.2.x".to_string(), "Test".to_string(), 1).unwrap();
         let generator = VlanGenerator::new(config);
         injector.add_generator(Box::new(generator));
-        
+
         let validation = injector.validate_injections();
         assert!(validation.is_valid);
     }
