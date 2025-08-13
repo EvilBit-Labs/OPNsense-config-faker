@@ -1,0 +1,373 @@
+---
+globs: **/generators/**,**/models/**
+alwaysApply: false
+---
+
+# Data Generation Standards for OPNsense-config-faker
+
+## Core Data Generation Principles
+
+- **RFC Compliance**: All generated network data must follow established RFC standards
+- **Realistic Distribution**: Use probability distributions that mirror real-world deployments
+- **Uniqueness Enforcement**: Prevent conflicts and duplicates within generated datasets
+- **Deterministic Seeding**: Support reproducible data generation for testing
+- **Scalability**: Efficiently generate large datasets (1000+ configurations)
+
+## Random Data Generation Framework
+
+### Random Number Generator Setup
+
+```rust
+use rand::{Rng, SeedableRng};
+use rand_chacha::ChaCha8Rng;
+
+// Use deterministic RNG for reproducible test data
+pub struct ConfigGenerator {
+    rng: ChaCha8Rng,
+    used_vlan_ids: HashSet<u16>,
+    used_networks: HashSet<IpNet>,
+}
+
+impl ConfigGenerator {
+    pub fn new(seed: Option<u64>) -> Self {
+        let rng = match seed {
+            Some(seed) => ChaCha8Rng::seed_from_u64(seed),
+            None => ChaCha8Rng::from_entropy(),
+        };
+
+        Self {
+            rng,
+            used_vlan_ids: HashSet::new(),
+            used_networks: HashSet::new(),
+        }
+    }
+}
+```
+
+### Data Uniqueness Management
+
+```rust
+impl ConfigGenerator {
+    /// Generate unique VLAN ID ensuring no conflicts
+    pub fn generate_unique_vlan_id(&mut self) -> Result<u16> {
+        for _ in 0..MAX_RETRY_ATTEMPTS {
+            let vlan_id = self.rng.gen_range(1..=4094);
+            if !self.used_vlan_ids.contains(&vlan_id) {
+                self.used_vlan_ids.insert(vlan_id);
+                return Ok(vlan_id);
+            }
+        }
+        Err(ConfigGenerationError::NoAvailableVlanIds)
+    }
+
+    /// Generate non-conflicting network range
+    pub fn generate_unique_network(&mut self, prefix_len: u8) -> Result<IpNet> {
+        // Implementation that ensures no network conflicts
+    }
+}
+```
+
+## Network Configuration Standards
+
+### VLAN Configuration
+
+- **Valid Range**: 1-4094 (IEEE 802.1Q standard, excluding reserved 0 and 4095)
+- **Realistic Distribution**: Weight towards common ranges:
+  - Management: 1-99 (20% probability)
+  - User networks: 100-999 (50% probability)
+  - Server networks: 1000-1999 (20% probability)
+  - Special purpose: 2000-4094 (10% probability)
+- **Uniqueness**: Ensure no duplicate VLAN IDs within each generated dataset
+- **Naming Convention**: Combine department type with VLAN ID for realistic names
+
+```rust
+const VLAN_RANGES: &[(std::ops::RangeInclusive<u16>, f32)] = &[
+    (1..=99, 0.2),      // Management networks
+    (100..=999, 0.5),   // User networks
+    (1000..=1999, 0.2), // Server networks
+    (2000..=4094, 0.1), // Special purpose
+];
+
+fn generate_weighted_vlan_id(rng: &mut ChaCha8Rng) -> u16 {
+    let weight: f32 = rng.gen();
+    let mut cumulative = 0.0;
+
+    for (range, probability) in VLAN_RANGES {
+        cumulative += probability;
+        if weight <= cumulative {
+            return rng.gen_range(range.clone());
+        }
+    }
+
+    rng.gen_range(1..=4094) // Fallback
+}
+```
+
+### IP Address Management
+
+#### RFC 1918 Private Address Spaces
+
+Use only RFC 1918 private address spaces for all generated IP configurations:
+
+```rust
+const PRIVATE_NETWORKS: &[&str] = &[
+    "10.0.0.0/8",       // Class A: 10.0.0.0 - 10.255.255.255
+    "172.16.0.0/12",    // Class B: 172.16.0.0 - 172.31.255.255
+    "192.168.0.0/16",   // Class C: 192.168.0.0 - 192.168.255.255
+];
+
+/// Generate realistic subnet within RFC 1918 ranges
+pub fn generate_private_network(
+    rng: &mut ChaCha8Rng,
+    base_network: &str,
+    subnet_prefix: u8
+) -> Result<IpNet> {
+    let base: IpNet = base_network.parse()?;
+
+    // Generate random subnet within the base network
+    let subnet_count = 2u32.pow((subnet_prefix - base.prefix_len()) as u32);
+    let subnet_index = rng.gen_range(0..subnet_count);
+
+    base.subnets(subnet_prefix)
+        .nth(subnet_index as usize)
+        .ok_or(ConfigGenerationError::InvalidSubnetCalculation)
+}
+```
+
+#### Network Conflict Prevention
+
+```rust
+/// Ensure generated networks don't overlap
+pub fn validate_network_conflicts(networks: &[IpNet]) -> Result<()> {
+    for (i, net1) in networks.iter().enumerate() {
+        for net2 in networks.iter().skip(i + 1) {
+            if net1.contains(net2) || net2.contains(net1) ||
+               networks_overlap(net1, net2) {
+                return Err(ConfigGenerationError::NetworkRangeConflict {
+                    range1: net1.to_string(),
+                    range2: net2.to_string(),
+                });
+            }
+        }
+    }
+    Ok(())
+}
+```
+
+### Organizational Naming Standards
+
+#### Department Categories
+
+Use realistic department names following corporate structures:
+
+```rust
+const DEPARTMENT_CATEGORIES: &[(&str, &[&str])] = &[
+    ("Technical", &[
+        "IT", "Engineering", "DevOps", "Security",
+        "Infrastructure", "Development", "QA"
+    ]),
+    ("Business", &[
+        "Sales", "Marketing", "Finance", "HR",
+        "Legal", "Procurement", "Business Development"
+    ]),
+    ("Operations", &[
+        "Support", "Admin", "Operations", "Facilities",
+        "Logistics", "Customer Service"
+    ]),
+    ("Special", &[
+        "Guest", "Lab", "Test", "Training",
+        "Contractors", "Temporary", "IoT"
+    ]),
+];
+
+pub fn generate_realistic_vlan_name(
+    rng: &mut ChaCha8Rng,
+    vlan_id: u16
+) -> String {
+    let (_, departments) = DEPARTMENT_CATEGORIES.choose(rng).unwrap();
+    let department = departments.choose(rng).unwrap();
+
+    format!("{}_VLAN_{:04}", department, vlan_id)
+}
+```
+
+### WAN Assignment Distribution
+
+Realistically distribute WAN assignments across VLANs:
+
+```rust
+const WAN_WEIGHTS: &[(u8, f32)] = &[
+    (1, 0.7),  // Primary WAN - most common
+    (2, 0.2),  // Secondary WAN - backup/load balancing
+    (3, 0.1),  // Tertiary WAN - specialized connections
+];
+
+pub fn generate_wan_assignment(rng: &mut ChaCha8Rng) -> u8 {
+    let weight: f32 = rng.gen();
+    let mut cumulative = 0.0;
+
+    for (wan_id, probability) in WAN_WEIGHTS {
+        cumulative += probability;
+        if weight <= cumulative {
+            return *wan_id;
+        }
+    }
+
+    1 // Default to primary WAN
+}
+```
+
+## Data Validation Standards
+
+### Input Validation
+
+```rust
+pub fn validate_generation_parameters(
+    count: u32,
+    base_id: Option<u16>,
+    base_network: Option<&str>
+) -> Result<()> {
+    // Validate count is reasonable
+    if count == 0 {
+        return Err(ConfigGenerationError::InvalidCount {
+            count,
+            min: 1,
+            max: MAX_VLAN_COUNT
+        });
+    }
+
+    if count > MAX_VLAN_COUNT {
+        return Err(ConfigGenerationError::InvalidCount {
+            count,
+            min: 1,
+            max: MAX_VLAN_COUNT
+        });
+    }
+
+    // Validate base VLAN ID if provided
+    if let Some(id) = base_id {
+        if id == 0 || id > 4094 || (id as u32 + count) > 4094 {
+            return Err(ConfigGenerationError::InvalidVlanId {
+                id,
+                max: 4094
+            });
+        }
+    }
+
+    // Validate base network if provided
+    if let Some(network) = base_network {
+        let _: IpNet = network.parse()
+            .map_err(|_| ConfigGenerationError::InvalidNetworkRange {
+                range: network.to_string()
+            })?;
+    }
+
+    Ok(())
+}
+```
+
+### Output Data Validation
+
+```rust
+pub fn validate_generated_config(config: &OPNsenseConfig) -> Result<()> {
+    // Validate VLAN IDs are unique and in valid range
+    validate_vlan_uniqueness(&config.vlans)?;
+
+    // Validate network ranges don't conflict
+    let networks: Vec<IpNet> = config.vlans
+        .iter()
+        .map(|v| v.network)
+        .collect();
+    validate_network_conflicts(&networks)?;
+
+    // Validate interface assignments are consistent
+    validate_interface_consistency(config)?;
+
+    Ok(())
+}
+```
+
+## Performance Optimization
+
+### Batch Generation
+
+```rust
+impl ConfigGenerator {
+    /// Generate multiple configurations efficiently
+    pub fn generate_batch(
+        &mut self,
+        count: u32
+    ) -> Result<Vec<VlanConfig>> {
+        // Pre-allocate vector for efficiency
+        let mut configs = Vec::with_capacity(count as usize);
+
+        // Generate base networks to avoid conflicts
+        let base_networks = self.generate_network_pool(count)?;
+
+        for i in 0..count {
+            let vlan_id = self.generate_unique_vlan_id()?;
+            let network = base_networks[i as usize];
+            let name = generate_realistic_vlan_name(&mut self.rng, vlan_id);
+            let wan_assignment = generate_wan_assignment(&mut self.rng);
+
+            configs.push(VlanConfig {
+                id: vlan_id,
+                name,
+                network,
+                wan_assignment,
+                description: Some(self.generate_description(vlan_id)),
+                enabled: true,
+            });
+        }
+
+        // Final validation
+        validate_generated_configs(&configs)?;
+
+        Ok(configs)
+    }
+}
+```
+
+### Memory Efficiency
+
+- Use `Vec::with_capacity()` for known-size collections
+- Stream large datasets instead of loading into memory
+- Reuse allocated data structures where possible
+- Use `HashSet` for O(1) uniqueness checking
+
+## Output Format Standards
+
+### CSV Structure
+
+```csv
+VLAN,IP Range,Beschreibung,WAN
+100,192.168.100.0/24,IT_VLAN_0100,1
+101,192.168.101.0/24,Sales_VLAN_0101,1
+102,10.0.50.0/24,Engineering_VLAN_0102,2
+```
+
+- Use German "Beschreibung" for description (legacy compatibility)
+- No trailing whitespace or extra delimiters
+- Consistent field ordering across all outputs
+- Support different CSV dialects as needed
+
+### File Organization
+
+- Default output to `output/` directory
+- Create directories automatically if they don't exist
+- Use descriptive filenames with timestamps when appropriate
+- Don't overwrite existing files without user confirmation
+- Support streaming output for large datasets
+
+## Extensibility Guidelines
+
+Design data generators to be easily extensible for future OPNsense features:
+
+- Firewall rules with realistic patterns
+- DHCP configurations with proper lease ranges
+- Interface configurations with realistic naming
+- NAT rules with proper port mappings
+- VPN configurations with secure key generation
+- Certificate management with proper validity periods
+
+Maintain relationships between related configuration elements to ensure generated configs are internally consistent and realistic.
