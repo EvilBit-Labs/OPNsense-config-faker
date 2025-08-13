@@ -97,6 +97,7 @@ Following idiomatic Rust standards:
 - **CodeRabbit.ai Preferred**: Use coderabbit.ai for code review over GitHub Copilot auto-reviews
 - **Single Maintainer**: Configure workflows for single maintainer (UncleSp1d3r) without second reviewer
 - **No Auto-commits**: Never commit code automatically without explicit maintainer permission
+- **Pre-Commit CI Check**: **MANDATORY** - Always run `just ci-check` before committing any work to ensure all quality gates pass
 
 ### Testing Strategy
 
