@@ -140,6 +140,7 @@ This document outlines the core concepts, framework, and coding standards for th
 - **CodeRabbit.ai Integration**: Prefer coderabbit.ai for code review over GitHub Copilot auto-reviews
 - **Single Maintainer Workflow**: Configure for single maintainer (UncleSp1d3r) with no second reviewer requirement
 - **No Auto-commits**: Never commit code on behalf of maintainer without explicit permission
+- **Pre-Commit CI Check**: **MANDATORY** - Always run `just ci-check` before committing any work to ensure all quality gates pass
 
 ### Assistant Guidelines
 
