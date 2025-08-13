@@ -40,7 +40,7 @@ format-check:
 
 # Lint code with clippy (strict warnings as errors)
 lint:
-    cargo clippy -- -D warnings
+    cargo clippy --all-targets --all-features --benches -- -D warnings
 
 # Run all linting and formatting checks
 check: format-check lint pre-commit
@@ -68,7 +68,7 @@ rust-fmt-check:
 
 # Lint Rust code with clippy (strict mode)
 rust-clippy:
-    cargo clippy --all-targets --all-features -- -D warnings
+    cargo clippy --all-targets --all-features --benches -- -D warnings
 
 # Run all Rust tests
 rust-test:
