@@ -1,0 +1,457 @@
+---
+globs: **/*.rs,**/Cargo.toml,**/Cargo.lock
+alwaysApply: false
+---
+
+# Rust Development Standards for OPNsense-config-faker
+
+## Rust Version Requirements
+
+- **Minimum Rust Version**: 1.70+ (as specified in project Cargo.toml)
+- **Edition**: 2021
+- **Toolchain**: Stable channel preferred
+
+## Code Quality Standards
+
+### Formatting and Linting
+
+- **Formatting**: `cargo fmt` with default settings (4-space indentation)
+- **Linting**: `cargo clippy -- -D warnings` - ZERO warnings policy enforced
+- **Documentation**: All public items must have `///` doc comments
+- **Testing**: Comprehensive test coverage with multiple testing strategies
+
+### Naming Conventions
+
+- **Functions/Variables**: `snake_case`
+- **Types/Structs/Enums**: `PascalCase`
+- **Constants**: `SCREAMING_SNAKE_CASE`
+- **Modules**: `snake_case`
+- **CLI Commands**: kebab-case for consistency with common CLI tools
+
+### Error Handling Standards
+
+```rust
+// ✅ Preferred: Custom error types with thiserror for OPNsense config generation
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum ConfigGenerationError {
+    #[error("Invalid VLAN ID: {id}. Must be between 1 and 4094")]
+    InvalidVlanId { id: u16 },
+
+    #[error("Network range conflict: {range1} overlaps with {range2}")]
+    NetworkRangeConflict { range1: String, range2: String },
+
+    #[error("Invalid interface name: '{name}'. Must follow OPNsense naming conventions")]
+    InvalidInterfaceName { name: String },
+
+    #[error("XML generation failed")]
+    XmlGenerationFailed(#[from] quick_xml::Error),
+
+    #[error("CSV generation failed")]
+    CsvGenerationFailed(#[from] csv::Error),
+
+    #[error("IO operation failed: {operation}")]
+    IoFailed {
+        operation: String,
+        #[source]
+        source: std::io::Error,
+    },
+}
+
+pub type Result<T> = std::result::Result<T, ConfigGenerationError>;
+
+// ✅ Proper error propagation with context
+async fn generate_vlan_config(count: u32, base_id: u16) -> Result<Vec<VlanConfig>> {
+    if base_id == 0 || base_id > 4094 {
+        return Err(ConfigGenerationError::InvalidVlanId { id: base_id });
+    }
+
+    if base_id + count as u16 > 4094 {
+        return Err(ConfigGenerationError::InvalidVlanId { 
+            id: base_id + count as u16 
+        });
+    }
+
+    let vlans = (0..count)
+        .map(|i| create_vlan_config(base_id + i as u16))
+        .collect::<Result<Vec<_>>>()?;
+
+    Ok(vlans)
+}
+```
+
+### Network Configuration Patterns
+
+```rust
+// ✅ Correct: Network-aware data structures
+use ipnet::IpNet;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct VlanConfig {
+    pub id: u16,                    // 1-4094 range enforced
+    pub name: String,               // Descriptive name
+    pub description: Option<String>, // Optional description
+    pub interface: String,          // Parent interface (e.g., "em0")
+    pub network: IpNet,             // Network range with CIDR
+    pub enabled: bool,              // Configuration state
+}
+
+impl VlanConfig {
+    /// Creates a new VLAN configuration with validation
+    pub fn new(
+        id: u16, 
+        name: String, 
+        interface: String, 
+        network: IpNet
+    ) -> Result<Self> {
+        if id == 0 || id > 4094 {
+            return Err(ConfigGenerationError::InvalidVlanId { id });
+        }
+
+        if name.is_empty() {
+            return Err(ConfigGenerationError::InvalidInterfaceName { 
+                name: name.clone() 
+            });
+        }
+
+        Ok(Self {
+            id,
+            name,
+            description: None,
+            interface,
+            network,
+            enabled: true,
+        })
+    }
+
+    /// Validates the VLAN configuration against OPNsense requirements
+    pub fn validate(&self) -> Result<()> {
+        if self.id == 0 || self.id > 4094 {
+            return Err(ConfigGenerationError::InvalidVlanId { id: self.id });
+        }
+
+        if self.name.is_empty() {
+            return Err(ConfigGenerationError::InvalidInterfaceName { 
+                name: self.name.clone() 
+            });
+        }
+
+        // Validate network range is reasonable
+        if self.network.prefix_len() > 30 {
+            return Err(ConfigGenerationError::NetworkRangeConflict {
+                range1: self.network.to_string(),
+                range2: "subnet too small for practical use".to_string(),
+            });
+        }
+
+        Ok(())
+    }
+}
+
+// ❌ Never do this: Unvalidated network configuration
+pub fn create_vlan_bad(id: u16) -> VlanConfig {
+    VlanConfig {
+        id, // Could be 0 or >4094
+        name: String::new(), // Empty name
+        description: None,
+        interface: "???".to_string(), // Invalid interface
+        network: "0.0.0.0/0".parse().unwrap(), // Nonsensical network
+        enabled: true,
+    }
+}
+```
+
+### CLI Pattern Standards
+
+```rust
+// ✅ Proper CLI structure with clap derive
+use clap::{Args, Parser, Subcommand};
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+#[command(name = "opnsense-config-faker")]
+#[command(about = "Generate realistic network configuration test data for OPNsense")]
+pub struct Cli {
+    #[command(subcommand)]
+    pub command: Commands,
+
+    /// Enable verbose output
+    #[arg(short, long)]
+    pub verbose: bool,
+
+    /// Output format
+    #[arg(short = 'f', long = "format", value_enum, default_value_t = OutputFormat::Xml)]
+    pub format: OutputFormat,
+}
+
+#[derive(Subcommand)]
+pub enum Commands {
+    /// Generate network configurations
+    Generate {
+        #[command(subcommand)]
+        config_type: ConfigType,
+    },
+    /// Validate existing configuration files
+    Validate {
+        /// Input file path
+        #[arg(short, long)]
+        input: PathBuf,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum ConfigType {
+    /// Generate VLAN configurations
+    Vlan(VlanArgs),
+    /// Generate firewall rules  
+    Firewall(FirewallArgs),
+    /// Generate interface configurations
+    Interfaces(InterfaceArgs),
+}
+
+#[derive(Args)]
+pub struct VlanArgs {
+    /// Number of VLANs to generate
+    #[arg(short, long, default_value_t = 10)]
+    pub count: u32,
+
+    /// Base VLAN ID for sequential generation
+    #[arg(short, long, default_value_t = 100)]
+    pub base_id: u16,
+
+    /// Output file path
+    #[arg(short, long)]
+    pub output: Option<PathBuf>,
+
+    /// Include descriptive comments
+    #[arg(long)]
+    pub include_descriptions: bool,
+}
+```
+
+### Testing Standards
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::prelude::*;
+    use rstest::*;
+
+    // ✅ Unit tests for network configuration validation
+    #[rstest]
+    #[case(1, true)]      // Minimum valid VLAN ID
+    #[case(4094, true)]   // Maximum valid VLAN ID
+    #[case(0, false)]     // Invalid: 0
+    #[case(4095, false)]  // Invalid: >4094
+    fn test_vlan_id_validation(#[case] id: u16, #[case] should_be_valid: bool) {
+        let result = VlanConfig::new(
+            id,
+            "Test VLAN".to_string(),
+            "em0".to_string(),
+            "192.168.1.0/24".parse().unwrap(),
+        );
+
+        assert_eq!(result.is_ok(), should_be_valid);
+    }
+
+    // ✅ Property-based testing for network configurations
+    proptest! {
+        #[test]
+        fn test_vlan_generation_properties(
+            count in 1..50u32,
+            base_id in 1..4000u16
+        ) {
+            let vlans = generate_vlan_config(count, base_id).unwrap();
+            
+            prop_assert_eq!(vlans.len(), count as usize);
+            
+            // Verify all VLAN IDs are in valid range
+            for vlan in &vlans {
+                prop_assert!(vlan.id >= 1 && vlan.id <= 4094);
+                prop_assert!(!vlan.name.is_empty());
+                prop_assert!(vlan.validate().is_ok());
+            }
+            
+            // Ensure no duplicate VLAN IDs
+            let mut ids: Vec<_> = vlans.iter().map(|v| v.id).collect();
+            ids.sort();
+            ids.dedup();
+            prop_assert_eq!(ids.len(), vlans.len());
+        }
+
+        #[test] 
+        fn test_ip_network_generation(
+            base_octet in 1u8..254,
+            prefix_len in 8u8..31
+        ) {
+            let network_str = format!("192.168.{}.0/{}", base_octet, prefix_len);
+            let network: IpNet = network_str.parse().unwrap();
+            
+            prop_assert!(network.prefix_len() == prefix_len);
+            prop_assert!(network.network().is_ipv4());
+        }
+    }
+
+    // ✅ Integration test with realistic data generation
+    #[tokio::test]
+    async fn test_xml_output_generation() {
+        let vlans = generate_vlan_config(5, 100).unwrap();
+        let xml_output = serialize_to_xml(&vlans).unwrap();
+        
+        // Verify XML structure
+        assert!(xml_output.contains("<vlans>"));
+        assert!(xml_output.contains("</vlans>"));
+        assert!(xml_output.contains("<vlan"));
+        
+        // Verify VLAN ID presence
+        for vlan in &vlans {
+            assert!(xml_output.contains(&format!("id=\"{}\"", vlan.id)));
+        }
+        
+        // Validate against schema (if schema validation is available)
+        // validate_xml_schema(&xml_output).unwrap();
+    }
+}
+
+// ✅ CLI integration tests
+#[cfg(test)]
+mod cli_tests {
+    use super::*;
+    use assert_cmd::prelude::*;
+    use predicates::prelude::*;
+    use std::process::Command;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_vlan_generation_command() {
+        let temp_dir = tempdir().unwrap();
+        let output_path = temp_dir.path().join("test_vlans.xml");
+
+        let mut cmd = Command::cargo_bin("opnsense-config-faker").unwrap();
+        cmd.arg("generate")
+            .arg("vlan")
+            .arg("--count").arg("5")
+            .arg("--base-id").arg("200")
+            .arg("--output").arg(&output_path);
+
+        cmd.assert()
+            .success()
+            .stdout(predicate::str::contains("Generated 5 VLAN configurations"));
+
+        // Verify output file was created and contains expected content
+        assert!(output_path.exists());
+        let content = std::fs::read_to_string(&output_path).unwrap();
+        assert!(content.contains("<vlans>"));
+        assert!(content.contains("id=\"200\""));
+    }
+
+    #[test]
+    fn test_invalid_vlan_count_error() {
+        let mut cmd = Command::cargo_bin("opnsense-config-faker").unwrap();
+        cmd.arg("generate")
+            .arg("vlan")
+            .arg("--count").arg("0");
+
+        cmd.assert()
+            .failure()
+            .stderr(predicate::str::contains("Count must be greater than 0"));
+    }
+}
+```
+
+### Performance and Memory Patterns
+
+```rust
+// ✅ Efficient data generation patterns
+use rand::prelude::*;
+use rand_chacha::ChaCha8Rng;
+
+pub struct VlanGenerator {
+    rng: ChaCha8Rng,
+    base_networks: Vec<IpNet>,
+}
+
+impl VlanGenerator {
+    pub fn new(seed: Option<u64>) -> Self {
+        let rng = match seed {
+            Some(seed) => ChaCha8Rng::seed_from_u64(seed),
+            None => ChaCha8Rng::from_entropy(),
+        };
+
+        // Pre-generate non-conflicting network ranges
+        let base_networks = vec![
+            "192.168.0.0/24".parse().unwrap(),
+            "10.0.0.0/24".parse().unwrap(),
+            "172.16.0.0/24".parse().unwrap(),
+        ];
+
+        Self { rng, base_networks }
+    }
+
+    /// Generate VLANs efficiently with minimal allocations
+    pub fn generate_batch(&mut self, count: u32, base_id: u16) -> Result<Vec<VlanConfig>> {
+        if base_id + count as u16 > 4094 {
+            return Err(ConfigGenerationError::InvalidVlanId { 
+                id: base_id + count as u16 
+            });
+        }
+
+        // Pre-allocate vector to avoid reallocations
+        let mut vlans = Vec::with_capacity(count as usize);
+
+        for i in 0..count {
+            let vlan_id = base_id + i as u16;
+            let network = self.base_networks.choose(&mut self.rng).unwrap();
+            
+            vlans.push(VlanConfig::new(
+                vlan_id,
+                format!("VLAN_{:04}", vlan_id),
+                "em0".to_string(),
+                *network,
+            )?);
+        }
+
+        Ok(vlans)
+    }
+}
+
+// ✅ Streaming output for large datasets
+use std::io::Write;
+
+pub fn write_xml_streaming<W: Write>(
+    writer: &mut W, 
+    vlans: &[VlanConfig]
+) -> Result<()> {
+    writeln!(writer, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>")?;
+    writeln!(writer, "<opnsense>")?;
+    writeln!(writer, "  <vlans>")?;
+
+    for vlan in vlans {
+        writeln!(
+            writer,
+            "    <vlan id=\"{}\" interface=\"{}\" name=\"{}\">",
+            vlan.id, vlan.interface, vlan.name
+        )?;
+        writeln!(writer, "      <network>{}</network>", vlan.network)?;
+        writeln!(writer, "    </vlan>")?;
+    }
+
+    writeln!(writer, "  </vlans>")?;
+    writeln!(writer, "</opnsense>")?;
+
+    Ok(())
+}
+```
+
+## Key Principles
+
+1. **Network Validity First**: Every generated configuration must be technically correct
+2. **Zero Warnings**: All clippy warnings must be addressed
+3. **Comprehensive Testing**: Unit, integration, property-based, and CLI tests
+4. **Clear Documentation**: All public APIs documented with network context
+5. **Performance Aware**: Efficient generation of large configuration sets
+6. **Error Context**: Rich error information with actionable suggestions
+7. **CLI Usability**: Intuitive commands with helpful error messages

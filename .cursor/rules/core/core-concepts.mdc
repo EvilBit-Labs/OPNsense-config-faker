@@ -1,0 +1,336 @@
+---
+alwaysApply: true
+---
+
+# Core Concepts for OPNsense-config-faker
+
+This project is OPNsense-config-faker, a flexible Rust CLI tool for generating realistic network configuration test data specifically designed for OPNsense testing environments. The tool creates valid network configurations including VLANs, interfaces, firewall rules, and routing tables that can be imported into OPNsense for comprehensive testing scenarios.
+
+## Rule Precedence
+
+**CRITICAL - Rules are applied in the following order of precedence:**
+
+1. **Project-specific rules** (from project root AGENTS.md or .cursor/rules/)
+2. **General development standards** (outlined in this document)
+3. **Language-specific style guides** (Rust conventions, etc.)
+
+When rules conflict, always follow the rule with higher precedence.
+
+## 🎯 Project Purpose & Focus
+
+- **Primary Function**: Generate realistic network configuration test data for OPNsense
+- **Target Configurations**: VLANs, interfaces, firewall rules, routing tables, network objects
+- **Output Formats**: XML (primary), CSV, JSON for different testing needs
+- **Target Users**: Network administrators, security professionals, testing teams
+- **Deployment Model**: Self-contained CLI binary with no runtime dependencies
+
+### EvilBit Labs Brand Principles
+
+- **Trust the Operator**: Full control, no black boxes
+- **Polish Over Scale**: Quality over feature-bloat  
+- **Realistic Data**: Generate configurations that mirror real-world networks
+- **Sane Defaults**: Clean outputs, CLI help that's actually helpful
+- **Testing Focus**: Built specifically for comprehensive network testing scenarios
+
+## 🦀 Technology Stack
+
+- **Language**: Rust 2021 Edition (minimum version 1.70)
+- **CLI Framework**: Clap v4 with derive macros for intuitive command-line interfaces
+- **Serialization**: Serde with JSON, XML (quick-xml), and CSV support
+- **Networking**: ipnet and ipnetwork crates for IP address manipulation
+- **Random Generation**: rand and rand_chacha for deterministic test data generation
+- **Testing**: rstest, proptest, assert_cmd for comprehensive test coverage
+- **CI/CD**: GitHub Actions for automated testing and releases
+
+## 🦀 Rust Development Standards
+
+### Code Quality Requirements
+
+- **Formatting**: `cargo fmt` using standard Rust formatting (4-space indentation)
+- **Linting**: `cargo clippy -- -D warnings` - ZERO warnings policy strictly enforced
+- **Naming**: Follow Rust conventions - `snake_case` for variables/functions, `PascalCase` for types
+- **Error Handling**: Use `Result<T, E>` types and `?` operator, create custom error types with `thiserror`
+- **Documentation**: Comprehensive `///` doc comments for all public APIs
+- **Testing**: Unit tests co-located with code, integration tests in separate files
+- **Logging**: Use `console` crate for user-facing output and `indicatif` for progress indication
+
+### Architecture Patterns
+
+- **Service Pattern**: Network configuration generation logic encapsulation
+- **Factory Pattern**: Configuration generator instantiation
+- **Command Pattern**: CLI command organization using Clap
+- **Validator Pattern**: Network configuration validation and verification
+
+### Rust Development Patterns
+
+- Use Clap for CLI with consistent verb patterns and derive macros
+- Use Serde for serialization with custom serializers for network data
+- Implement Service pattern for configuration generation abstraction
+- Use property-based testing with proptest for network configuration validation
+- Use rstest for parameterized unit tests
+
+## 🌐 Network Configuration Standards
+
+### Core Network Validity Requirements
+
+1. **VLAN ID Compliance**: All VLAN IDs must be within IEEE 802.1Q range (1-4094)
+2. **IP Address Validity**: Generated IP ranges must be realistic and non-conflicting
+3. **MAC Address Standards**: Follow IEEE OUI standards for MAC address generation
+4. **XML Schema Compliance**: All generated XML must validate against OPNsense schema
+5. **Network Logic**: Generated configurations must follow logical networking patterns
+
+### Network Configuration Patterns
+
+```rust
+// ✅ Correct: Valid network configuration generation
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct VlanConfig {
+    pub id: u16,                    // 1-4094 range
+    pub name: String,               // Descriptive name
+    pub description: Option<String>, // Optional description
+    pub interface: String,          // Parent interface
+    pub network: IpNetwork,         // Network range
+}
+
+// ✅ Correct: Network validation
+impl VlanConfig {
+    pub fn new(id: u16, name: String, interface: String, network: IpNetwork) -> Result<Self> {
+        if id == 0 || id > 4094 {
+            return Err(ConfigError::InvalidVlanId(id));
+        }
+        
+        Ok(Self {
+            id,
+            name,
+            description: None,
+            interface,
+            network,
+        })
+    }
+    
+    pub fn validate(&self) -> Result<()> {
+        if self.id == 0 || self.id > 4094 {
+            return Err(ConfigError::InvalidVlanId(self.id));
+        }
+        
+        if self.name.is_empty() {
+            return Err(ConfigError::EmptyName);
+        }
+        
+        Ok(())
+    }
+}
+```
+
+### CLI Output Standards
+
+- **Progress Indication**: Use indicatif for operations taking >1 second
+- **Error Reporting**: Clear, actionable error messages with suggestions
+- **Help Text**: Comprehensive help with examples for each command
+- **Output Validation**: Verify generated configurations before writing files
+
+## 🧪 Testing Requirements
+
+### Test Organization
+
+- **Unit Tests**: Test individual functions and data structures
+- **Integration Tests**: Test CLI commands and file generation end-to-end
+- **Property Tests**: Validate network configuration properties with proptest
+- **Performance Tests**: Benchmark data generation speed and memory usage
+- **Coverage**: Aim for >80% test coverage with cargo-llvm-cov
+
+### Testing Patterns
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    #[test]
+    fn test_vlan_creation() {
+        let vlan = VlanConfig::new(100, "Test VLAN".to_string(), "em0".to_string(), 
+                                  "192.168.1.0/24".parse().unwrap()).unwrap();
+        assert_eq!(vlan.id, 100);
+        assert_eq!(vlan.name, "Test VLAN");
+    }
+
+    proptest! {
+        #[test]
+        fn test_vlan_id_range(id in 1u16..4095) {
+            let vlan = VlanConfig::new(id, "Test".to_string(), "em0".to_string(),
+                                     "192.168.1.0/24".parse().unwrap());
+            prop_assert!(vlan.is_ok());
+        }
+        
+        #[test]
+        fn test_invalid_vlan_id(id in 0u16..1u16) {
+            let vlan = VlanConfig::new(id, "Test".to_string(), "em0".to_string(),
+                                     "192.168.1.0/24".parse().unwrap());
+            prop_assert!(vlan.is_err());
+        }
+    }
+}
+```
+
+## 🔧 Development Workflow
+
+### Essential Commands
+
+- `just dev` - Run complete development workflow (format, lint, test, coverage)
+- `just lint` - Run strict clippy linting (`cargo clippy -- -D warnings`)
+- `just format` - Format code with `cargo fmt`
+- `just test` - Run complete test suite
+- `just bench` - Run performance benchmarks
+- `just build-release` - Build optimized release version
+
+### Quality Gates
+
+1. **Rust Quality Gate**: `cargo clippy -- -D warnings` must pass with zero warnings
+2. **Formatting**: `cargo fmt --check` must pass
+3. **Testing**: All tests must pass with `cargo test --all-features`
+4. **Network Validation**: Generated configurations must validate against OPNsense schema
+5. **Documentation**: All public APIs must be documented
+
+### Development Process
+
+- Review files before editing
+- Match existing Rust patterns and conventions
+- Use `just` commands for build and development tasks
+- Follow conventional commit format: `<type>(<scope>): <description>`
+- Test generated configurations for network validity
+
+## 📁 Project Structure Standards
+
+```text
+/
+├── src/
+│   ├── main.rs                   # CLI entry point
+│   ├── lib.rs                    # Library root
+│   ├── cli/                      # Command-line interface modules
+│   ├── generators/               # Configuration generators
+│   ├── validators/               # Network configuration validators
+│   └── models/                   # Data structures
+├── tests/                        # Integration tests
+├── benches/                      # Performance benchmarks
+├── .cursor/rules/                # Cursor AI rules
+├── .github/workflows/            # GitHub Actions CI/CD
+├── docs/                         # Project documentation
+├── justfile                      # Task runner configuration
+├── Cargo.toml                    # Project configuration
+└── README.md                     # Project overview
+```
+
+## 🔍 Code Review Standards
+
+### What to Check
+
+- **Network Validity**: Generated configurations are technically correct and realistic
+- **CLI Usability**: Commands are intuitive with clear help and error messages
+- **Rust Quality**: Zero clippy warnings, proper error handling, comprehensive documentation
+- **Testing**: Unit tests, integration tests, property tests for all changes
+- **Performance**: Efficient data generation with reasonable memory usage
+
+### Common Anti-Patterns to Avoid
+
+```rust
+// ❌ Avoid: Generating invalid VLAN IDs
+let vlan_id = random_u16(); // Could be 0 or >4094
+
+// ✅ Correct: Generate within valid range
+let vlan_id = rng.gen_range(1..=4094);
+
+// ❌ Avoid: Hardcoded network ranges
+let network = "192.168.1.0/24";
+
+// ✅ Correct: Configurable, non-conflicting ranges
+let network = generate_test_network_range(base_network, subnet_size);
+
+// ❌ Avoid: Unclear CLI error messages  
+return Err("Invalid input".into());
+
+// ✅ Correct: Actionable error messages
+return Err(ConfigError::InvalidVlanCount { 
+    count, 
+    max: MAX_VLANS,
+    suggestion: "Reduce the count or split into multiple files".to_string()
+});
+```
+
+## 🚨 Critical Requirements
+
+### Network Configuration Constraints (NON-NEGOTIABLE)
+
+1. **VLAN ID Validity**: All VLAN IDs must be 1-4094
+2. **IP Range Validity**: Generated IP ranges must be realistic and non-conflicting
+3. **MAC Address Standards**: Follow IEEE OUI standards
+4. **XML Schema Compliance**: All XML output must validate against OPNsense schema
+5. **Network Logic**: Generated configurations must be technically feasible
+
+### Rust Constraints
+
+1. **Zero Warnings**: `cargo clippy -- -D warnings` must pass
+2. **Error Handling**: All `Result` types must be properly handled
+3. **Documentation**: All public APIs must have `///` documentation
+4. **Testing**: All new functionality must include appropriate tests
+5. **Performance**: Data generation must be efficient for large datasets
+
+## 🤖 AI Assistant Guidelines
+
+### Development Rules of Engagement
+
+- **Clippy Strict Enforcement**: Always use `cargo clippy -- -D warnings`
+- **Network Configuration Focus**: All changes must maintain network validity
+- **TERM=dumb Support**: Terminal output respects `TERM="dumb"` for CI/automation
+- **CodeRabbit.ai Integration**: Prefer coderabbit.ai for code review
+- **Single Maintainer**: Configure for single maintainer (UncleSp1d3r) workflow
+- **No Auto-commits**: Never commit code without explicit permission
+
+### Code Generation Requirements
+
+- Generated code must conform to all established patterns
+- Include comprehensive type safety through Rust's type system and networking libraries
+- Use proper error handling with context preservation
+- Follow architectural patterns (Service, Factory, Command, Validator)
+- Include appropriate documentation and testing
+- Maintain network configuration validity in all generated data
+
+## 🔄 Commit Standards
+
+All commit messages must follow [Conventional Commits](https://www.conventionalcommits.org):
+
+- **Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`
+- **Scopes**: `(cli)`, `(generators)`, `(validators)`, `(network)`, `(xml)`, `(csv)`, etc.
+- **Format**: `<type>(<scope>): <description>`
+- **Breaking Changes**: Indicated with `!` in header
+
+Examples:
+
+- `feat(generators): add firewall rule generation with realistic patterns`
+- `fix(validators): prevent VLAN ID overflow in batch generation`
+- `docs(readme): update CLI examples with new command options`
+
+## 🚩 Issue Resolution
+
+When encountering problems:
+
+- Identify the specific issue clearly
+- Explain the problem in ≤ 5 lines
+- Propose a concrete path forward that maintains network validity
+- Don't proceed without resolving network configuration accuracy issues
+- Always test generated configurations for technical correctness
+
+## ⚠️ Final Reminders
+
+1. **Network Validity First**: Every change must maintain realistic, valid network configurations
+2. **Zero Warnings**: `cargo clippy -- -D warnings` must pass
+3. **CLI Usability**: Commands must be intuitive with clear help and error messages  
+4. **Testing Coverage**: Comprehensive unit, integration, and property-based tests
+5. **Quality Focus**: Build for network professionals who need reliable test data
+6. **Documentation**: Clear docs for all public APIs and CLI usage
+
+## 🚨 Final Reminder
+
+You're here to deliver realistic, valid network configuration test data generation tools. No side quests. No second-guessing. Network validity and usability first, always.
+
+This document serves as the core guide for AI assistants working on the OPNsense-config-faker project.
