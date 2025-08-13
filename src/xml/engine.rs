@@ -1,7 +1,7 @@
 //! Core XML processing engine with quick-xml event-based processing
 
 use crate::xml::error::{XMLError, XMLResult};
-use quick_xml::events::{Event};
+use quick_xml::events::Event;
 use quick_xml::{Reader, Writer};
 use std::collections::HashMap;
 use std::io::{BufRead, Cursor, Write};
@@ -58,13 +58,11 @@ impl XMLEngine {
         let _current_path: Vec<String> = Vec::new();
 
         // Use a different approach to avoid lifetime issues
-        let mut position = 0;
-        for line in content.lines() {
+        for (position, line) in content.lines().enumerate() {
             if line.trim().contains("{{") && line.trim().contains("}}") {
-                let selector = format!("/line{}", position);
+                let selector = format!("/line{position}");
                 injection_points.insert(selector, position);
             }
-            position += 1;
         }
 
         // Simple event generation for now - convert to owned events
@@ -91,12 +89,13 @@ impl XMLEngine {
 
         for event in events {
             writer.write_event(event).map_err(|e| {
-                XMLError::generation("EventProcessor", format!("Write failed: {}", e))
+                XMLError::generation("EventProcessor", format!("Write failed: {e}"))
             })?;
         }
 
-        let result = String::from_utf8(output.into_inner())
-            .map_err(|e| XMLError::invalid_structure(format!("Invalid UTF-8 in XML output: {}", e)))?;
+        let result = String::from_utf8(output.into_inner()).map_err(|e| {
+            XMLError::invalid_structure(format!("Invalid UTF-8 in XML output: {e}"))
+        })?;
 
         Ok(result)
     }
@@ -120,38 +119,17 @@ impl XMLEngine {
                 Ok(event) => {
                     if let Some(processed_event) = processor(&event)? {
                         xml_writer.write_event(processed_event).map_err(|e| {
-                            XMLError::generation("StreamProcessor", format!("Write failed: {}", e))
+                            XMLError::generation("StreamProcessor", format!("Write failed: {e}"))
                         })?;
                     } else {
                         xml_writer.write_event(event).map_err(|e| {
-                            XMLError::generation("StreamProcessor", format!("Write failed: {}", e))
+                            XMLError::generation("StreamProcessor", format!("Write failed: {e}"))
                         })?;
                     }
                 }
                 Err(e) => return Err(XMLError::Parsing(e)),
             }
             buf.clear();
-        }
-
-        Ok(())
-    }
-
-    /// Build XPath-like selector from current path
-    fn build_xpath(&self, path: &[String]) -> String {
-        if path.is_empty() {
-            "/".to_string()
-        } else {
-            format!("/{}", path.join("/"))
-        }
-    }
-
-    /// Update memory usage and check limits
-    fn update_memory_usage(&mut self, bytes: usize) -> XMLResult<()> {
-        self.memory_usage += bytes;
-        let memory_mb = self.memory_usage / (1024 * 1024);
-
-        if memory_mb > self.memory_limit {
-            return Err(XMLError::memory_limit_exceeded(memory_mb, self.memory_limit));
         }
 
         Ok(())
@@ -237,10 +215,12 @@ impl XMLTemplate {
         selectors
             .iter()
             .filter_map(|selector| {
-                self.injection_points.get(selector).map(|&index| InjectionPoint {
-                    selector: selector.clone(),
-                    event_index: index,
-                })
+                self.injection_points
+                    .get(selector)
+                    .map(|&index| InjectionPoint {
+                        selector: selector.clone(),
+                        event_index: index,
+                    })
             })
             .collect()
     }
@@ -260,16 +240,19 @@ impl XMLTemplate {
         for (index, event) in self.events.iter().enumerate() {
             match event {
                 Event::Start(start) => {
-                    stack.push((String::from_utf8_lossy(start.name().as_ref()).to_string(), index));
+                    stack.push((
+                        String::from_utf8_lossy(start.name().as_ref()).to_string(),
+                        index,
+                    ));
                 }
                 Event::End(end) => {
                     let end_name = String::from_utf8_lossy(end.name().as_ref()).to_string();
                     if let Some((start_name, _)) = stack.pop() {
                         if start_name != end_name {
-                            errors.push(format!("Mismatched tags: {} and {}", start_name, end_name));
+                            errors.push(format!("Mismatched tags: {start_name} and {end_name}"));
                         }
                     } else {
-                        errors.push(format!("Unexpected end tag: {}", end_name));
+                        errors.push(format!("Unexpected end tag: {end_name}"));
                     }
                 }
                 _ => {}
@@ -278,7 +261,7 @@ impl XMLTemplate {
 
         if !stack.is_empty() {
             for (tag_name, _) in stack {
-                errors.push(format!("Unclosed tag: {}", tag_name));
+                errors.push(format!("Unclosed tag: {tag_name}"));
             }
         }
 
@@ -339,7 +322,10 @@ mod tests {
     fn test_xml_engine_namespaces() {
         let mut engine = XMLEngine::new();
         engine.add_namespace("opn", "https://opnsense.org/schema");
-        assert_eq!(engine.namespaces.get("opn"), Some(&"https://opnsense.org/schema".to_string()));
+        assert_eq!(
+            engine.namespaces.get("opn"),
+            Some(&"https://opnsense.org/schema".to_string())
+        );
     }
 
     #[test]
@@ -366,7 +352,12 @@ mod tests {
         let template = engine.parse_template(xml_content.to_string()).unwrap();
         let validation = template.validate_structure();
         // For simplified implementation, validation should pass with no events
-        assert!(validation.is_valid() || validation.warnings.contains(&"No injection points found in template".to_string()));
+        assert!(
+            validation.is_valid()
+                || validation
+                    .warnings
+                    .contains(&"No injection points found in template".to_string())
+        );
     }
 
     #[test]
