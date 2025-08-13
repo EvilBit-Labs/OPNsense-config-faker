@@ -1,8 +1,9 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use opnsense_config_faker::generator::vlan::generate_vlan_configurations;
 use opnsense_config_faker::io::csv::{
     read_csv, read_csv_streaming, write_csv, write_csv_streaming,
 };
+use std::hint::black_box;
 use tempfile::NamedTempFile;
 
 fn bench_csv_serialization(c: &mut Criterion) {

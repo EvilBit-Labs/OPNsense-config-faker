@@ -1,6 +1,7 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use opnsense_config_faker::generator::vlan::generate_vlan_configurations;
 use opnsense_config_faker::xml::template::XmlTemplate;
+use std::hint::black_box;
 
 fn bench_xml_generation(c: &mut Criterion) {
     let base_xml = r#"<?xml version="1.0"?>
