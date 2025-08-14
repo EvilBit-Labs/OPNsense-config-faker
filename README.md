@@ -107,23 +107,6 @@ curl --proto '=https' --tlsv1.2 -sSf <https://just.systems/install.sh> | bash
 
 ```
 
-### XSD Model Generation
-
-The project uses xsdata-pydantic to generate Pydantic models from the OPNsense XSD schema:
-
-```bash
-# Install development dependencies (includes xsdata-pydantic)
-uv sync --extra dev
-
-# Generate Pydantic models from XSD schema
-just generate-models
-
-# Verify XSD setup
-just verify-xsd
-```
-
-This generates type-safe models that ensure generated configurations match the OPNsense schema exactly.
-
 ### Development Workflow
 
 ```bash
@@ -146,34 +129,20 @@ just ci-check
 
 ```bash
 # Create 10 OPNsense configurations
-cargo run --release -- xml --base-config legacy/opnsense/config-example.xml --count 10
-
-# Specify output directory
-cargo run --release -- xml --base-config config.xml --count 25 --output-dir ./my-configs
+cargo run --release -- generate vlan --count 10 --output vlans.xml
 
 # Generate CSV data only
-cargo run --release -- csv --count 50 --output network-data.csv
+cargo run --release -- generate vlan --count 50 --format csv --output network-data.csv
 ```
 
 ### Advanced Scenarios
 
 ```bash
 # Generate configurations for a large enterprise (100 firewalls)
-cargo run --release -- xml --base-config config.xml --count 100 --output-dir enterprise-configs
+cargo run --release -- generate vlan --count 100 --output enterprise-configs.xml
 
-# Create configurations with specific firewall settings
-cargo run --release -- xml --base-config config.xml --count 50 \
-  --firewall-nr 3 --opt-counter 15
-
-# Use existing CSV data as input
-cargo run --release -- xml --base-config config.xml --csv-file my-network-data.csv
-```
-
-### Interactive Mode
-
-```bash
-# Use the interactive helper
-./run_generator.sh
+# Create configurations with specific settings
+cargo run --release -- generate vlan --count 50 --base-id 500 --output config.xml
 ```
 
 ## Generated Configuration Details
@@ -260,16 +229,17 @@ cargo run --release -- xml --base-config config.xml --count 500 --output-dir loa
 ```bash
 # Command help
 cargo run --release -- --help
-cargo run --release -- xml --help
-cargo run --release -- csv --help
-
-# Interactive mode for guided usage
-./run_generator.sh
+cargo run --release -- generate --help
+cargo run --release -- generate vlan --help
 ```
 
 ## Project Background
 
-This tool is based on the original work by Stefan Reichhard and the nett-media team, enhanced with modern Rust practices and integrated functionality. It maintains compatibility with OPNsense while adding realistic data generation capabilities.
+This tool is a complete Rust rewrite designed to generate realistic OPNsense firewall configurations for testing and development purposes. It provides comprehensive network configuration generation capabilities with modern Rust practices and performance.
+
+## Acknowledgments
+
+This project was inspired by the original concept of generating OPNsense configurations. We extend our gratitude to **Stefan Reichhard** and the **nett-media team** for their original work ([nett-media/opnsense-config-generator](https://github.com/nett-media/opnsense-config-generator)) that used CSV data to bootstrap OPNsense configurations for production use. This project evolved that concept to focus purely on generating realistic test data for testing and development purposes.
 
 ## Roadmap
 
