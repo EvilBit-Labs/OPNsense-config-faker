@@ -152,6 +152,74 @@ impl VlanConfig {
         self.as_ipv4_network().map(|_| ())
     }
 
+    /// Comprehensive validation of VLAN configuration
+    pub fn validate(&self) -> Result<()> {
+        // Validate VLAN ID range
+        if !(10..=4094).contains(&self.vlan_id) {
+            return Err(ConfigError::validation(format!(
+                "VLAN ID {} is outside valid range 10-4094",
+                self.vlan_id
+            )));
+        }
+
+        // Validate WAN assignment
+        if !(1..=3).contains(&self.wan_assignment) {
+            return Err(ConfigError::validation(format!(
+                "WAN assignment {} is outside valid range 1-3",
+                self.wan_assignment
+            )));
+        }
+
+        // Validate IP network format
+        let is_x_format =
+            self.ip_network.ends_with(".x") && self.ip_network.matches('.').count() == 3;
+        let is_cidr_format =
+            self.ip_network.ends_with(".0/24") && self.ip_network.matches('.').count() == 3;
+
+        if !is_x_format && !is_cidr_format {
+            return Err(ConfigError::validation(format!(
+                "IP network '{}' does not match expected format (should end with .x or .0/24)",
+                self.ip_network
+            )));
+        }
+
+        // Validate IP network structure
+        if is_x_format {
+            let prefix = self.ip_network.strip_suffix(".x").unwrap();
+            let octets: Vec<&str> = prefix.split('.').collect();
+            if octets.len() != 3 || octets.iter().any(|&octet| octet.is_empty()) {
+                return Err(ConfigError::validation(format!(
+                    "IP network '{}' has invalid octet structure",
+                    self.ip_network
+                )));
+            }
+        } else if is_cidr_format {
+            let prefix = self.ip_network.strip_suffix(".0/24").unwrap();
+            let octets: Vec<&str> = prefix.split('.').collect();
+            if octets.len() != 3 || octets.iter().any(|&octet| octet.is_empty()) {
+                return Err(ConfigError::validation(format!(
+                    "IP network '{}' has invalid octet structure",
+                    self.ip_network
+                )));
+            }
+        }
+
+        // Validate description is not empty
+        if self.description.is_empty() {
+            return Err(ConfigError::validation("VLAN description cannot be empty"));
+        }
+
+        // Validate RFC 1918 compliance
+        if let Err(e) = self.validate_rfc1918() {
+            return Err(ConfigError::validation(format!(
+                "VLAN network is not RFC 1918 compliant: {}",
+                e
+            )));
+        }
+
+        Ok(())
+    }
+
     /// Get the subnet mask for this VLAN (always /24 for compatibility)
     pub fn subnet_mask(&self) -> &'static str {
         "255.255.255.0"
@@ -1097,5 +1165,105 @@ mod tests {
 
         assert_eq!(vlan_ids.len(), 5);
         assert_eq!(networks.len(), 5);
+    }
+
+    #[test]
+    fn test_vlan_config_validate_success() {
+        let valid_config = VlanConfig::new(
+            100,
+            "192.168.100.x".to_string(),
+            "IT_VLAN_0100".to_string(),
+            1,
+        )
+        .unwrap();
+
+        assert!(valid_config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_vlan_config_validate_invalid_vlan_id() {
+        let invalid_config = VlanConfig {
+            vlan_id: 5000, // Invalid VLAN ID > 4094
+            ip_network: "192.168.100.x".to_string(),
+            description: "Test_VLAN".to_string(),
+            wan_assignment: 1,
+        };
+
+        let result = invalid_config.validate();
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("outside valid range 10-4094"));
+    }
+
+    #[test]
+    fn test_vlan_config_validate_invalid_wan_assignment() {
+        let invalid_config = VlanConfig {
+            vlan_id: 100,
+            ip_network: "192.168.100.x".to_string(),
+            description: "Test_VLAN".to_string(),
+            wan_assignment: 5, // Invalid WAN assignment > 3
+        };
+
+        let result = invalid_config.validate();
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("outside valid range 1-3"));
+    }
+
+    #[test]
+    fn test_vlan_config_validate_invalid_network_format() {
+        let invalid_config = VlanConfig {
+            vlan_id: 100,
+            ip_network: "invalid.network.format".to_string(), // Invalid format
+            description: "Test_VLAN".to_string(),
+            wan_assignment: 1,
+        };
+
+        let result = invalid_config.validate();
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("does not match expected format"));
+    }
+
+    #[test]
+    fn test_vlan_config_validate_empty_description() {
+        let invalid_config = VlanConfig {
+            vlan_id: 100,
+            ip_network: "192.168.100.x".to_string(),
+            description: "".to_string(), // Empty description
+            wan_assignment: 1,
+        };
+
+        let result = invalid_config.validate();
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("cannot be empty"));
+    }
+
+    #[test]
+    fn test_vlan_config_validate_cidr_format() {
+        let valid_config = VlanConfig {
+            vlan_id: 100,
+            ip_network: "192.168.100.0/24".to_string(), // CIDR format
+            description: "Test_VLAN".to_string(),
+            wan_assignment: 1,
+        };
+
+        assert!(valid_config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_vlan_config_validate_invalid_octet_structure() {
+        let invalid_config = VlanConfig {
+            vlan_id: 100,
+            ip_network: "192.168..x".to_string(), // Invalid octet structure
+            description: "Test_VLAN".to_string(),
+            wan_assignment: 1,
+        };
+
+        let result = invalid_config.validate();
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("invalid octet structure"));
     }
 }
