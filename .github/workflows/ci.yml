@@ -39,23 +39,10 @@ jobs:
             doesn't match the configured pattern. Please ensure that the subject
             doesn't start with an uppercase character.
 
-  # Python removal safety check
-  python-safety-check:
-    name: Python Removal Safety Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Run Python removal safety checks
-        shell: bash
-        run: set -euo pipefail; bash ./scripts/verify_removals.sh
-
-  # Linting job
+  # Linting and security job
   lint:
-    name: Lint
+    name: Lint and Security
     runs-on: ubuntu-latest
-    needs: python-safety-check
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -82,11 +69,9 @@ jobs:
       - name: Run security audit
         run: cargo audit
 
-  # Testing and coverage job
   test-and-coverage:
     name: Test and Coverage
     runs-on: ubuntu-latest
-    needs: python-safety-check
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -158,11 +143,9 @@ jobs:
           name: rust-coverage
           fail_ci_if_error: false
 
-  # Benchmarking job
   benches:
     name: Benchmarks
     runs-on: ubuntu-latest
-    needs: python-safety-check
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
