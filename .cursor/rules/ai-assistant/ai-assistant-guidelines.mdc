@@ -6,6 +6,7 @@ alwaysApply: true
 
 ## Development Rules of Engagement
 
+- This project is managed in [GitHub](https://github.com/EvilBit-Labs/OPNsense-config-faker). All changes should be made via pull requests and issues should never be manually closed, only through the associated pull request.
 - **TERM=dumb Support**: Ensure terminal output respects `TERM="dumb"` environment variable for CI/automation
 - **CodeRabbit.ai Integration**: Prefer coderabbit.ai for code review over GitHub Copilot auto-reviews
 - **Single Maintainer Workflow**: Configure for single maintainer (UncleSp1d3r) with no second reviewer requirement
