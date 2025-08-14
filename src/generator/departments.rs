@@ -26,7 +26,7 @@ pub const DEPARTMENTS: &[&str] = &[
 
 /// Get a random department name using the provided RNG
 pub fn random_department<R: rand::Rng>(rng: &mut R) -> &'static str {
-    DEPARTMENTS[rng.gen_range(0..DEPARTMENTS.len())]
+    DEPARTMENTS[rng.random_range(0..DEPARTMENTS.len())]
 }
 
 /// Get the number of available departments

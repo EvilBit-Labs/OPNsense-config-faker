@@ -90,8 +90,8 @@ pub fn convert_x_format_to_network(x_format: &str) -> VlanResult<Ipv4Network> {
 
 /// Generate a random RFC 1918 Class A network (10.x.y.0/24)
 pub fn generate_random_class_a_network<R: rand::Rng>(rng: &mut R) -> Ipv4Network {
-    let second_octet = rng.gen_range(1..=254);
-    let third_octet = rng.gen_range(1..=254);
+    let second_octet = rng.random_range(1..=254);
+    let third_octet = rng.random_range(1..=254);
 
     // This is guaranteed to be RFC 1918 compliant
     format!("10.{second_octet}.{third_octet}.0/24")
@@ -101,8 +101,8 @@ pub fn generate_random_class_a_network<R: rand::Rng>(rng: &mut R) -> Ipv4Network
 
 /// Generate a random RFC 1918 Class B network (172.16-31.x.0/24)
 pub fn generate_random_class_b_network<R: rand::Rng>(rng: &mut R) -> Ipv4Network {
-    let second_octet = rng.gen_range(16..=31);
-    let third_octet = rng.gen_range(1..=254);
+    let second_octet = rng.random_range(16..=31);
+    let third_octet = rng.random_range(1..=254);
 
     // This is guaranteed to be RFC 1918 compliant
     format!("172.{second_octet}.{third_octet}.0/24")
@@ -112,7 +112,7 @@ pub fn generate_random_class_b_network<R: rand::Rng>(rng: &mut R) -> Ipv4Network
 
 /// Generate a random RFC 1918 Class C network (192.168.x.0/24)
 pub fn generate_random_class_c_network<R: rand::Rng>(rng: &mut R) -> Ipv4Network {
-    let third_octet = rng.gen_range(1..=254);
+    let third_octet = rng.random_range(1..=254);
 
     // This is guaranteed to be RFC 1918 compliant
     format!("192.168.{third_octet}.0/24")
