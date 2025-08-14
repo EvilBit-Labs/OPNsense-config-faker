@@ -5,7 +5,7 @@ expression: vlan_section
 <vlans>
     <vlan>
       <if>em0</if>
-      <tag>1968</tag>
-      <descr>Development VLAN 1968</descr>
+      <tag>2532</tag>
+      <descr>Development VLAN 2532</descr>
     </vlan>
   </vlans>

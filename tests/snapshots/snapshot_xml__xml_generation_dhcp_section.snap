@@ -3,11 +3,11 @@ source: tests/snapshot_xml.rs
 expression: dhcp_section
 ---
 <dhcpd>
-    <opt7>
+    <opt8>
       <enable>1</enable>
       <range>
-        <from>10.1.209.100</from>
-        <to>10.1.209.200</to>
+        <from>10.106.89.100</from>
+        <to>10.106.89.200</to>
       </range>
-    </opt7>
+    </opt8>
   </dhcpd>
