@@ -541,7 +541,7 @@ fn test_invalid_count_parameter_fails() {
         .arg("--format")
         .arg("csv")
         .arg("--count")
-        .arg("9999") // Exceeds max VLAN ID limit
+        .arg("15000") // Exceeds CLI limit of 10000
         .arg("--output")
         .arg(&output_file);
 
