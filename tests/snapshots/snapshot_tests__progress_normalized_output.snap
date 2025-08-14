@@ -2,4 +2,4 @@
 source: tests/snapshot_tests.rs
 expression: normalized
 ---
-🔧 OPNsense Config Faker - Configuration Generator 📊 Generating CSV configuration data... Summary: 📊 Configurations: 10 📁 Output file: <TEMP_FILE> 🏷️ VLAN IDs: 103 - 3503
+🔧 OPNsense Config Faker - Configuration Generator 📊 Generating CSV configuration data... Summary: 📊 Configurations: 10 📁 Output file: <TEMP_FILE> 🏷️ VLAN IDs: 749 - 3710
