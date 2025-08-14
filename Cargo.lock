@@ -1219,6 +1219,7 @@ dependencies = [
  "insta",
  "ipnet",
  "ipnetwork",
+ "lazy_static",
  "lru",
  "pprof",
  "predicates",
