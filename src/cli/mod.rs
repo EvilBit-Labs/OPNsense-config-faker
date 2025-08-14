@@ -80,7 +80,7 @@ pub struct GenerateArgs {
 
     /// Number of VLAN configurations to generate
     #[arg(short, long, default_value_t = 10)]
-    #[arg(value_parser = clap::value_parser!(u16).range(1..=4084))]
+    #[arg(value_parser = clap::value_parser!(u16).range(1..=10000))]
     pub count: u16,
 
     /// Output file path (for CSV format) or directory (for XML format)
@@ -131,7 +131,7 @@ pub struct GenerateArgs {
 pub struct CsvArgs {
     /// Number of VLAN configurations to generate
     #[arg(short, long, default_value_t = 10)]
-    #[arg(value_parser = clap::value_parser!(u16).range(1..=4084))]
+    #[arg(value_parser = clap::value_parser!(u16).range(1..=10000))]
     pub count: u16,
 
     /// Output CSV file path
@@ -156,7 +156,7 @@ pub struct XmlArgs {
 
     /// Number of VLAN configurations to generate (if not using CSV)
     #[arg(short, long)]
-    #[arg(value_parser = clap::value_parser!(u16).range(1..=4084))]
+    #[arg(value_parser = clap::value_parser!(u16).range(1..=10000))]
     pub count: Option<u16>,
 
     /// Use existing CSV file for configuration data
