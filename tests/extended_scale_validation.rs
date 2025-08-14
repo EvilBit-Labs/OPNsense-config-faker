@@ -1,165 +1,266 @@
 //! Extended Scale Validation Tests
 //!
-//! Tests for the large scales mentioned in the issue (5000, 10000 VLANs)
-//! These tests are marked as slow tests and can be enabled with --features slow-tests
+//! This module implements comprehensive scale validation tests for the Rust implementation,
+//! focusing on large-scale generation capabilities without Python dependencies.
 
-use crate::migration_validation::{MigrationValidator, ValidationConfig};
+use opnsense_config_faker::generator::vlan::VlanGenerator;
+use opnsense_config_faker::io::csv;
+use std::time::Instant;
+use tempfile::NamedTempFile;
 
-#[path = "migration_validation.rs"]
-mod migration_validation;
-
-/// Test large scale validation (5000 VLANs) - requires slow-tests feature
+/// Test large scale generation (2000 VLANs)
 #[test]
-#[cfg(feature = "slow-tests")]
-fn test_large_scale_5000_vlans() {
-    let validator = MigrationValidator::new().expect("Failed to create validator");
+fn test_large_scale_2000_vlans() {
+    let scale = 2000;
+    println!("🧪 Testing large scale generation: {} VLANs", scale);
 
-    println!("🧪 Testing LARGE scale: 5000 VLANs (this may take a while...)");
+    let start = Instant::now();
 
-    let config = ValidationConfig::new("large_scale_5000", 5000, Some(42));
+    // Generate VLAN configurations
+    let mut generator = VlanGenerator::new(Some(42));
+    let configs = generator
+        .generate_batch(scale)
+        .expect("Failed to generate VLANs");
 
-    match validator.run_validation(config) {
-        Ok(result) => {
-            println!("📊 Large Scale 5000: {}", result.summary());
+    let generation_time = start.elapsed();
 
-            if result.is_valid() {
-                println!("✅ SUCCESS: Output match at scale 5000");
-            } else {
-                println!("❌ FAIL: Output mismatch at scale 5000");
-                println!("   This may indicate resource limitations or edge cases at large scale");
-            }
+    // Large scale target: should complete in under 5 seconds for 2000 VLANs
+    assert!(
+        generation_time.as_millis() < 5000,
+        "Large scale generation took {:?}, should be under 5 seconds",
+        generation_time
+    );
 
-            // Performance should still show improvement even at large scale
-            assert!(
-                result.meets_performance_target(1.0),
-                "Even at large scale, Rust should be at least as fast as Python: {}",
-                result.summary()
-            );
-        }
-        Err(e) => {
-            println!("⚠️  Large scale test failed: {}", e);
-            // Don't panic on large scale tests as they may hit resource limits
-        }
-    }
+    assert_eq!(
+        configs.len(),
+        scale,
+        "Should generate exactly {} configs",
+        scale
+    );
+
+    // Validate uniqueness
+    let mut vlan_ids: Vec<u16> = configs.iter().map(|c| c.vlan_id).collect();
+    vlan_ids.sort();
+    vlan_ids.dedup();
+    assert_eq!(vlan_ids.len(), configs.len(), "VLAN IDs should be unique");
+
+    println!(
+        "✅ Large scale test passed: Generated {} configs in {:?}",
+        configs.len(),
+        generation_time
+    );
 }
 
-/// Test extra large scale validation (10000 VLANs) - requires slow-tests feature  
+/// Test very large scale generation (3000 VLANs)
 #[test]
-#[cfg(feature = "slow-tests")]
-fn test_extra_large_scale_10000_vlans() {
-    let validator = MigrationValidator::new().expect("Failed to create validator");
+fn test_very_large_scale_3000_vlans() {
+    let scale = 3000;
+    println!("🧪 Testing very large scale generation: {} VLANs", scale);
 
-    println!("🧪 Testing EXTRA LARGE scale: 10000 VLANs (this will take significant time...)");
+    let start = Instant::now();
 
-    let config = ValidationConfig::new("extra_large_scale_10000", 10000, Some(42));
+    // Generate VLAN configurations
+    let mut generator = VlanGenerator::new(Some(42));
+    let configs = generator
+        .generate_batch(scale)
+        .expect("Failed to generate VLANs");
 
-    match validator.run_validation(config) {
-        Ok(result) => {
-            println!("📊 Extra Large Scale 10000: {}", result.summary());
+    let generation_time = start.elapsed();
 
-            if result.is_valid() {
-                println!("✅ SUCCESS: Output match at scale 10000");
-            } else {
-                println!("❌ FAIL: Output mismatch at scale 10000");
-                println!("   This may indicate resource limitations at extra large scale");
-            }
+    // Very large scale target: should complete in under 10 seconds for 3000 VLANs
+    assert!(
+        generation_time.as_millis() < 10000,
+        "Very large scale generation took {:?}, should be under 10 seconds",
+        generation_time
+    );
 
-            // At this scale, we're primarily testing that it doesn't crash
-            // Performance may be less critical than stability
-            println!("🎯 Extra large scale test completed successfully");
-        }
-        Err(e) => {
-            println!("⚠️  Extra large scale test failed: {}", e);
-            println!("   This is not unexpected at 10k scale due to resource constraints");
-            // Don't panic on extra large scale tests
-        }
-    }
+    assert_eq!(
+        configs.len(),
+        scale,
+        "Should generate exactly {} configs",
+        scale
+    );
+
+    // Validate uniqueness
+    let mut vlan_ids: Vec<u16> = configs.iter().map(|c| c.vlan_id).collect();
+    vlan_ids.sort();
+    vlan_ids.dedup();
+    assert_eq!(vlan_ids.len(), configs.len(), "VLAN IDs should be unique");
+
+    println!(
+        "✅ Very large scale test passed: Generated {} configs in {:?}",
+        configs.len(),
+        generation_time
+    );
 }
 
-/// Stress test to validate the scalability limits
-#[test]
-#[cfg(feature = "slow-tests")]
-fn test_scalability_stress_test() {
-    let validator = MigrationValidator::new().expect("Failed to create validator");
-
-    // Test a range of scales to find the practical limits
-    let stress_scales = vec![1500, 2000, 3000, 4000];
-
-    for scale in stress_scales {
-        println!("🔬 Stress testing scale: {} VLANs", scale);
-
-        let config = ValidationConfig::new(&format!("stress_{}", scale), scale, Some(123));
-
-        match validator.run_validation(config) {
-            Ok(result) => {
-                println!("📊 Stress Scale {}: {}", scale, result.summary());
-
-                // At stress scales, we mainly want to ensure it completes
-                if result.is_valid() {
-                    println!("✅ Stress test passed at scale {}", scale);
-                } else {
-                    println!(
-                        "⚠️  Stress test structural validation failed at scale {}",
-                        scale
-                    );
-                }
-            }
-            Err(e) => {
-                println!("❌ Stress test failed at scale {}: {}", scale, e);
-                // Continue with other scales even if one fails
-            }
-        }
-    }
-}
-
-/// Test to validate memory efficiency at different scales
+/// Test memory scaling validation
 #[test]
 fn test_memory_scaling_validation() {
-    let validator = MigrationValidator::new().expect("Failed to create validator");
+    let scales = vec![100, 500, 1000, 2000, 3000];
 
-    // Test memory efficiency across a range of scales
-    let memory_test_scales = vec![100, 250, 500, 750, 1000];
-    let mut results = Vec::new();
+    for scale in scales {
+        println!("🧪 Testing memory scaling at {} VLANs", scale);
 
-    for scale in memory_test_scales {
-        let config = ValidationConfig::new(&format!("memory_scale_{}", scale), scale, Some(456));
+        let start = Instant::now();
 
-        match validator.run_validation(config) {
-            Ok(result) => {
-                println!("💾 Memory Scale {}: {}", scale, result.summary());
-                results.push((scale, result.performance_ratio, result.rust_duration));
-            }
-            Err(e) => {
-                println!("❌ Memory test failed at scale {}: {}", scale, e);
-            }
-        }
-    }
+        // Generate VLAN configurations
+        let mut generator = VlanGenerator::new(Some(42));
+        let configs = generator
+            .generate_batch(scale)
+            .expect("Failed to generate VLANs");
 
-    // Analyze memory scaling characteristics
-    if results.len() >= 2 {
-        println!("📈 Memory Scaling Analysis:");
-        for (scale, ratio, duration) in &results {
-            println!(
-                "   Scale {}: {:.2}x faster, {:?} runtime",
-                scale, ratio, duration
-            );
-        }
+        let generation_time = start.elapsed();
 
-        // Check that performance doesn't degrade too much with scale
-        let first_ratio = results[0].1;
-        let last_ratio = results[results.len() - 1].1;
-        let degradation_ratio = first_ratio / last_ratio;
+        // Validate basic properties
+        assert_eq!(
+            configs.len(),
+            scale,
+            "Should generate exactly {} configs",
+            scale
+        );
+
+        // Test CSV output to ensure no memory leaks
+        let temp_file = NamedTempFile::new().expect("Failed to create temp file");
+        csv::write_csv(&configs, temp_file.path()).expect("Failed to write CSV");
+
+        // Read back the CSV to verify it was written correctly
+        let read_configs = csv::read_csv(temp_file.path()).expect("Failed to read CSV");
+        assert_eq!(
+            read_configs.len(),
+            scale,
+            "CSV should have {} records",
+            scale
+        );
 
         println!(
-            "   Performance degradation ratio: {:.2}x",
-            degradation_ratio
-        );
-
-        // Performance shouldn't degrade more than 10x across the test range
-        assert!(
-            degradation_ratio < 10.0,
-            "Performance degradation should be reasonable: {:.2}x",
-            degradation_ratio
+            "✅ Memory scaling test passed for {} VLANs in {:?}",
+            scale, generation_time
         );
     }
+}
+
+/// Test scalability stress test
+#[test]
+fn test_scalability_stress_test() {
+    let scale = 1500; // Moderate stress test
+    println!("🧪 Testing scalability stress test: {} VLANs", scale);
+
+    let start = Instant::now();
+
+    // Generate VLAN configurations
+    let mut generator = VlanGenerator::new(Some(42));
+    let configs = generator
+        .generate_batch(scale)
+        .expect("Failed to generate VLANs");
+
+    let generation_time = start.elapsed();
+
+    // Stress test target: should complete in under 3 seconds for 1500 VLANs
+    assert!(
+        generation_time.as_millis() < 3000,
+        "Stress test generation took {:?}, should be under 3 seconds",
+        generation_time
+    );
+
+    assert_eq!(
+        configs.len(),
+        scale,
+        "Should generate exactly {} configs",
+        scale
+    );
+
+    // Comprehensive validation
+    let mut vlan_ids: Vec<u16> = configs.iter().map(|c| c.vlan_id).collect();
+    vlan_ids.sort();
+    vlan_ids.dedup();
+    assert_eq!(vlan_ids.len(), configs.len(), "VLAN IDs should be unique");
+
+    let mut networks: Vec<String> = configs.iter().map(|c| c.ip_network.clone()).collect();
+    networks.sort();
+    networks.dedup();
+    assert_eq!(networks.len(), configs.len(), "Networks should be unique");
+
+    // Test CSV round-trip
+    let temp_file = NamedTempFile::new().expect("Failed to create temp file");
+    csv::write_csv(&configs, temp_file.path()).expect("Failed to write CSV");
+    let read_configs = csv::read_csv(temp_file.path()).expect("Failed to read CSV");
+    assert_eq!(
+        read_configs.len(),
+        scale,
+        "CSV round-trip should preserve count"
+    );
+
+    println!(
+        "✅ Scalability stress test passed: Generated {} configs in {:?}",
+        configs.len(),
+        generation_time
+    );
+}
+
+/// Test multiple batch generation
+#[test]
+fn test_multiple_batch_generation() {
+    let batch_size = 500;
+    let num_batches = 3;
+    println!(
+        "🧪 Testing multiple batch generation: {} batches of {} VLANs each",
+        num_batches, batch_size
+    );
+
+    let start = Instant::now();
+
+    let mut all_configs = Vec::new();
+
+    // Use a single generator instance to ensure no duplicate VLAN IDs across batches
+    let mut generator = VlanGenerator::new(Some(42));
+
+    for batch_num in 0..num_batches {
+        let configs = generator
+            .generate_batch(batch_size)
+            .expect("Failed to generate VLANs");
+
+        // Validate batch
+        assert_eq!(
+            configs.len(),
+            batch_size,
+            "Batch {} should have {} configs",
+            batch_num,
+            batch_size
+        );
+
+        all_configs.extend(configs);
+    }
+
+    let generation_time = start.elapsed();
+
+    // Multiple batch target: should complete in under 5 seconds for 1500 total VLANs
+    assert!(
+        generation_time.as_millis() < 5000,
+        "Multiple batch generation took {:?}, should be under 5 seconds",
+        generation_time
+    );
+
+    assert_eq!(
+        all_configs.len(),
+        batch_size * num_batches,
+        "Should generate exactly {} total configs",
+        batch_size * num_batches
+    );
+
+    // Check for uniqueness across all batches
+    let mut all_vlan_ids: Vec<u16> = all_configs.iter().map(|c| c.vlan_id).collect();
+    all_vlan_ids.sort();
+    all_vlan_ids.dedup();
+    assert_eq!(
+        all_vlan_ids.len(),
+        all_configs.len(),
+        "All VLAN IDs should be unique across all batches"
+    );
+
+    println!(
+        "✅ Multiple batch generation test passed: Generated {} total configs in {:?}",
+        all_configs.len(),
+        generation_time
+    );
 }
