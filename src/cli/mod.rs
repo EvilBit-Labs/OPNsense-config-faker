@@ -27,6 +27,12 @@ pub const MAX_UNIQUE_VLAN_IDS: u16 = 4085;
   Generate XML from existing CSV:
     opnsense-config-faker generate --format xml --base-config config.xml --csv-file data.csv
 
+  Generate configurations with firewall rules:
+    opnsense-config-faker generate --count 25 --format csv --output config.csv --include-firewall-rules
+
+  Generate advanced firewall rules:
+    opnsense-config-faker generate --count 10 --format xml --base-config config.xml --include-firewall-rules --firewall-rule-complexity advanced
+
   Force overwrite existing files:
     opnsense-config-faker generate --count 10 --format csv --output test.csv --force
 
@@ -131,6 +137,18 @@ pub struct GenerateArgs {
     /// Interactive mode - prompt for missing required arguments
     #[arg(short, long)]
     pub interactive: bool,
+
+    /// Include firewall rules in generated configurations
+    #[arg(long)]
+    pub include_firewall_rules: bool,
+
+    /// Number of firewall rules per VLAN (default: based on complexity level)
+    #[arg(long)]
+    pub firewall_rules_per_vlan: Option<u16>,
+
+    /// Firewall rule complexity level (basic, intermediate, advanced)
+    #[arg(long, default_value = "intermediate")]
+    pub firewall_rule_complexity: String,
 }
 
 impl GenerateArgs {
