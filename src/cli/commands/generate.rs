@@ -2,7 +2,8 @@
 
 use crate::cli::{GenerateArgs, OutputFormat};
 use crate::generator::vlan::generate_vlan_configurations;
-use crate::io::csv::{read_csv, write_csv};
+use crate::generator::{generate_firewall_rules, FirewallComplexity};
+use crate::io::csv::{read_csv, write_csv, write_firewall_rules_csv};
 use crate::xml::template::XmlTemplate;
 use crate::Result;
 use console::{style, Term};
@@ -165,6 +166,42 @@ fn execute_csv_generation(args: &GenerateArgs) -> Result<()> {
     ));
 
     print_csv_summary(&configs, output_file);
+
+    // Generate firewall rules if requested
+    if args.include_firewall_rules {
+        println!();
+        println!("🔥 Generating firewall rules...");
+
+        // Parse complexity level
+        let complexity: FirewallComplexity =
+            args.firewall_rule_complexity.parse().map_err(|e| {
+                crate::model::ConfigError::validation(format!("Invalid firewall complexity: {}", e))
+            })?;
+
+        // Generate firewall rules
+        let firewall_pb = create_progress_bar(configs.len() as u64, "Generating firewall rules...");
+        let firewall_rules =
+            generate_firewall_rules(&configs, complexity, args.seed, Some(&firewall_pb))?;
+        firewall_pb.finish_with_message(format!(
+            "✅ Generated {} firewall rules",
+            firewall_rules.len()
+        ));
+
+        // Write firewall rules to separate CSV file
+        let firewall_output = output_file.with_file_name(format!(
+            "{}_firewall_rules.csv",
+            output_file.file_stem().unwrap().to_str().unwrap()
+        ));
+
+        write_firewall_rules_csv(&firewall_rules, &firewall_output)?;
+
+        println!(
+            "📄 Firewall rules written to: {}",
+            firewall_output.display()
+        );
+        print_firewall_summary(&firewall_rules, &firewall_output);
+    }
+
     Ok(())
 }
 
@@ -200,6 +237,33 @@ fn execute_xml_generation(args: &GenerateArgs) -> Result<()> {
     };
 
     println!("📝 Processing {} configurations...", configs.len());
+
+    // Generate firewall rules if requested
+    let firewall_rules = if args.include_firewall_rules {
+        println!("🔥 Generating firewall rules...");
+
+        // Parse complexity level
+        let complexity: FirewallComplexity =
+            args.firewall_rule_complexity.parse().map_err(|e| {
+                crate::model::ConfigError::validation(format!("Invalid firewall complexity: {}", e))
+            })?;
+
+        // Generate firewall rules
+        let firewall_pb = create_progress_bar(configs.len() as u64, "Generating firewall rules...");
+        let rules = generate_firewall_rules(&configs, complexity, args.seed, Some(&firewall_pb))?;
+        firewall_pb.finish_with_message(format!("✅ Generated {} firewall rules", rules.len()));
+
+        // Write firewall rules to CSV for reference
+        let firewall_csv = args
+            .output_dir
+            .join(format!("firewall_{}_rules.csv", args.firewall_nr));
+        write_firewall_rules_csv(&rules, &firewall_csv)?;
+        println!("📄 Firewall rules CSV: {}", firewall_csv.display());
+
+        Some(rules)
+    } else {
+        None
+    };
 
     // Load base XML template
     let base_xml = fs::read_to_string(base_config)?;
@@ -239,6 +303,15 @@ fn execute_xml_generation(args: &GenerateArgs) -> Result<()> {
     pb.finish_with_message("✅ XML configurations generated");
 
     print_xml_summary(&configs, &args.output_dir, args.firewall_nr);
+
+    // Print firewall summary if rules were generated
+    if let Some(ref rules) = firewall_rules {
+        let firewall_csv = args
+            .output_dir
+            .join(format!("firewall_{}_rules.csv", args.firewall_nr));
+        print_firewall_summary(rules, &firewall_csv);
+    }
+
     Ok(())
 }
 
@@ -297,4 +370,38 @@ fn print_xml_summary(
         );
     }
     println!("  🔧 Firewall number: {firewall_nr}");
+}
+
+/// Print summary for firewall rule generation
+fn print_firewall_summary(rules: &[crate::generator::FirewallRule], output_file: &Path) {
+    println!();
+    println!("{}", style("Firewall Rules Summary:").bold());
+    println!("  🔥 Total rules: {}", rules.len());
+    println!("  📁 Output file: {}", output_file.display());
+
+    // Count rules by action
+    let pass_count = rules
+        .iter()
+        .filter(|r| r.action.to_lowercase() == "pass")
+        .count();
+    let block_count = rules
+        .iter()
+        .filter(|r| r.action.to_lowercase() == "block")
+        .count();
+    let reject_count = rules
+        .iter()
+        .filter(|r| r.action.to_lowercase() == "reject")
+        .count();
+
+    println!("  ✅ Pass rules: {}", pass_count);
+    println!("  🚫 Block rules: {}", block_count);
+    println!("  ❌ Reject rules: {}", reject_count);
+
+    // Count rules by VLAN
+    let vlan_count = rules
+        .iter()
+        .filter_map(|r| r.vlan_id)
+        .collect::<std::collections::HashSet<_>>()
+        .len();
+    println!("  🏷️  VLANs with rules: {}", vlan_count);
 }
