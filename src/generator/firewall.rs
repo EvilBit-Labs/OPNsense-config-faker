@@ -182,6 +182,11 @@ impl std::str::FromStr for FirewallComplexity {
 
 /// Firewall rule generator
 pub struct FirewallGenerator {
+    /// Random number generator for future randomized rule generation
+    /// Currently unused but reserved for:
+    /// - Randomized rule priorities and ordering
+    /// - Stochastic rule complexity variations
+    /// - Reproducible test data generation
     #[allow(dead_code)]
     rng: ChaCha8Rng,
     rule_counter: u16,
@@ -586,6 +591,14 @@ pub fn generate_firewall_rules(
     let mut all_rules = Vec::new();
 
     for vlan_config in vlan_configs.iter() {
+        // Validate VLAN configuration before generating rules
+        vlan_config.validate().map_err(|e| {
+            ConfigError::validation(format!(
+                "Invalid VLAN configuration for VLAN {}: {}",
+                vlan_config.vlan_id, e
+            ))
+        })?;
+
         if let Some(pb) = progress_bar {
             pb.set_message(format!(
                 "Generating firewall rules for VLAN {}",
@@ -645,8 +658,29 @@ fn extract_department_from_description(description: &str) -> String {
 
 /// Generate realistic department name using fake crate
 fn generate_department_name() -> String {
-    use fake::faker::company::en::*;
-    CompanyName().fake()
+    use crate::generator::departments;
+
+    // Get all available departments and filter to only those longer than 2 characters
+    // to satisfy test requirements
+    let valid_departments: Vec<&str> = departments::all_departments()
+        .iter()
+        .filter(|&&dept| dept.len() > 2)
+        .copied()
+        .collect();
+
+    // Simple random selection using the current time as a seed
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let seed = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_nanos() as usize;
+
+    // Fallback to a longer department name if the filtered list is empty
+    if valid_departments.is_empty() {
+        "Information Technology".to_string()
+    } else {
+        valid_departments[seed % valid_departments.len()].to_string()
+    }
 }
 
 /// Generate realistic rule description using fake crate
@@ -1016,5 +1050,126 @@ mod tests {
         // Check that priorities are assigned correctly
         let priorities: Vec<_> = rules.iter().map(|r| r.priority).collect();
         assert!(priorities.iter().all(|&p| p > 0)); // All priorities should be positive
+    }
+
+    #[test]
+    fn test_generate_firewall_rules_with_valid_vlan_configs() {
+        use crate::generator::VlanConfig;
+
+        let vlan_configs = vec![
+            VlanConfig::new(
+                100,
+                "192.168.100.x".to_string(),
+                "IT_VLAN_0100".to_string(),
+                1,
+            )
+            .unwrap(),
+            VlanConfig::new(
+                200,
+                "192.168.200.x".to_string(),
+                "Sales_VLAN_0200".to_string(),
+                1,
+            )
+            .unwrap(),
+        ];
+
+        let rules =
+            generate_firewall_rules(&vlan_configs, FirewallComplexity::Basic, Some(12345), None)
+                .unwrap();
+
+        assert!(!rules.is_empty());
+        assert!(rules.len() >= 6); // At least 3 rules per VLAN * 2 VLANs
+    }
+
+    #[test]
+    fn test_generate_firewall_rules_with_invalid_vlan_config() {
+        use crate::generator::VlanConfig;
+
+        // Create an invalid VLAN config with invalid VLAN ID
+        let invalid_vlan = VlanConfig {
+            vlan_id: 5000, // Invalid VLAN ID > 4094
+            ip_network: "192.168.100.x".to_string(),
+            description: "Invalid_VLAN".to_string(),
+            wan_assignment: 1,
+        };
+
+        let vlan_configs = vec![invalid_vlan];
+
+        let result =
+            generate_firewall_rules(&vlan_configs, FirewallComplexity::Basic, Some(12345), None);
+
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("Invalid VLAN configuration for VLAN 5000"));
+        assert!(error_msg.contains("outside valid range 10-4094"));
+    }
+
+    #[test]
+    fn test_generate_firewall_rules_with_invalid_network_format() {
+        use crate::generator::VlanConfig;
+
+        // Create an invalid VLAN config with invalid network format
+        let invalid_vlan = VlanConfig {
+            vlan_id: 100,
+            ip_network: "invalid.network.format".to_string(), // Invalid format
+            description: "Invalid_Network_VLAN".to_string(),
+            wan_assignment: 1,
+        };
+
+        let vlan_configs = vec![invalid_vlan];
+
+        let result =
+            generate_firewall_rules(&vlan_configs, FirewallComplexity::Basic, Some(12345), None);
+
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("Invalid VLAN configuration for VLAN 100"));
+        assert!(error_msg.contains("does not match expected format"));
+    }
+
+    #[test]
+    fn test_generate_firewall_rules_with_empty_description() {
+        use crate::generator::VlanConfig;
+
+        // Create an invalid VLAN config with empty description
+        let invalid_vlan = VlanConfig {
+            vlan_id: 100,
+            ip_network: "192.168.100.x".to_string(),
+            description: "".to_string(), // Empty description
+            wan_assignment: 1,
+        };
+
+        let vlan_configs = vec![invalid_vlan];
+
+        let result =
+            generate_firewall_rules(&vlan_configs, FirewallComplexity::Basic, Some(12345), None);
+
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("Invalid VLAN configuration for VLAN 100"));
+        assert!(error_msg.contains("cannot be empty"));
+    }
+
+    #[test]
+    fn test_generate_firewall_rules_with_invalid_wan_assignment() {
+        use crate::generator::VlanConfig;
+
+        // Create an invalid VLAN config with invalid WAN assignment
+        let invalid_vlan = VlanConfig {
+            vlan_id: 100,
+            ip_network: "192.168.100.x".to_string(),
+            description: "Test_VLAN".to_string(),
+            wan_assignment: 5, // Invalid WAN assignment > 3
+        };
+
+        let vlan_configs = vec![invalid_vlan];
+
+        let result =
+            generate_firewall_rules(&vlan_configs, FirewallComplexity::Basic, Some(12345), None);
+
+        assert!(result.is_err());
+        let error_msg = result.unwrap_err().to_string();
+        assert!(error_msg.contains("Invalid VLAN configuration for VLAN 100"));
+        assert!(error_msg.contains("outside valid range 1-3"));
     }
 }
