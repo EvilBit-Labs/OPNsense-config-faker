@@ -12,10 +12,10 @@ expression: interface_section
       <ipaddr>dhcp</ipaddr>
     </wan>
     <!-- VLAN interfaces will be added here -->
-    <opt7>
-      <if>em0.1968</if>
-      <ipaddr>10.1.209.1</ipaddr>
+    <opt8>
+      <if>em0.2532</if>
+      <ipaddr>10.106.89.1</ipaddr>
       <subnet>24</subnet>
-      <descr>Development VLAN 1968</descr>
-    </opt7>
+      <descr>Development VLAN 2532</descr>
+    </opt8>
   </interfaces>
