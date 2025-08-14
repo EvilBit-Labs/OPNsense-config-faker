@@ -23,7 +23,6 @@ setup:
     @echo "🚀 Setting up development environment..."
     rustup component add clippy rustfmt
     just install-cov
-    just node-install
     @echo "✅ Setup complete!"
 
 # -----------------------------
@@ -236,26 +235,6 @@ watch:
 # Watch for changes and run checks
 watch-check:
     cargo watch -x "check --all-features" -x "clippy -- -D warnings"
-
-# -----------------------------
-# 📦 Node.js Development
-# -----------------------------
-
-# Install Node.js dependencies
-node-install:
-    pnpm install
-
-# Run markdown linting
-lint-md:
-    pnpm run lint:md
-
-# Fix markdown linting issues
-lint-md-fix:
-    pnpm run lint:md:fix
-
-# Run commitlint
-commitlint:
-    pnpm run commitlint
 
 # -----------------------------
 # 🧪 GitHub Actions Testing (act)
