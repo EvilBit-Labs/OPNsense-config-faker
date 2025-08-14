@@ -1,6 +1,6 @@
 //! CSV input/output operations
 
-use crate::generator::VlanConfig;
+use crate::generator::{FirewallRule, VlanConfig};
 use crate::Result;
 use csv::{Reader, Writer};
 use serde::{Deserialize, Serialize};
@@ -98,23 +98,23 @@ pub fn read_csv_validated<P: AsRef<Path>>(path: P) -> Result<Vec<VlanConfig>> {
         // Additional validation for CSV-loaded data
         if config.vlan_id < 10 || config.vlan_id > 4094 {
             return Err(crate::model::ConfigError::validation(format!(
-                "Invalid VLAN ID {} at line {line_number}: must be between 10 and 4094",
-                config.vlan_id
+                "Invalid VLAN ID {} at line {}: must be between 10 and 4094",
+                config.vlan_id, line_number
             )));
         }
 
         if config.wan_assignment < 1 || config.wan_assignment > 3 {
             return Err(crate::model::ConfigError::validation(format!(
-                "Invalid WAN assignment {} at line {line_number}: must be between 1 and 3",
-                config.wan_assignment
+                "Invalid WAN assignment {} at line {}: must be between 1 and 3",
+                config.wan_assignment, line_number
             )));
         }
 
         // Validate IP network format
-        if !config.ip_network.ends_with(".x") && !config.ip_network.ends_with(".0/24") {
+        if !config.ip_network.ends_with(".x") && !config.ip_network.contains('/') {
             return Err(crate::model::ConfigError::validation(format!(
-                "Invalid IP network format '{}' at line {line_number}: must end with '.x' or '.0/24'",
-                config.ip_network
+                "Invalid IP network format '{}' at line {}: must end with '.x' or contain '/'",
+                config.ip_network, line_number
             )));
         }
 
@@ -122,6 +122,182 @@ pub fn read_csv_validated<P: AsRef<Path>>(path: P) -> Result<Vec<VlanConfig>> {
     }
 
     Ok(configs)
+}
+
+/// CSV record structure for firewall rules
+#[derive(Debug, Serialize, Deserialize)]
+struct FirewallRuleCsvRecord {
+    #[serde(rename = "rule_id")]
+    rule_id: String,
+
+    #[serde(rename = "source")]
+    source: String,
+
+    #[serde(rename = "destination")]
+    destination: String,
+
+    #[serde(rename = "protocol")]
+    protocol: String,
+
+    #[serde(rename = "ports")]
+    ports: String,
+
+    #[serde(rename = "action")]
+    action: String,
+
+    #[serde(rename = "direction")]
+    direction: String,
+
+    #[serde(rename = "description")]
+    description: String,
+
+    #[serde(rename = "log")]
+    log: bool,
+
+    #[serde(rename = "vlan_id")]
+    vlan_id: Option<u16>,
+
+    #[serde(rename = "priority")]
+    priority: u16,
+
+    #[serde(rename = "interface")]
+    interface: String,
+}
+
+impl From<&FirewallRule> for FirewallRuleCsvRecord {
+    fn from(rule: &FirewallRule) -> Self {
+        Self {
+            rule_id: rule.rule_id.clone(),
+            source: rule.source.clone(),
+            destination: rule.destination.clone(),
+            protocol: rule.protocol.clone(),
+            ports: rule.ports.clone(),
+            action: rule.action.clone(),
+            direction: rule.direction.clone(),
+            description: rule.description.clone(),
+            log: rule.log,
+            vlan_id: rule.vlan_id,
+            priority: rule.priority,
+            interface: rule.interface.clone(),
+        }
+    }
+}
+
+impl From<FirewallRuleCsvRecord> for FirewallRule {
+    fn from(record: FirewallRuleCsvRecord) -> Self {
+        // Note: This bypasses validation for CSV compatibility
+        Self {
+            rule_id: record.rule_id,
+            source: record.source,
+            destination: record.destination,
+            protocol: record.protocol,
+            ports: record.ports,
+            action: record.action,
+            direction: record.direction,
+            description: record.description,
+            log: record.log,
+            vlan_id: record.vlan_id,
+            priority: record.priority,
+            interface: record.interface,
+        }
+    }
+}
+
+/// Write firewall rules to a CSV file
+pub fn write_firewall_rules_csv<P: AsRef<Path>>(rules: &[FirewallRule], path: P) -> Result<()> {
+    let file = File::create(path)?;
+    let mut writer = Writer::from_writer(file);
+
+    // Write header and records
+    for rule in rules {
+        let record = FirewallRuleCsvRecord::from(rule);
+        writer.serialize(record)?;
+    }
+
+    writer.flush()?;
+    Ok(())
+}
+
+/// Read firewall rules from a CSV file
+pub fn read_firewall_rules_csv<P: AsRef<Path>>(path: P) -> Result<Vec<FirewallRule>> {
+    let file = File::open(path)?;
+    let mut reader = Reader::from_reader(file);
+    let mut rules = Vec::new();
+
+    for result in reader.deserialize() {
+        let record: FirewallRuleCsvRecord = result?;
+        rules.push(FirewallRule::from(record));
+    }
+
+    Ok(rules)
+}
+
+/// Read firewall rules from a CSV file with enhanced validation
+pub fn read_firewall_rules_csv_validated<P: AsRef<Path>>(path: P) -> Result<Vec<FirewallRule>> {
+    let file = File::open(path)?;
+    let mut reader = Reader::from_reader(file);
+    let mut rules = Vec::new();
+    let mut line_number = 1; // Start at 1 for header
+
+    for result in reader.deserialize() {
+        line_number += 1;
+        let record: FirewallRuleCsvRecord = result.map_err(|e| {
+            crate::model::ConfigError::validation(format!(
+                "Firewall rule CSV parsing error at line {line_number}: {e}"
+            ))
+        })?;
+
+        // Validate the converted FirewallRule
+        let rule = FirewallRule::from(record);
+
+        // Additional validation for CSV-loaded data
+        if rule.rule_id.is_empty() {
+            return Err(crate::model::ConfigError::validation(format!(
+                "Empty rule ID at line {}",
+                line_number
+            )));
+        }
+
+        if let Some(vid) = rule.vlan_id {
+            if !(10..=4094).contains(&vid) {
+                return Err(crate::model::ConfigError::validation(format!(
+                    "Invalid VLAN ID {} at line {}: must be between 10 and 4094",
+                    vid, line_number
+                )));
+            }
+        }
+
+        // Validate action
+        let valid_actions = ["pass", "block", "reject"];
+        if !valid_actions.contains(&rule.action.to_lowercase().as_str()) {
+            return Err(crate::model::ConfigError::validation(format!(
+                "Invalid action '{}' at line {}: must be one of {:?}",
+                rule.action, line_number, valid_actions
+            )));
+        }
+
+        // Validate direction
+        let valid_directions = ["in", "out"];
+        if !valid_directions.contains(&rule.direction.to_lowercase().as_str()) {
+            return Err(crate::model::ConfigError::validation(format!(
+                "Invalid direction '{}' at line {}: must be one of {:?}",
+                rule.direction, line_number, valid_directions
+            )));
+        }
+
+        // Validate protocol
+        let valid_protocols = ["tcp", "udp", "icmp", "any"];
+        if !valid_protocols.contains(&rule.protocol.to_lowercase().as_str()) {
+            return Err(crate::model::ConfigError::validation(format!(
+                "Invalid protocol '{}' at line {}: must be one of {:?}",
+                rule.protocol, line_number, valid_protocols
+            )));
+        }
+
+        rules.push(rule);
+    }
+
+    Ok(rules)
 }
 
 /// Read VLAN configurations from CSV with streaming for large files
