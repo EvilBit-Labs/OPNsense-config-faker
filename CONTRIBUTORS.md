@@ -1,44 +1,22 @@
 # Contributors and Attribution
 
-## Original Project Attribution
+## Project History
 
-This project was originally inspired by and builds upon the foundational work from:
-
-- **Original Repository**: [nett-media/opnsense-config-generator](https://github.com/nett-media/opnsense-config-generator)
-- **Original Author**: Stefan Reichhard
-- **Original Purpose**: Batch creation of VLANs, Interfaces, DHCP Server, CARP IP, NAT, Firewall Rules and Radius User configurations for OPNsense
-- **Initial Commit**: November 20, 2023
-
-### Original Code Components
-
-The following functionality was derived from or inspired by the original project:
-
-- XML generation patterns for OPNsense configuration elements
-- CSV-based configuration input approach
-- Network configuration data structures
-- OPNsense-specific XML templating concepts
-
-### Transformation and Enhancement
-
-This fork has evolved the original concept by:
-
-- **Generalizing**: From OPNsense-specific to general network configuration data generation
-- **Modernizing**: Updated to use Faker library for realistic test data generation
-- **Restructuring**: Organized as a proper Python package with modern tooling
-- **Expanding**: Added support for various network configuration scenarios
+This project was originally inspired by the concept of generating OPNsense firewall configurations for testing purposes. However, this is now a complete Rust rewrite with no remaining code from any previous implementation.
 
 ## Current Contributors
 
-- **EvilBit Labs** - Project transformation, modernization, and ongoing development
+- **EvilBit Labs** - Complete Rust implementation and ongoing development
 
 ## Acknowledgments
 
 We extend our gratitude to:
 
-- **Stefan Reichhard** and the **nett-media team** for the original OPNsense configuration generator that inspired this project
-- **The Faker Library maintainers** for providing excellent test data generation capabilities
-- **The Python community** for the robust ecosystem that makes projects like this possible
+- **Stefan Reichhard** and the **nett-media team** for their original work ([nett-media/opnsense-config-generator](https://github.com/nett-media/opnsense-config-generator)) that inspired the concept of automated OPNsense configuration generation
+- **The Rust community** for providing excellent tooling and ecosystem
+- **The OPNsense community** for maintaining the firewall platform that this tool supports
+- **All contributors** who have helped improve this project
 
 ---
 
-_This project maintains its own independent license while respectfully acknowledging the original inspiration._
+_This project is a complete rewrite with its own independent implementation._
