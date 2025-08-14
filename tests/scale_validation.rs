@@ -210,8 +210,8 @@ fn test_deterministic_behavior() {
     // Performance should be consistent (within reasonable bounds)
     let perf_diff = (result1.performance_ratio - result2.performance_ratio).abs();
     assert!(
-        perf_diff < 10.0,
-        "Performance should be reasonably consistent between runs: diff = {:.3}",
+        perf_diff < 3.0,
+        "Performance should be reasonably consistent between runs: diff = {:.3} (threshold: 3.0)",
         perf_diff
     );
 }
