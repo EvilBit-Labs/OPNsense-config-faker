@@ -71,6 +71,7 @@ lru = "0.16.0"                                   # Template caching
 rustc-hash = "2.1.1"                             # Faster hashing
 smallvec = "1.11"                                # Stack-allocated vectors
 xmlwriter = "0.1"                                # Streaming XML writing
+lazy_static = "1.4"                              # Lazy static initialization
 
 [features]
 slow-tests = []

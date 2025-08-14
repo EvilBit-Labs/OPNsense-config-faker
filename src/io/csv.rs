@@ -3,9 +3,79 @@
 use crate::generator::{FirewallRule, VlanConfig};
 use crate::Result;
 use csv::{Reader, Writer};
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::fs::File;
 use std::path::Path;
+
+// CSV header field name constants
+#[allow(dead_code)]
+const FIELD_VLAN: &str = "VLAN";
+
+// Lazy static validation sets for O(1) membership tests
+lazy_static! {
+    static ref VALID_ACTIONS: HashSet<&'static str> = {
+        let mut set = HashSet::new();
+        set.insert("pass");
+        set.insert("block");
+        set.insert("reject");
+        set
+    };
+    static ref VALID_DIRECTIONS: HashSet<&'static str> = {
+        let mut set = HashSet::new();
+        set.insert("in");
+        set.insert("out");
+        set
+    };
+    static ref VALID_PROTOCOLS: HashSet<&'static str> = {
+        let mut set = HashSet::new();
+        set.insert("tcp");
+        set.insert("udp");
+        set.insert("icmp");
+        set.insert("any");
+        set
+    };
+}
+#[allow(dead_code)]
+const FIELD_IP_RANGE: &str = "IP Range";
+#[allow(dead_code)]
+const FIELD_BESCHREIBUNG: &str = "Beschreibung";
+#[allow(dead_code)]
+const FIELD_WAN: &str = "WAN";
+#[allow(dead_code)]
+const FIELD_RULE_ID: &str = "rule_id";
+#[allow(dead_code)]
+const FIELD_SOURCE: &str = "source";
+#[allow(dead_code)]
+const FIELD_DESTINATION: &str = "destination";
+#[allow(dead_code)]
+const FIELD_PROTOCOL: &str = "protocol";
+#[allow(dead_code)]
+const FIELD_PORTS: &str = "ports";
+#[allow(dead_code)]
+const FIELD_ACTION: &str = "action";
+#[allow(dead_code)]
+const FIELD_DIRECTION: &str = "direction";
+#[allow(dead_code)]
+const FIELD_DESCRIPTION: &str = "description";
+#[allow(dead_code)]
+const FIELD_LOG: &str = "log";
+#[allow(dead_code)]
+const FIELD_VLAN_ID: &str = "vlan_id";
+#[allow(dead_code)]
+const FIELD_PRIORITY: &str = "priority";
+#[allow(dead_code)]
+const FIELD_INTERFACE: &str = "interface";
+
+/// Construct the CSV header string for VLAN records
+#[allow(dead_code)]
+fn vlan_csv_header() -> String {
+    format!(
+        "{},{},{},{}",
+        FIELD_VLAN, FIELD_IP_RANGE, FIELD_BESCHREIBUNG, FIELD_WAN
+    )
+}
 
 /// CSV record structure matching Python implementation format
 #[derive(Debug, Serialize, Deserialize)]
@@ -98,14 +168,14 @@ pub fn read_csv_validated<P: AsRef<Path>>(path: P) -> Result<Vec<VlanConfig>> {
         // Additional validation for CSV-loaded data
         if config.vlan_id < 10 || config.vlan_id > 4094 {
             return Err(crate::model::ConfigError::validation(format!(
-                "Invalid VLAN ID {} at line {}: must be between 10 and 4094",
+                "Invalid VLAN ID '{}' at line {}: must be between 10 and 4094",
                 config.vlan_id, line_number
             )));
         }
 
         if config.wan_assignment < 1 || config.wan_assignment > 3 {
             return Err(crate::model::ConfigError::validation(format!(
-                "Invalid WAN assignment {} at line {}: must be between 1 and 3",
+                "Invalid WAN assignment '{}' at line {}: must be between 1 and 3",
                 config.wan_assignment, line_number
             )));
         }
@@ -267,30 +337,38 @@ pub fn read_firewall_rules_csv_validated<P: AsRef<Path>>(path: P) -> Result<Vec<
             }
         }
 
-        // Validate action
-        let valid_actions = ["pass", "block", "reject"];
-        if !valid_actions.contains(&rule.action.to_lowercase().as_str()) {
+        // Pre-compute lowercase strings once per record for efficient validation
+        let action_lower = rule.action.to_lowercase();
+        let direction_lower = rule.direction.to_lowercase();
+        let protocol_lower = rule.protocol.to_lowercase();
+
+        // Validate action using O(1) HashSet lookup
+        if !VALID_ACTIONS.contains(action_lower.as_str()) {
             return Err(crate::model::ConfigError::validation(format!(
                 "Invalid action '{}' at line {}: must be one of {:?}",
-                rule.action, line_number, valid_actions
+                rule.action,
+                line_number,
+                VALID_ACTIONS.iter().collect::<Vec<_>>()
             )));
         }
 
-        // Validate direction
-        let valid_directions = ["in", "out"];
-        if !valid_directions.contains(&rule.direction.to_lowercase().as_str()) {
+        // Validate direction using O(1) HashSet lookup
+        if !VALID_DIRECTIONS.contains(direction_lower.as_str()) {
             return Err(crate::model::ConfigError::validation(format!(
                 "Invalid direction '{}' at line {}: must be one of {:?}",
-                rule.direction, line_number, valid_directions
+                rule.direction,
+                line_number,
+                VALID_DIRECTIONS.iter().collect::<Vec<_>>()
             )));
         }
 
-        // Validate protocol
-        let valid_protocols = ["tcp", "udp", "icmp", "any"];
-        if !valid_protocols.contains(&rule.protocol.to_lowercase().as_str()) {
+        // Validate protocol using O(1) HashSet lookup
+        if !VALID_PROTOCOLS.contains(protocol_lower.as_str()) {
             return Err(crate::model::ConfigError::validation(format!(
                 "Invalid protocol '{}' at line {}: must be one of {:?}",
-                rule.protocol, line_number, valid_protocols
+                rule.protocol,
+                line_number,
+                VALID_PROTOCOLS.iter().collect::<Vec<_>>()
             )));
         }
 
@@ -393,7 +471,7 @@ mod tests {
         write_csv(&configs, tf.path()).unwrap();
         let content = std::fs::read_to_string(tf.path()).unwrap();
         let first_line = content.lines().next().unwrap();
-        assert_eq!(first_line, "VLAN,IP Range,Beschreibung,WAN");
+        assert_eq!(first_line, vlan_csv_header());
     }
 
     #[test]
@@ -425,14 +503,14 @@ mod tests {
         let temp_file = NamedTempFile::new().unwrap();
         std::fs::write(
             temp_file.path(),
-            "VLAN,IP Range,Beschreibung,WAN\n5,10.1.2.x,Invalid VLAN,1\n",
+            format!("{}\n5,10.1.2.x,Invalid VLAN,1\n", vlan_csv_header()),
         )
         .unwrap();
 
         let result = read_csv_validated(temp_file.path());
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
-        assert!(error_msg.contains("Invalid VLAN ID 5"));
+        assert!(error_msg.contains("Invalid VLAN ID '5'"));
         assert!(error_msg.contains("line 2"));
     }
 
@@ -442,14 +520,14 @@ mod tests {
         let temp_file = NamedTempFile::new().unwrap();
         std::fs::write(
             temp_file.path(),
-            "VLAN,IP Range,Beschreibung,WAN\n100,10.1.2.x,Test VLAN,5\n",
+            format!("{}\n100,10.1.2.x,Test VLAN,5\n", vlan_csv_header()),
         )
         .unwrap();
 
         let result = read_csv_validated(temp_file.path());
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
-        assert!(error_msg.contains("Invalid WAN assignment 5"));
+        assert!(error_msg.contains("Invalid WAN assignment '5'"));
         assert!(error_msg.contains("line 2"));
     }
 
@@ -459,7 +537,7 @@ mod tests {
         let temp_file = NamedTempFile::new().unwrap();
         std::fs::write(
             temp_file.path(),
-            "VLAN,IP Range,Beschreibung,WAN\n100,10.1.2.1,Test VLAN,1\n",
+            format!("{}\n100,10.1.2.1,Test VLAN,1\n", vlan_csv_header()),
         )
         .unwrap();
 
@@ -632,5 +710,59 @@ mod tests {
 
         assert_eq!(stream_count, 1000);
         assert_eq!(read_count, 1000);
+    }
+
+    #[test]
+    fn test_firewall_rule_validation_performance() {
+        // Test that the HashSet-based validation works correctly and efficiently
+        let temp_file = NamedTempFile::new().unwrap();
+        let mut csv_content = String::from("rule_id,source,destination,protocol,ports,action,direction,description,log,vlan_id,priority,interface\n");
+
+        // Generate 1000 valid firewall rules to test performance
+        for i in 1..=1000 {
+            csv_content.push_str(&format!(
+                "rule_{},192.168.1.0/24,any,tcp,80,pass,in,Test rule {},true,100,1,lan\n",
+                i, i
+            ));
+        }
+
+        std::fs::write(&temp_file, csv_content).unwrap();
+
+        // Test that validation completes successfully with large dataset
+        let result = read_firewall_rules_csv_validated(temp_file.path());
+        assert!(result.is_ok(), "Should successfully validate large dataset");
+        assert_eq!(result.unwrap().len(), 1000);
+    }
+
+    #[test]
+    fn test_firewall_rule_validation_invalid_values() {
+        // Test that invalid values are caught efficiently
+        let temp_file = NamedTempFile::new().unwrap();
+        let csv_content = "rule_id,source,destination,protocol,ports,action,direction,description,log,vlan_id,priority,interface\nrule_1,192.168.1.0/24,any,tcp,80,invalid_action,in,Test rule,true,100,1,lan\n";
+
+        std::fs::write(&temp_file, csv_content).unwrap();
+
+        let result = read_firewall_rules_csv_validated(temp_file.path());
+        assert!(result.is_err(), "Should fail with invalid action");
+        let error = result.unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("Invalid action 'invalid_action'"));
+    }
+
+    #[test]
+    fn test_firewall_rule_validation_case_insensitive() {
+        // Test that case-insensitive validation works correctly
+        let temp_file = NamedTempFile::new().unwrap();
+        let csv_content = "rule_id,source,destination,protocol,ports,action,direction,description,log,vlan_id,priority,interface\nrule_1,192.168.1.0/24,any,TCP,80,PASS,IN,Test rule,true,100,1,lan\n";
+
+        std::fs::write(&temp_file, csv_content).unwrap();
+
+        let result = read_firewall_rules_csv_validated(temp_file.path());
+        assert!(
+            result.is_ok(),
+            "Should accept case-insensitive valid values"
+        );
+        assert_eq!(result.unwrap().len(), 1);
     }
 }
