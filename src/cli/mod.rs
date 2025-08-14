@@ -5,6 +5,10 @@ use std::path::PathBuf;
 
 pub mod commands;
 
+/// Maximum number of unique VLAN IDs that can be generated
+/// VLAN IDs range from 10-4094, giving us 4085 unique values
+pub const MAX_UNIQUE_VLAN_IDS: u16 = 4085;
+
 /// OPNsense Config Faker - Generate realistic network configuration test data
 #[derive(Parser)]
 #[command(name = "opnsense-config-faker")]
@@ -79,6 +83,9 @@ pub struct GenerateArgs {
     pub format: OutputFormat,
 
     /// Number of VLAN configurations to generate
+    ///
+    /// Note: For unique VLAN generation (XML format), maximum is 4085 due to
+    /// VLAN ID range constraints (10-4094). CSV format may allow duplicates.
     #[arg(short, long, default_value_t = 10)]
     #[arg(value_parser = clap::value_parser!(u16).range(1..=10000))]
     pub count: u16,
@@ -126,10 +133,26 @@ pub struct GenerateArgs {
     pub interactive: bool,
 }
 
+impl GenerateArgs {
+    /// Validate arguments after parsing, checking for VLAN ID constraints
+    pub fn validate(&self) -> Result<(), String> {
+        // For XML format, we require unique VLAN IDs, so check against maximum
+        if matches!(self.format, OutputFormat::Xml) && self.count > MAX_UNIQUE_VLAN_IDS {
+            return Err(format!(
+                "Cannot generate {} unique VLAN configurations. Maximum is {} for XML format due to VLAN ID range constraints (10-4094). Consider using CSV format if duplicates are acceptable, or reduce the count.",
+                self.count, MAX_UNIQUE_VLAN_IDS
+            ));
+        }
+        Ok(())
+    }
+}
+
 /// Legacy arguments for CSV generation (for backward compatibility)
 #[derive(Parser)]
 pub struct CsvArgs {
     /// Number of VLAN configurations to generate
+    ///
+    /// Note: CSV format may allow duplicate VLAN IDs if count exceeds 4085.
     #[arg(short, long, default_value_t = 10)]
     #[arg(value_parser = clap::value_parser!(u16).range(1..=10000))]
     pub count: u16,
@@ -147,6 +170,20 @@ pub struct CsvArgs {
     pub seed: Option<u64>,
 }
 
+impl CsvArgs {
+    /// Validate arguments after parsing
+    pub fn validate(&self) -> Result<(), String> {
+        // For CSV format, warn if count exceeds unique VLAN limit but don't error
+        if self.count > MAX_UNIQUE_VLAN_IDS {
+            eprintln!(
+                "Warning: Requested {} VLAN configurations exceeds maximum unique VLANs ({}). Duplicate VLAN IDs may be generated in CSV output.",
+                self.count, MAX_UNIQUE_VLAN_IDS
+            );
+        }
+        Ok(())
+    }
+}
+
 /// Legacy arguments for XML generation (for backward compatibility)
 #[derive(Parser)]
 pub struct XmlArgs {
@@ -155,6 +192,8 @@ pub struct XmlArgs {
     pub base_config: PathBuf,
 
     /// Number of VLAN configurations to generate (if not using CSV)
+    ///
+    /// Note: For unique VLAN generation, maximum is 4085 due to VLAN ID range constraints (10-4094).
     #[arg(short, long)]
     #[arg(value_parser = clap::value_parser!(u16).range(1..=10000))]
     pub count: Option<u16>,
@@ -184,4 +223,20 @@ pub struct XmlArgs {
     /// Random seed for reproducible generation
     #[arg(long)]
     pub seed: Option<u64>,
+}
+
+impl XmlArgs {
+    /// Validate arguments after parsing
+    pub fn validate(&self) -> Result<(), String> {
+        // For XML format with count specified, check against maximum unique VLANs
+        if let Some(count) = self.count {
+            if count > MAX_UNIQUE_VLAN_IDS {
+                return Err(format!(
+                    "Cannot generate {} unique VLAN configurations. Maximum is {} for XML format due to VLAN ID range constraints (10-4094). Consider using CSV format if duplicates are acceptable, or reduce the count.",
+                    count, MAX_UNIQUE_VLAN_IDS
+                ));
+            }
+        }
+        Ok(())
+    }
 }

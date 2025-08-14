@@ -36,6 +36,11 @@ pub fn execute(args: GenerateArgs) -> Result<()> {
     // Validate arguments based on format
     validate_arguments(&args)?;
 
+    // Validate VLAN ID constraints
+    if let Err(e) = args.validate() {
+        return Err(crate::model::ConfigError::invalid_parameter("count", &e));
+    }
+
     // Execute based on format
     match args.format {
         OutputFormat::Csv => execute_csv_generation(&args),

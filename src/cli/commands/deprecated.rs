@@ -6,6 +6,11 @@ use console::style;
 
 /// Handle deprecated CSV command with migration guidance
 pub fn handle_deprecated_csv(args: CsvArgs) -> Result<()> {
+    // Validate arguments before showing deprecation message
+    if let Err(e) = args.validate() {
+        return Err(crate::model::ConfigError::invalid_parameter("count", &e));
+    }
+
     println!("{}", style("⚠️  DEPRECATED COMMAND").bold().yellow());
     println!();
     println!("The 'csv' subcommand has been replaced with the unified 'generate' command.");
@@ -51,6 +56,11 @@ pub fn handle_deprecated_csv(args: CsvArgs) -> Result<()> {
 
 /// Handle deprecated XML command with migration guidance
 pub fn handle_deprecated_xml(args: XmlArgs) -> Result<()> {
+    // Validate arguments before showing deprecation message
+    if let Err(e) = args.validate() {
+        return Err(crate::model::ConfigError::invalid_parameter("count", &e));
+    }
+
     println!("{}", style("⚠️  DEPRECATED COMMAND").bold().yellow());
     println!();
     println!("The 'xml' subcommand has been replaced with the unified 'generate' command.");
