@@ -133,7 +133,7 @@ impl PerformantConfigGenerator {
             ip_buffer: String::with_capacity(15), // "255.255.255.255" max length
             used_vlan_ids: FxHashSet::default(),
             used_networks: FxHashMap::default(),
-            rng: ChaCha8Rng::seed_from_u64(seed.unwrap_or_else(|| rand::thread_rng().gen())),
+            rng: ChaCha8Rng::seed_from_u64(seed.unwrap_or_else(|| rand::rng().random())),
             batch_buffer: Vec::new(),
             metrics: PerformanceMetrics {
                 generation_time: std::time::Duration::ZERO,
@@ -191,7 +191,7 @@ impl PerformantConfigGenerator {
         let description = format!("{} VLAN {}", department, vlan_id);
 
         // Generate WAN assignment
-        let wan_assignment = self.rng.gen_range(1..=3);
+        let wan_assignment = self.rng.random_range(1..=3);
 
         VlanConfig::new(vlan_id, ip_network, description, wan_assignment)
     }
@@ -201,7 +201,7 @@ impl PerformantConfigGenerator {
         const MAX_ATTEMPTS: usize = 100;
 
         for _ in 0..MAX_ATTEMPTS {
-            let vlan_id = self.rng.gen_range(10..=4094);
+            let vlan_id = self.rng.random_range(10..=4094);
             if self.used_vlan_ids.insert(vlan_id) {
                 return Ok(vlan_id);
             }
@@ -218,7 +218,7 @@ impl PerformantConfigGenerator {
 
         for _ in 0..MAX_ATTEMPTS {
             // Use existing RFC 1918 generation functions
-            let network = match self.rng.gen_range(0..3) {
+            let network = match self.rng.random_range(0..3) {
                 0 => rfc1918::generate_random_class_a_network(&mut self.rng),
                 1 => rfc1918::generate_random_class_b_network(&mut self.rng),
                 _ => rfc1918::generate_random_class_c_network(&mut self.rng),
@@ -240,7 +240,9 @@ impl PerformantConfigGenerator {
 
     /// Get department name with caching
     fn get_cached_department(&mut self) -> String {
-        let dept_id = self.rng.gen_range(0..departments::all_departments().len()) as u8;
+        let dept_id = self
+            .rng
+            .random_range(0..departments::all_departments().len()) as u8;
 
         if let Some(dept) = self.department_cache.get(&dept_id) {
             dept.clone()
@@ -289,7 +291,7 @@ impl PerformantConfigGenerator {
         let mut results = Vec::with_capacity(total_count);
 
         // Generate base seed outside of closure
-        let base_seed = self.rng.gen::<u64>();
+        let base_seed = self.rng.random::<u64>();
 
         let chunk_results: Result<Vec<Vec<VlanConfig>>> = (0..chunks)
             .into_par_iter()

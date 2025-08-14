@@ -213,7 +213,7 @@ impl VlanGenerator {
         let rng: Box<dyn RngCore> = if let Some(seed) = seed {
             Box::new(ChaCha8Rng::seed_from_u64(seed))
         } else {
-            Box::new(ChaCha8Rng::from_entropy())
+            Box::new(ChaCha8Rng::from_rng(&mut rand::rng()))
         };
 
         Self {
@@ -228,7 +228,7 @@ impl VlanGenerator {
         let rng: Box<dyn RngCore> = if let Some(seed) = seed {
             Box::new(StdRng::seed_from_u64(seed))
         } else {
-            Box::new(StdRng::from_entropy())
+            Box::new(StdRng::from_rng(&mut rand::rng()))
         };
 
         Self {
@@ -252,7 +252,7 @@ impl VlanGenerator {
         let description = self.generate_description(vlan_id);
 
         // Generate WAN assignment
-        let wan_assignment = self.rng.gen_range(1..=3);
+        let wan_assignment = self.rng.random_range(1..=3);
 
         VlanConfig::new(vlan_id, ip_network, description, wan_assignment)
     }
@@ -271,7 +271,7 @@ impl VlanGenerator {
         let description = self.generate_description_enhanced(vlan_id);
 
         // Generate WAN assignment
-        let wan_assignment = Some(self.rng.gen_range(1..=3));
+        let wan_assignment = Some(self.rng.random_range(1..=3));
 
         VlanConfig::new_with_network(vlan_id, network, description, wan_assignment)
     }
@@ -303,7 +303,7 @@ impl VlanGenerator {
     /// Generate unique VLAN ID
     fn generate_unique_vlan_id(&mut self, max_attempts: usize) -> Result<u16> {
         for _ in 0..max_attempts {
-            let vlan_id = self.rng.gen_range(10..=4094);
+            let vlan_id = self.rng.random_range(10..=4094);
             if self.used_vlan_ids.insert(vlan_id) {
                 return Ok(vlan_id);
             }
@@ -315,7 +315,7 @@ impl VlanGenerator {
     /// Generate unique VLAN ID with enhanced error handling
     fn generate_unique_vlan_id_enhanced(&mut self, max_attempts: usize) -> VlanResult<u16> {
         for _ in 0..max_attempts {
-            let vlan_id = self.rng.gen_range(10..=4094);
+            let vlan_id = self.rng.random_range(10..=4094);
             if self.used_vlan_ids.insert(vlan_id) {
                 return Ok(vlan_id);
             }
@@ -328,8 +328,8 @@ impl VlanGenerator {
     fn generate_unique_ip_network(&mut self, max_attempts: usize) -> Result<String> {
         for _ in 0..max_attempts {
             // Generate Class A private network (10.0.0.0/8)
-            let second_octet = self.rng.gen_range(1..=254);
-            let third_octet = self.rng.gen_range(1..=254);
+            let second_octet = self.rng.random_range(1..=254);
+            let third_octet = self.rng.random_range(1..=254);
             let network = format!("10.{second_octet}.{third_octet}.x");
 
             if self.used_networks.insert(network.clone()) {
@@ -344,9 +344,9 @@ impl VlanGenerator {
     fn generate_unique_rfc1918_network(&mut self, max_attempts: usize) -> VlanResult<Ipv4Network> {
         for _ in 0..max_attempts {
             // Prefer Class A networks for larger address space
-            let network = if self.rng.gen_bool(0.8) {
+            let network = if self.rng.random_bool(0.8) {
                 rfc1918::generate_random_class_a_network(&mut self.rng)
-            } else if self.rng.gen_bool(0.6) {
+            } else if self.rng.random_bool(0.6) {
                 rfc1918::generate_random_class_b_network(&mut self.rng)
             } else {
                 rfc1918::generate_random_class_c_network(&mut self.rng)
@@ -382,7 +382,7 @@ impl VlanGenerator {
             "Management",
         ];
 
-        let department = DEPARTMENTS[self.rng.gen_range(0..DEPARTMENTS.len())];
+        let department = DEPARTMENTS[self.rng.random_range(0..DEPARTMENTS.len())];
         format!("{department} VLAN {vlan_id}")
     }
 

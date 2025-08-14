@@ -32,11 +32,11 @@ quick-xml = { version = "0.38", features = ["serialize"] }
 
 # Networking utilities
 ipnet = "2.9"
-ipnetwork = "0.20"
+ipnetwork = "0.21.1"
 
 # Random data generation
-rand = { version = "0.8", features = ["small_rng"] }
-rand_chacha = "0.3"
+rand = { version = "0.9.2", features = ["small_rng"] }
+rand_chacha = "0.9.0"
 uuid = { version = "1.10", features = ["v4", "serde"] }
 
 # Error handling
@@ -56,8 +56,8 @@ console = "0.16"
 rayon = { version = "1.8", optional = true }                # Data parallelism
 tokio = { version = "1.0", features = ["full"] }            # Async runtime
 bumpalo = "3.14"                                             # Arena allocation
-lru = "0.12"                                                 # Template caching
-rustc-hash = "1.1"                                           # Faster hashing
+lru = "0.16.0"                                                 # Template caching
+rustc-hash = "2.1.1"                                           # Faster hashing
 smallvec = "1.11"                                            # Stack-allocated vectors
 xmlwriter = "0.1"                                            # Streaming XML writing
 
@@ -82,7 +82,7 @@ proptest = "1.4"
 criterion = { version = "0.7", features = ["html_reports"] }
 
 # Performance profiling
-pprof = { version = "0.14", features = ["criterion", "flamegraph"] }
+pprof = { version = "0.15.0", features = ["criterion", "flamegraph"] }
 
 # Test utilities
 pretty_assertions = "1.4"
@@ -90,7 +90,7 @@ insta = { version = "1", features = ["yaml"] }
 assert_fs = "1.1"
 predicates = "3.1"
 regex = "1"
-roxmltree = "0.19"
+roxmltree = "0.20.0"
 
 [[bench]]
 name = "vlan_generation"
