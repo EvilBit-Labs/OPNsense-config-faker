@@ -81,7 +81,7 @@ proptest = "1.4"
 # Benchmarking
 criterion = { version = "0.7", features = ["html_reports"] }
 
-# Performance profiling 
+# Performance profiling
 pprof = { version = "0.13", features = ["criterion", "flamegraph"] }
 
 # Test utilities
@@ -90,6 +90,7 @@ insta = { version = "1", features = ["yaml"] }
 assert_fs = "1.1"
 predicates = "3.1"
 regex = "1"
+roxmltree = "0.19"
 
 [[bench]]
 name = "vlan_generation"
