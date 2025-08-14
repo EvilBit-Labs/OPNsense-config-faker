@@ -195,19 +195,17 @@ This section provides a comprehensive breakdown of each Python component that ne
 
 ### 2.4.1 Original Generator Scripts
 
-**Python Implementation**: `legacy/opnsense/` directory
+**Python Implementation**: `legacy/opnsense/` directory (ELIMINATED)
 
 - Multiple standalone generators (genCARP.py, genDHCP.py, etc.)
-- Original implementation by Stefan Reichhard
+- Original implementation concept (no remaining code)
 - String-based XML generation without models
 
-**Rust Target**: Not directly migrated
+**Rust Target**: Complete rewrite
 
-- **Status**: ❌ **LEGACY REFERENCE ONLY**
-- **Purpose**: Reference for XML structure and logic
-- **Integration**: Logic incorporated into modern Rust generators
-
-**Migration Status**: Used as reference, not directly converted.
+- **Status**: ✅ **COMPLETE REWRITE**
+- **Purpose**: Modern Rust implementation with enhanced capabilities
+- **Integration**: All functionality rewritten in Rust with improved performance
 
 ## 2.5 Testing and Validation Infrastructure
 
