@@ -1,0 +1,87 @@
+# OPNsense Config Faker - Cargo Deny Configuration
+# Supply chain security and license compliance for network configuration generation
+
+[graph]
+# Target platforms for network configuration generation
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "x86_64-apple-darwin",
+    "aarch64-apple-darwin",
+    "x86_64-pc-windows-msvc",
+]
+all-features = false
+no-default-features = false
+
+[output]
+feature-depth = 1
+
+[advisories]
+# Ignore specific advisories if needed for network configuration generation
+ignore = [
+    # Add specific advisory IDs here if needed
+]
+
+[licenses]
+# Allow common open source licenses for network configuration tools
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "CC0-1.0",
+    "Unlicense",
+    "Unicode-3.0",
+]
+confidence-threshold = 0.8
+
+exceptions = [
+    # Add license exceptions for specific crates if needed
+]
+
+[licenses.private]
+ignore = false
+registries = []
+
+[bans]
+# Warn about multiple versions of the same crate
+multiple-versions = "warn"
+# Allow wildcards for network configuration generation flexibility
+wildcards = "allow"
+highlight = "all"
+workspace-default-features = "allow"
+external-default-features = "allow"
+
+# Allow specific crates that are needed for network configuration
+allow = [
+    # Add specific allowed crates if needed
+]
+
+# Deny known problematic crates
+deny = [
+    # Add specific denied crates if needed
+]
+
+# Skip certain crates during duplicate detection
+skip = [
+    # Add crates to skip if needed
+]
+
+skip-tree = [
+    # Add crates to skip with dependencies if needed
+]
+
+[sources]
+# Only allow crates.io for security
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []
+
+[sources.allow-org]
+# Allow specific organizations for git sources if needed
+github = []
+gitlab = []
+bitbucket = []

@@ -82,7 +82,7 @@ proptest = "1.4"
 criterion = { version = "0.7", features = ["html_reports"] }
 
 # Performance profiling
-pprof = { version = "0.13", features = ["criterion", "flamegraph"] }
+pprof = { version = "0.14", features = ["criterion", "flamegraph"] }
 
 # Test utilities
 pretty_assertions = "1.4"
