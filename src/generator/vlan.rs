@@ -29,6 +29,40 @@ pub struct VlanConfig {
 }
 
 impl VlanConfig {
+    /// Private helper to validate IP network format strictly
+    fn validate_ip_format_strict(ip_network: &str) -> Result<()> {
+        // Validate IP network format - must be either "x.x.x.x" or "x.x.x.0/24" format
+        let is_x_format = ip_network.ends_with(".x") && ip_network.matches('.').count() == 3;
+        let is_cidr_format = ip_network.ends_with(".0/24") && ip_network.matches('.').count() == 3;
+
+        if !is_x_format && !is_cidr_format {
+            return Err(ConfigError::validation(format!(
+                "IP network '{ip_network}' does not match expected format (should end with .x or .0/24)"
+            )));
+        }
+
+        // Additional validation: check that we don't have empty octets (e.g., "10.1..x")
+        if is_x_format {
+            let prefix = ip_network.strip_suffix(".x").unwrap();
+            let octets: Vec<&str> = prefix.split('.').collect();
+            if octets.len() != 3 || octets.iter().any(|&octet| octet.is_empty()) {
+                return Err(ConfigError::validation(format!(
+                    "IP network '{ip_network}' has invalid octet structure"
+                )));
+            }
+        } else if is_cidr_format {
+            let prefix = ip_network.strip_suffix(".0/24").unwrap();
+            let octets: Vec<&str> = prefix.split('.').collect();
+            if octets.len() != 3 || octets.iter().any(|&octet| octet.is_empty()) {
+                return Err(ConfigError::validation(format!(
+                    "IP network '{ip_network}' has invalid octet structure"
+                )));
+            }
+        }
+
+        Ok(())
+    }
+
     /// Create a new VLAN configuration
     pub fn new(
         vlan_id: u16,
@@ -50,34 +84,8 @@ impl VlanConfig {
             )));
         }
 
-        // Validate IP network format - must be either "x.x.x.x" or "x.x.x.0/24" format
-        let is_x_format = ip_network.ends_with(".x") && ip_network.matches('.').count() == 3;
-        let is_cidr_format = ip_network.ends_with(".0/24") && ip_network.matches('.').count() == 3;
-
-        if !is_x_format && !is_cidr_format {
-            return Err(ConfigError::validation(format!(
-                "IP network '{ip_network}' does not match expected format"
-            )));
-        }
-
-        // Additional validation: check that we don't have empty octets (e.g., "10.1..x")
-        if is_x_format {
-            let prefix = ip_network.strip_suffix(".x").unwrap();
-            let octets: Vec<&str> = prefix.split('.').collect();
-            if octets.len() != 3 || octets.iter().any(|&octet| octet.is_empty()) {
-                return Err(ConfigError::validation(format!(
-                    "IP network '{ip_network}' does not match expected format"
-                )));
-            }
-        } else if is_cidr_format {
-            let prefix = ip_network.strip_suffix(".0/24").unwrap();
-            let octets: Vec<&str> = prefix.split('.').collect();
-            if octets.len() != 3 || octets.iter().any(|&octet| octet.is_empty()) {
-                return Err(ConfigError::validation(format!(
-                    "IP network '{ip_network}' does not match expected format"
-                )));
-            }
-        }
+        // Validate IP network format using helper function
+        Self::validate_ip_format_strict(&ip_network)?;
 
         Ok(Self {
             vlan_id,
@@ -170,42 +178,11 @@ impl VlanConfig {
             )));
         }
 
-        // Validate IP network format
-        let is_x_format =
-            self.ip_network.ends_with(".x") && self.ip_network.matches('.').count() == 3;
-        let is_cidr_format =
-            self.ip_network.ends_with(".0/24") && self.ip_network.matches('.').count() == 3;
+        // Validate IP network format using helper function
+        Self::validate_ip_format_strict(&self.ip_network)?;
 
-        if !is_x_format && !is_cidr_format {
-            return Err(ConfigError::validation(format!(
-                "IP network '{}' does not match expected format (should end with .x or .0/24)",
-                self.ip_network
-            )));
-        }
-
-        // Validate IP network structure
-        if is_x_format {
-            let prefix = self.ip_network.strip_suffix(".x").unwrap();
-            let octets: Vec<&str> = prefix.split('.').collect();
-            if octets.len() != 3 || octets.iter().any(|&octet| octet.is_empty()) {
-                return Err(ConfigError::validation(format!(
-                    "IP network '{}' has invalid octet structure",
-                    self.ip_network
-                )));
-            }
-        } else if is_cidr_format {
-            let prefix = self.ip_network.strip_suffix(".0/24").unwrap();
-            let octets: Vec<&str> = prefix.split('.').collect();
-            if octets.len() != 3 || octets.iter().any(|&octet| octet.is_empty()) {
-                return Err(ConfigError::validation(format!(
-                    "IP network '{}' has invalid octet structure",
-                    self.ip_network
-                )));
-            }
-        }
-
-        // Validate description is not empty
-        if self.description.is_empty() {
+        // Validate description is not empty (including whitespace-only)
+        if self.description.trim().is_empty() {
             return Err(ConfigError::validation("VLAN description cannot be empty"));
         }
 

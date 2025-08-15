@@ -65,7 +65,6 @@ console = "0.16"
 
 # Performance optimization dependencies
 rayon = { version = "1.8", optional = true }     # Data parallelism
-tokio = { version = "1.0", features = ["full"] } # Async runtime
 bumpalo = "3.14"                                 # Arena allocation
 lru = "0.16.0"                                   # Template caching
 rustc-hash = "2.1.1"                             # Faster hashing

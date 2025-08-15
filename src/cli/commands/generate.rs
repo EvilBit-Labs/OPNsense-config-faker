@@ -180,8 +180,14 @@ fn execute_csv_generation(args: &GenerateArgs) -> Result<()> {
 
         // Generate firewall rules
         let firewall_pb = create_progress_bar(configs.len() as u64, "Generating firewall rules...");
-        let firewall_rules =
-            generate_firewall_rules(&configs, complexity, args.seed, Some(&firewall_pb))?;
+        let firewall_rules = generate_firewall_rules(
+            &configs,
+            complexity,
+            args.seed,
+            Some(&firewall_pb),
+            args.firewall_rules_per_vlan,
+        )?;
+
         firewall_pb.finish_with_message(format!(
             "✅ Generated {} firewall rules",
             firewall_rules.len()
@@ -250,7 +256,14 @@ fn execute_xml_generation(args: &GenerateArgs) -> Result<()> {
 
         // Generate firewall rules
         let firewall_pb = create_progress_bar(configs.len() as u64, "Generating firewall rules...");
-        let rules = generate_firewall_rules(&configs, complexity, args.seed, Some(&firewall_pb))?;
+        let rules = generate_firewall_rules(
+            &configs,
+            complexity,
+            args.seed,
+            Some(&firewall_pb),
+            args.firewall_rules_per_vlan,
+        )?;
+
         firewall_pb.finish_with_message(format!("✅ Generated {} firewall rules", rules.len()));
 
         // Write firewall rules to CSV for reference
