@@ -37,8 +37,20 @@ pub const MAX_UNIQUE_VLAN_IDS: u16 = 4085;
     opnsense-config-faker generate --count 10 --format csv --output test.csv --force
 
   Generate shell completions:
-    opnsense-config-faker completions bash > opnsense-config-faker.bash"#)]
+    opnsense-config-faker completions bash > opnsense-config-faker.bash
+
+  Validate configuration data:
+    opnsense-config-faker validate --input data.csv
+    opnsense-config-faker validate --input config.xml --format xml
+
+  Use global flags:
+    opnsense-config-faker --quiet generate --count 10 --format csv
+    opnsense-config-faker --no-color generate --count 10 --format xml --base-config config.xml"#)]
 pub struct Cli {
+    /// Global flags available for all subcommands
+    #[command(flatten)]
+    pub global: GlobalArgs,
+
     #[command(subcommand)]
     pub command: Commands,
 }
@@ -53,12 +65,30 @@ pub enum Commands {
         #[arg(value_enum)]
         shell: Shell,
     },
+    /// Validate configuration data for consistency and correctness
+    Validate(ValidateArgs),
     /// DEPRECATED: Use 'generate --format csv' instead
     #[command(hide = true)]
     Csv(CsvArgs),
     /// DEPRECATED: Use 'generate --format xml' instead
     #[command(hide = true)]
     Xml(XmlArgs),
+}
+
+/// Global flags available for all subcommands
+#[derive(Parser)]
+pub struct GlobalArgs {
+    /// Suppress non-essential output (progress bars, summaries, etc.)
+    #[arg(short, long, global = true)]
+    pub quiet: bool,
+
+    /// Disable colored output (useful for scripts and CI)
+    #[arg(long, global = true)]
+    pub no_color: bool,
+
+    /// Global output file or directory (overrides command-specific output)
+    #[arg(short, long, global = true)]
+    pub output: Option<PathBuf>,
 }
 
 /// Output format for generated configurations
@@ -97,7 +127,7 @@ pub struct GenerateArgs {
     pub count: u16,
 
     /// Output file path (for CSV format) or directory (for XML format)
-    #[arg(short, long)]
+    #[arg(long)]
     pub output: Option<PathBuf>,
 
     /// Output directory for generated XML files (XML format only)
@@ -176,7 +206,7 @@ pub struct CsvArgs {
     pub count: u16,
 
     /// Output CSV file path
-    #[arg(short, long, default_value = "vlan_configs.csv")]
+    #[arg(long, default_value = "vlan_configs.csv")]
     pub output: PathBuf,
 
     /// Force overwrite existing files
@@ -221,7 +251,7 @@ pub struct XmlArgs {
     pub csv_file: Option<PathBuf>,
 
     /// Output directory for generated XML files
-    #[arg(short, long, default_value = "output")]
+    #[arg(long, default_value = "output")]
     pub output_dir: PathBuf,
 
     /// Firewall number for naming (used in filenames)
@@ -257,4 +287,40 @@ impl XmlArgs {
         }
         Ok(())
     }
+}
+
+/// Arguments for the validate command
+#[derive(Parser)]
+pub struct ValidateArgs {
+    /// Input file or directory to validate
+    #[arg(short, long)]
+    pub input: PathBuf,
+
+    /// Format of the input data
+    #[arg(short = 'f', long = "format", default_value = "auto")]
+    #[arg(value_enum)]
+    pub format: ValidationFormat,
+
+    /// Detailed validation output
+    #[arg(short, long)]
+    pub verbose: bool,
+
+    /// Maximum number of errors to report before stopping
+    #[arg(long, default_value_t = 100)]
+    pub max_errors: u32,
+
+    /// Output validation report to file
+    #[arg(long)]
+    pub report: Option<PathBuf>,
+}
+
+/// Validation input format
+#[derive(Clone, Debug, ValueEnum)]
+pub enum ValidationFormat {
+    /// Automatically detect format from file extension
+    Auto,
+    /// Validate CSV configuration data
+    Csv,
+    /// Validate OPNsense XML configuration
+    Xml,
 }

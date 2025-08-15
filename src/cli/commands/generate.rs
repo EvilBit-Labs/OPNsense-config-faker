@@ -1,6 +1,6 @@
 //! Generate command implementation - unified CSV and XML generation
 
-use crate::cli::{GenerateArgs, OutputFormat};
+use crate::cli::{GenerateArgs, GlobalArgs, OutputFormat};
 use crate::generator::vlan::generate_vlan_configurations;
 use crate::generator::{generate_firewall_rules, FirewallComplexity};
 use crate::io::csv::{read_csv, write_csv, write_firewall_rules_csv};
@@ -13,19 +13,53 @@ use std::fs;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
-/// Execute the generate command with format selection
-pub fn execute(args: GenerateArgs) -> Result<()> {
-    // Handle terminal compatibility
-    configure_terminal(&args);
+/// Execute the generate command with global arguments
+pub fn execute_with_global(mut args: GenerateArgs, global: &GlobalArgs) -> Result<()> {
+    // Apply global settings to args
+    if global.no_color {
+        args.no_color = true;
+    }
+    
+    // Apply global output if specified and not overridden
+    if let Some(ref global_output) = global.output {
+        if args.output.is_none() {
+            args.output = Some(global_output.clone());
+        }
+    }
 
-    // Show header
-    println!(
-        "{}",
-        style("🔧 OPNsense Config Faker - Configuration Generator")
-            .bold()
-            .blue()
-    );
-    println!();
+    // Handle terminal compatibility
+    configure_terminal_with_global(&args, global);
+
+    execute_internal(args, global)
+}
+
+/// Execute the generate command (legacy function for backward compatibility)
+pub fn execute(args: GenerateArgs) -> Result<()> {
+    // Create empty global args for backward compatibility
+    let global = GlobalArgs {
+        quiet: false,
+        no_color: args.no_color,
+        output: None,
+    };
+    
+    execute_with_global(args, &global)
+}
+
+/// Internal execution with global context
+fn execute_internal(args: GenerateArgs, global: &GlobalArgs) -> Result<()> {
+    // Handle terminal compatibility
+    configure_terminal_with_global(&args, global);
+
+    // Show header unless quiet
+    if !global.quiet {
+        println!(
+            "{}",
+            style("🔧 OPNsense Config Faker - Configuration Generator")
+                .bold()
+                .blue()
+        );
+        println!();
+    }
 
     // Handle interactive mode if requested
     let args = if args.interactive {
@@ -44,15 +78,15 @@ pub fn execute(args: GenerateArgs) -> Result<()> {
 
     // Execute based on format
     match args.format {
-        OutputFormat::Csv => execute_csv_generation(&args),
-        OutputFormat::Xml => execute_xml_generation(&args),
+        OutputFormat::Csv => execute_csv_generation(&args, global),
+        OutputFormat::Xml => execute_xml_generation(&args, global),
     }
 }
 
-/// Configure terminal output based on environment and arguments
-fn configure_terminal(args: &GenerateArgs) {
+/// Configure terminal output based on environment and arguments with global context
+fn configure_terminal_with_global(args: &GenerateArgs, global: &GlobalArgs) {
     // Handle TERM=dumb compatibility
-    if env::var("TERM").unwrap_or_default() == "dumb" || args.no_color {
+    if env::var("TERM").unwrap_or_default() == "dumb" || args.no_color || global.no_color {
         env::set_var("NO_COLOR", "1");
     }
 }
@@ -135,10 +169,12 @@ fn validate_arguments(args: &GenerateArgs) -> Result<()> {
 }
 
 /// Execute CSV generation
-fn execute_csv_generation(args: &GenerateArgs) -> Result<()> {
+fn execute_csv_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()> {
     let output_file = args.output.as_ref().unwrap(); // Validated in validate_arguments
 
-    println!("📊 Generating CSV configuration data...");
+    if !global.quiet {
+        println!("📊 Generating CSV configuration data...");
+    }
 
     // Check if output file exists and handle force flag
     if output_file.exists() && !args.force {
@@ -212,10 +248,12 @@ fn execute_csv_generation(args: &GenerateArgs) -> Result<()> {
 }
 
 /// Execute XML generation
-fn execute_xml_generation(args: &GenerateArgs) -> Result<()> {
+fn execute_xml_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()> {
     let base_config = args.base_config.as_ref().unwrap(); // Validated in validate_arguments
 
-    println!("🔧 Generating OPNsense XML configuration...");
+    if !global.quiet {
+        println!("🔧 Generating OPNsense XML configuration...");
+    }
 
     // Validate base configuration file exists
     if !base_config.exists() {
