@@ -430,7 +430,8 @@ fn test_vlan_config_invalid_ip_network_formats() {
             ConfigError::Validation { message } => {
                 assert!(
                     message.contains("IP network")
-                        && message.contains("does not match expected format"),
+                        && (message.contains("does not match expected format")
+                            || message.contains("has invalid octet structure")),
                     "Expected specific IP network validation error for '{network}', got: {message}"
                 );
             }

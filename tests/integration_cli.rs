@@ -20,6 +20,7 @@ const ANSI_CONTROL_PATTERN: &str = r"\x1b\[[0-9;]*[ABCDEFGHJKSTfhil]";
 const PROGRESS_CHAR_PATTERN: &str = r"[⠁⠂⠄⡀⢀⠠⠐⠈⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏▪▫]";
 
 /// Helper function to assert no ANSI escape codes in output
+#[allow(clippy::needless_borrow)]
 fn assert_no_ansi_escapes(output: &str) {
     let ansi_regex = Regex::new(ANSI_COLOR_PATTERN).unwrap();
     let control_regex = Regex::new(ANSI_CONTROL_PATTERN).unwrap();
