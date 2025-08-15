@@ -11,7 +11,10 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     // Handle global flags first
-    if cli.global.no_color || env::var("NO_COLOR").is_ok() || env::var("TERM").unwrap_or_default() == "dumb" {
+    if cli.global.no_color
+        || env::var("NO_COLOR").is_ok()
+        || env::var("TERM").unwrap_or_default() == "dumb"
+    {
         env::set_var("NO_COLOR", "1");
     }
 

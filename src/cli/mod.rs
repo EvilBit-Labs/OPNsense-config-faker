@@ -76,7 +76,7 @@ pub enum Commands {
 }
 
 /// Global flags available for all subcommands
-#[derive(Parser)]
+#[derive(Parser, Default)]
 pub struct GlobalArgs {
     /// Suppress non-essential output (progress bars, summaries, etc.)
     #[arg(short, long, global = true)]
