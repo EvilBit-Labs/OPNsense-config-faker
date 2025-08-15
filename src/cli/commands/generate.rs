@@ -39,7 +39,8 @@ pub fn execute(args: GenerateArgs) -> Result<()> {
     let global = GlobalArgs {
         quiet: false,
         no_color: args.no_color,
-        output: None,
+        no_color: args.no_color,
+        ..Default::default()
     };
 
     execute_with_global(args, &global)
