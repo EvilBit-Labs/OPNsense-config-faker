@@ -43,12 +43,10 @@ pub fn execute(args: ValidateArgs, global: &GlobalArgs) -> Result<()> {
     match format {
         ValidationFormat::Csv => validate_csv(&args, global),
         ValidationFormat::Xml => validate_xml(&args, global),
-        ValidationFormat::Auto => {
-            Err(ConfigError::invalid_parameter(
-                "format",
-                "Could not automatically determine format. Please specify --format csv or --format xml",
-            ))
-        }
+        ValidationFormat::Auto => Err(ConfigError::invalid_parameter(
+            "format",
+            "Could not automatically determine format. Please specify --format csv or --format xml",
+        )),
     }
 }
 
@@ -66,12 +64,15 @@ fn validate_csv(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
         Ok(configs) => configs,
         Err(e) => {
             println!("❌ Failed to read CSV: {}", e);
-            return Err(e.into());
+            return Err(e);
         }
     };
 
     if !global.quiet {
-        println!("✅ Successfully loaded {} configurations from CSV", configs.len());
+        println!(
+            "✅ Successfully loaded {} configurations from CSV",
+            configs.len()
+        );
     }
 
     // Create progress bar
@@ -85,7 +86,10 @@ fn validate_csv(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
     for (index, config) in configs.iter().enumerate() {
         if error_count >= args.max_errors {
             if !global.quiet {
-                println!("⚠️  Reached maximum error limit ({}). Stopping validation.", args.max_errors);
+                println!(
+                    "⚠️  Reached maximum error limit ({}). Stopping validation.",
+                    args.max_errors
+                );
             }
             break;
         }
@@ -110,7 +114,7 @@ fn validate_csv(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
         println!("📊 Validation Results:");
         println!("  ✅ Valid configurations: {}", valid_configs.len());
         println!("  ❌ Errors found: {}", error_count);
-        
+
         if error_count == 0 {
             println!("🎉 All configurations are valid!");
         } else {
@@ -127,7 +131,10 @@ fn validate_csv(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
     }
 
     if error_count > 0 {
-        return Err(ConfigError::other(format!("Validation failed: {} error(s) found", error_count)));
+        return Err(ConfigError::config(format!(
+            "Validation failed: {} error(s) found",
+            error_count
+        )));
     }
 
     Ok(())
@@ -143,8 +150,7 @@ fn validate_xml(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
     // For now, just verify the file is valid XML
     let content = fs::read_to_string(&args.input)?;
 
-    let mut buf = Vec::new();
-    match quick_xml::Reader::from_str(&content).read_event(&mut buf) {
+    match quick_xml::Reader::from_str(&content).read_event() {
         Ok(_) => {
             if !global.quiet {
                 println!("✅ File is valid XML");
@@ -154,7 +160,7 @@ fn validate_xml(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
             println!("❌ Invalid XML: {}", e);
             return Err(ConfigError::invalid_parameter(
                 "input",
-                &format!("Invalid XML: {}", e),
+                format!("Invalid XML: {}", e),
             ));
         }
     }
@@ -165,23 +171,24 @@ fn validate_xml(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
 /// Determine input format from file extension or explicit format
 fn determine_format(input: &Path, format: &ValidationFormat) -> Result<ValidationFormat> {
     match format {
-        ValidationFormat::Auto => {
-            match input.extension().and_then(|ext| ext.to_str()) {
-                Some("csv") => Ok(ValidationFormat::Csv),
-                Some("xml") => Ok(ValidationFormat::Xml),
-                _ => Err(ConfigError::invalid_parameter(
-                    "input",
-                    "Could not determine format from file extension. Please specify --format",
-                )),
-            }
-        }
+        ValidationFormat::Auto => match input.extension().and_then(|ext| ext.to_str()) {
+            Some("csv") => Ok(ValidationFormat::Csv),
+            Some("xml") => Ok(ValidationFormat::Xml),
+            _ => Err(ConfigError::invalid_parameter(
+                "input",
+                "Could not determine format from file extension. Please specify --format",
+            )),
+        },
         other => Ok(other.clone()),
     }
 }
 
 /// Configure terminal output based on global settings
 fn configure_terminal(global: &GlobalArgs) {
-    if global.no_color || env::var("NO_COLOR").is_ok() || env::var("TERM").unwrap_or_default() == "dumb" {
+    if global.no_color
+        || env::var("NO_COLOR").is_ok()
+        || env::var("TERM").unwrap_or_default() == "dumb"
+    {
         env::set_var("NO_COLOR", "1");
     }
 }
@@ -214,7 +221,11 @@ fn write_validation_report(
     let mut file = fs::File::create(path)?;
 
     writeln!(file, "# OPNsense Config Faker - Validation Report")?;
-    writeln!(file, "Generated: {}", chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC"))?;
+    writeln!(
+        file,
+        "Generated: {}",
+        chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
+    )?;
     writeln!(file)?;
     writeln!(file, "## Summary")?;
     writeln!(file, "- Valid configurations: {}", configs.len())?;
@@ -225,15 +236,12 @@ fn write_validation_report(
         writeln!(file, "## Valid Configurations")?;
         writeln!(file, "| VLAN ID | IP Network | Description | WAN |")?;
         writeln!(file, "|---------|------------|-------------|-----|")?;
-        
+
         for config in configs {
             writeln!(
                 file,
                 "| {} | {} | {} | {} |",
-                config.vlan_id,
-                config.ip_network,
-                config.description,
-                config.wan_assignment
+                config.vlan_id, config.ip_network, config.description, config.wan_assignment
             )?;
         }
     }
