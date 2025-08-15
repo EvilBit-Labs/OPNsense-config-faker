@@ -252,32 +252,44 @@ impl VlanGenerator {
         // DHCP range
         events.push(Event::Start(BytesStart::new("range")));
         events.push(Event::Start(BytesStart::new("from")));
-        events.push(Event::Text(BytesText::new(&dhcp_config.range_start).into_owned()));
+        events.push(Event::Text(
+            BytesText::new(&dhcp_config.range_start).into_owned(),
+        ));
         events.push(Event::End(BytesEnd::new("from")));
 
         events.push(Event::Start(BytesStart::new("to")));
-        events.push(Event::Text(BytesText::new(&dhcp_config.range_end).into_owned()));
+        events.push(Event::Text(
+            BytesText::new(&dhcp_config.range_end).into_owned(),
+        ));
         events.push(Event::End(BytesEnd::new("to")));
         events.push(Event::End(BytesEnd::new("range")));
 
         // Default lease time
         events.push(Event::Start(BytesStart::new("defaultleasetime")));
-        events.push(Event::Text(BytesText::new(&dhcp_config.lease_time.to_string()).into_owned()));
+        events.push(Event::Text(
+            BytesText::new(&dhcp_config.lease_time.to_string()).into_owned(),
+        ));
         events.push(Event::End(BytesEnd::new("defaultleasetime")));
 
         // Maximum lease time
         events.push(Event::Start(BytesStart::new("maxleasetime")));
-        events.push(Event::Text(BytesText::new(&dhcp_config.max_lease_time.to_string()).into_owned()));
+        events.push(Event::Text(
+            BytesText::new(&dhcp_config.max_lease_time.to_string()).into_owned(),
+        ));
         events.push(Event::End(BytesEnd::new("maxleasetime")));
 
         // Gateway
         events.push(Event::Start(BytesStart::new("gateway")));
-        events.push(Event::Text(BytesText::new(&dhcp_config.gateway).into_owned()));
+        events.push(Event::Text(
+            BytesText::new(&dhcp_config.gateway).into_owned(),
+        ));
         events.push(Event::End(BytesEnd::new("gateway")));
 
         // Domain name
         events.push(Event::Start(BytesStart::new("domain")));
-        events.push(Event::Text(BytesText::new(&dhcp_config.domain_name).into_owned()));
+        events.push(Event::Text(
+            BytesText::new(&dhcp_config.domain_name).into_owned(),
+        ));
         events.push(Event::End(BytesEnd::new("domain")));
 
         // DNS servers (multiple entries)
@@ -297,19 +309,23 @@ impl VlanGenerator {
         // Static reservations
         for reservation in &dhcp_config.static_reservations {
             events.push(Event::Start(BytesStart::new("staticmap")));
-            
+
             events.push(Event::Start(BytesStart::new("mac")));
             events.push(Event::Text(BytesText::new(&reservation.mac).into_owned()));
             events.push(Event::End(BytesEnd::new("mac")));
-            
+
             events.push(Event::Start(BytesStart::new("ipaddr")));
-            events.push(Event::Text(BytesText::new(&reservation.ip_addr).into_owned()));
+            events.push(Event::Text(
+                BytesText::new(&reservation.ip_addr).into_owned(),
+            ));
             events.push(Event::End(BytesEnd::new("ipaddr")));
-            
+
             events.push(Event::Start(BytesStart::new("hostname")));
-            events.push(Event::Text(BytesText::new(&reservation.hostname).into_owned()));
+            events.push(Event::Text(
+                BytesText::new(&reservation.hostname).into_owned(),
+            ));
             events.push(Event::End(BytesEnd::new("hostname")));
-            
+
             events.push(Event::End(BytesEnd::new("staticmap")));
         }
 
