@@ -19,7 +19,7 @@ pub fn execute_with_global(mut args: GenerateArgs, global: &GlobalArgs) -> Resul
     if global.no_color {
         args.no_color = true;
     }
-    
+
     // Apply global output if specified and not overridden
     if let Some(ref global_output) = global.output {
         if args.output.is_none() {
@@ -41,7 +41,7 @@ pub fn execute(args: GenerateArgs) -> Result<()> {
         no_color: args.no_color,
         output: None,
     };
-    
+
     execute_with_global(args, &global)
 }
 

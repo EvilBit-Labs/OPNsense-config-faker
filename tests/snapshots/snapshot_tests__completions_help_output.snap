@@ -2,4 +2,4 @@
 source: tests/snapshot_tests.rs
 expression: output.normalized_stdout()
 ---
-Generate shell completions for the specified shell Usage: opnsense-config-faker completions <SHELL> Arguments: <SHELL> Shell to generate completions for [possible values: bash, zsh, fish, power-shell, elvish] Options: -h, --help Print help
+Generate shell completions for the specified shell Usage: opnsense-config-faker completions [OPTIONS] <SHELL> Arguments: <SHELL> Shell to generate completions for [possible values: bash, zsh, fish, power-shell, elvish] Options: -q, --quiet Suppress non-essential output (progress bars, summaries, etc.) --no-color Disable colored output (useful for scripts and CI) -o, --output <OUTPUT> Global output file or directory (overrides command-specific output) -h, --help Print help
