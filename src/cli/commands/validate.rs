@@ -66,7 +66,7 @@ fn validate_csv(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
         Ok(configs) => configs,
         Err(e) => {
             println!("❌ Failed to read CSV: {}", e);
-            std::process::exit(1);
+            return Err(e.into());
         }
     };
 
