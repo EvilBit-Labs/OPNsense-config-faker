@@ -231,6 +231,96 @@ impl VlanGenerator {
 
     /// Generate DHCP server configuration events
     fn generate_dhcp_events(&self) -> XMLResult<Vec<Event<'static>>> {
+        // Get enhanced DHCP configuration
+        let dhcp_config = match self.config.dhcp_server_config() {
+            Ok(config) => config,
+            Err(_) => {
+                // Fallback to basic configuration if enhanced config fails
+                return self.generate_basic_dhcp_events();
+            }
+        };
+
+        let mut events = vec![
+            // Start DHCP element
+            Event::Start(BytesStart::new("dhcp")),
+            // Enable DHCP
+            Event::Start(BytesStart::new("enable")),
+            Event::Text(BytesText::new(if dhcp_config.enabled { "1" } else { "0" }).into_owned()),
+            Event::End(BytesEnd::new("enable")),
+        ];
+
+        // DHCP range
+        events.push(Event::Start(BytesStart::new("range")));
+        events.push(Event::Start(BytesStart::new("from")));
+        events.push(Event::Text(BytesText::new(&dhcp_config.range_start).into_owned()));
+        events.push(Event::End(BytesEnd::new("from")));
+
+        events.push(Event::Start(BytesStart::new("to")));
+        events.push(Event::Text(BytesText::new(&dhcp_config.range_end).into_owned()));
+        events.push(Event::End(BytesEnd::new("to")));
+        events.push(Event::End(BytesEnd::new("range")));
+
+        // Default lease time
+        events.push(Event::Start(BytesStart::new("defaultleasetime")));
+        events.push(Event::Text(BytesText::new(&dhcp_config.lease_time.to_string()).into_owned()));
+        events.push(Event::End(BytesEnd::new("defaultleasetime")));
+
+        // Maximum lease time
+        events.push(Event::Start(BytesStart::new("maxleasetime")));
+        events.push(Event::Text(BytesText::new(&dhcp_config.max_lease_time.to_string()).into_owned()));
+        events.push(Event::End(BytesEnd::new("maxleasetime")));
+
+        // Gateway
+        events.push(Event::Start(BytesStart::new("gateway")));
+        events.push(Event::Text(BytesText::new(&dhcp_config.gateway).into_owned()));
+        events.push(Event::End(BytesEnd::new("gateway")));
+
+        // Domain name
+        events.push(Event::Start(BytesStart::new("domain")));
+        events.push(Event::Text(BytesText::new(&dhcp_config.domain_name).into_owned()));
+        events.push(Event::End(BytesEnd::new("domain")));
+
+        // DNS servers (multiple entries)
+        for dns_server in &dhcp_config.dns_servers {
+            events.push(Event::Start(BytesStart::new("dnsserver")));
+            events.push(Event::Text(BytesText::new(dns_server).into_owned()));
+            events.push(Event::End(BytesEnd::new("dnsserver")));
+        }
+
+        // NTP servers
+        for ntp_server in &dhcp_config.ntp_servers {
+            events.push(Event::Start(BytesStart::new("ntpserver")));
+            events.push(Event::Text(BytesText::new(ntp_server).into_owned()));
+            events.push(Event::End(BytesEnd::new("ntpserver")));
+        }
+
+        // Static reservations
+        for reservation in &dhcp_config.static_reservations {
+            events.push(Event::Start(BytesStart::new("staticmap")));
+            
+            events.push(Event::Start(BytesStart::new("mac")));
+            events.push(Event::Text(BytesText::new(&reservation.mac).into_owned()));
+            events.push(Event::End(BytesEnd::new("mac")));
+            
+            events.push(Event::Start(BytesStart::new("ipaddr")));
+            events.push(Event::Text(BytesText::new(&reservation.ip_addr).into_owned()));
+            events.push(Event::End(BytesEnd::new("ipaddr")));
+            
+            events.push(Event::Start(BytesStart::new("hostname")));
+            events.push(Event::Text(BytesText::new(&reservation.hostname).into_owned()));
+            events.push(Event::End(BytesEnd::new("hostname")));
+            
+            events.push(Event::End(BytesEnd::new("staticmap")));
+        }
+
+        // End DHCP element
+        events.push(Event::End(BytesEnd::new("dhcp")));
+
+        Ok(events)
+    }
+
+    /// Generate basic DHCP configuration events (fallback)
+    fn generate_basic_dhcp_events(&self) -> XMLResult<Vec<Event<'static>>> {
         let mut events = vec![
             // Start DHCP element
             Event::Start(BytesStart::new("dhcp")),

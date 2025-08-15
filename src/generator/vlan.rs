@@ -12,6 +12,42 @@ use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
+/// Static DHCP reservation mapping MAC address to IP
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct StaticReservation {
+    /// MAC address in AA:BB:CC:DD:EE:FF format
+    pub mac: String,
+    /// Reserved IP address
+    pub ip_addr: String,
+    /// Hostname for the reservation
+    pub hostname: String,
+}
+
+/// DHCP server configuration with realistic enterprise settings
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DhcpServerConfig {
+    /// Enable DHCP server
+    pub enabled: bool,
+    /// DHCP range start IP
+    pub range_start: String,
+    /// DHCP range end IP  
+    pub range_end: String,
+    /// Default lease time in seconds
+    pub lease_time: u32,
+    /// Maximum lease time in seconds
+    pub max_lease_time: u32,
+    /// DNS servers list
+    pub dns_servers: Vec<String>,
+    /// Domain name for clients
+    pub domain_name: String,
+    /// Gateway IP address
+    pub gateway: String,
+    /// NTP servers for time synchronization
+    pub ntp_servers: Vec<String>,
+    /// Static IP reservations
+    pub static_reservations: Vec<StaticReservation>,
+}
+
 /// VLAN configuration structure matching Python implementation
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct VlanConfig {
@@ -242,6 +278,139 @@ impl VlanConfig {
                 self.ip_network
             )))
         }
+    }
+
+    /// Get the DHCP lease time based on department type (in seconds)
+    pub fn dhcp_lease_time(&self) -> u32 {
+        // Determine lease time based on department characteristics
+        match self.description.split(' ').next().unwrap_or("Unknown") {
+            // Corporate departments - longer lease times (24 hours)
+            "IT" | "Finance" | "Accounting" | "Legal" | "Management" => 86400,
+            // Production environments - medium lease times (12 hours)  
+            "Engineering" | "Development" | "QA" | "Research" | "Operations" => 43200,
+            // Dynamic environments - shorter lease times (8 hours)
+            "Sales" | "Marketing" | "Support" | "Customer Service" | "Training" => 28800,
+            // High-mobility environments - very short lease times (4 hours)
+            "HR" | "Procurement" | "Logistics" => 14400,
+            // Security-sensitive - short lease times (6 hours) for easier tracking
+            "Security" => 21600,
+            // Default for unknown departments (8 hours)
+            _ => 28800,
+        }
+    }
+
+    /// Get the maximum DHCP lease time (typically 2x the default lease time)
+    pub fn dhcp_max_lease_time(&self) -> u32 {
+        self.dhcp_lease_time() * 2
+    }
+
+    /// Get the DHCP domain name based on department context
+    pub fn dhcp_domain_name(&self) -> String {
+        let department = self.description.split(' ').next().unwrap_or("unknown").to_lowercase();
+        format!("{}.company.local", department)
+    }
+
+    /// Get DNS servers list (gateway + reliable public DNS)
+    pub fn dhcp_dns_servers(&self) -> Result<Vec<String>> {
+        let mut dns_servers = Vec::new();
+        
+        // Add gateway as primary DNS
+        if let Ok(gateway) = self.gateway_ip() {
+            dns_servers.push(gateway);
+        }
+        
+        // Add reliable public DNS servers as secondary
+        dns_servers.push("8.8.8.8".to_string());      // Google DNS
+        dns_servers.push("1.1.1.1".to_string());      // Cloudflare DNS
+        
+        Ok(dns_servers)
+    }
+
+    /// Get NTP servers appropriate for corporate environments
+    pub fn dhcp_ntp_servers(&self) -> Vec<String> {
+        vec![
+            "pool.ntp.org".to_string(),
+            "time.nist.gov".to_string(),
+            "time.cloudflare.com".to_string(),
+        ]
+    }
+
+    /// Generate static DHCP reservations with realistic MAC-IP mappings
+    pub fn static_reservations(&self) -> Result<Vec<StaticReservation>> {
+        let mut reservations = Vec::new();
+        
+        // Get base network for IP assignments
+        let base = if let Some(base) = self.ip_network.strip_suffix(".x") {
+            base
+        } else if let Some(base) = self.ip_network.strip_suffix(".0/24") {
+            base
+        } else {
+            return Err(ConfigError::validation(format!(
+                "Cannot derive static reservations from IP network: {}",
+                self.ip_network
+            )));
+        };
+
+        // Generate department-specific static reservations
+        let department = self.description.split(' ').next().unwrap_or("unknown").to_lowercase();
+        
+        match department.as_str() {
+            "it" | "engineering" | "development" => {
+                // IT departments typically have servers and network equipment
+                reservations.push(StaticReservation {
+                    mac: format!("aa:bb:cc:dd:ee:{:02x}", self.vlan_id % 256),
+                    ip_addr: format!("{}.10", base),
+                    hostname: format!("server-{}-01", department),
+                });
+                reservations.push(StaticReservation {
+                    mac: format!("aa:bb:cc:dd:ef:{:02x}", self.vlan_id % 256),
+                    ip_addr: format!("{}.11", base),
+                    hostname: format!("printer-{}-01", department),
+                });
+            }
+            "finance" | "accounting" | "legal" => {
+                // Finance departments typically have specialized workstations
+                reservations.push(StaticReservation {
+                    mac: format!("aa:bb:cc:dd:f0:{:02x}", self.vlan_id % 256),
+                    ip_addr: format!("{}.15", base),
+                    hostname: format!("workstation-{}-01", department),
+                });
+            }
+            "sales" | "marketing" => {
+                // Sales departments typically have presentation equipment
+                reservations.push(StaticReservation {
+                    mac: format!("aa:bb:cc:dd:f1:{:02x}", self.vlan_id % 256),
+                    ip_addr: format!("{}.20", base),
+                    hostname: format!("display-{}-01", department),
+                });
+            }
+            _ => {
+                // Default reservation for other departments
+                reservations.push(StaticReservation {
+                    mac: format!("aa:bb:cc:dd:f2:{:02x}", self.vlan_id % 256),
+                    ip_addr: format!("{}.25", base),
+                    hostname: format!("device-{}-01", department),
+                });
+            }
+        }
+
+        Ok(reservations)
+    }
+
+    /// Generate complete DHCP server configuration
+    pub fn dhcp_server_config(&self) -> Result<DhcpServerConfig> {
+        Ok(DhcpServerConfig {
+            enabled: true,
+            range_start: self.dhcp_range_start()?,
+            range_end: self.dhcp_range_end()?,
+            lease_time: self.dhcp_lease_time(),
+            max_lease_time: self.dhcp_max_lease_time(),
+            dns_servers: self.dhcp_dns_servers()?,
+            domain_name: self.dhcp_domain_name(),
+            gateway: self.gateway_ip()?,
+            ntp_servers: self.dhcp_ntp_servers(),
+            static_reservations: self.static_reservations()?,
+        })
     }
 }
 
@@ -1242,5 +1411,92 @@ mod tests {
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
         assert!(error_msg.contains("invalid octet structure"));
+    }
+
+    // ===== Enhanced DHCP Configuration Tests =====
+
+    #[test]
+    fn test_dhcp_lease_time_based_on_department() {
+        let it_config = VlanConfig::new(100, "10.1.2.x".to_string(), "IT 100".to_string(), 1).unwrap();
+        assert_eq!(it_config.dhcp_lease_time(), 86400); // 24 hours for IT
+
+        let sales_config = VlanConfig::new(200, "10.1.3.x".to_string(), "Sales 200".to_string(), 1).unwrap();
+        assert_eq!(sales_config.dhcp_lease_time(), 28800); // 8 hours for Sales
+
+        let security_config = VlanConfig::new(300, "10.1.4.x".to_string(), "Security 300".to_string(), 1).unwrap();
+        assert_eq!(security_config.dhcp_lease_time(), 21600); // 6 hours for Security
+
+        let unknown_config = VlanConfig::new(400, "10.1.5.x".to_string(), "Unknown 400".to_string(), 1).unwrap();
+        assert_eq!(unknown_config.dhcp_lease_time(), 28800); // 8 hours default
+    }
+
+    #[test]
+    fn test_dhcp_max_lease_time() {
+        let config = VlanConfig::new(100, "10.1.2.x".to_string(), "IT 100".to_string(), 1).unwrap();
+        assert_eq!(config.dhcp_max_lease_time(), config.dhcp_lease_time() * 2);
+    }
+
+    #[test]
+    fn test_dhcp_domain_name_department_specific() {
+        let it_config = VlanConfig::new(100, "10.1.2.x".to_string(), "IT 100".to_string(), 1).unwrap();
+        assert_eq!(it_config.dhcp_domain_name(), "it.company.local");
+
+        let sales_config = VlanConfig::new(200, "10.1.3.x".to_string(), "Sales 200".to_string(), 1).unwrap();
+        assert_eq!(sales_config.dhcp_domain_name(), "sales.company.local");
+    }
+
+    #[test]
+    fn test_dhcp_dns_servers() {
+        let config = VlanConfig::new(100, "10.1.2.x".to_string(), "IT 100".to_string(), 1).unwrap();
+        let dns_servers = config.dhcp_dns_servers().unwrap();
+        
+        assert!(dns_servers.len() >= 3);
+        assert_eq!(dns_servers[0], "10.1.2.1"); // Gateway as primary
+        assert!(dns_servers.contains(&"8.8.8.8".to_string())); // Google DNS
+        assert!(dns_servers.contains(&"1.1.1.1".to_string())); // Cloudflare DNS
+    }
+
+    #[test]
+    fn test_dhcp_ntp_servers() {
+        let config = VlanConfig::new(100, "10.1.2.x".to_string(), "IT 100".to_string(), 1).unwrap();
+        let ntp_servers = config.dhcp_ntp_servers();
+        
+        assert!(ntp_servers.len() >= 3);
+        assert!(ntp_servers.contains(&"pool.ntp.org".to_string()));
+        assert!(ntp_servers.contains(&"time.nist.gov".to_string()));
+        assert!(ntp_servers.contains(&"time.cloudflare.com".to_string()));
+    }
+
+    #[test]
+    fn test_static_reservations_department_specific() {
+        let it_config = VlanConfig::new(100, "10.1.2.x".to_string(), "IT 100".to_string(), 1).unwrap();
+        let reservations = it_config.static_reservations().unwrap();
+        
+        assert!(reservations.len() >= 2); // IT should have server and printer
+        assert!(reservations.iter().any(|r| r.hostname.contains("server")));
+        assert!(reservations.iter().any(|r| r.hostname.contains("printer")));
+
+        let finance_config = VlanConfig::new(200, "10.1.3.x".to_string(), "Finance 200".to_string(), 1).unwrap();
+        let finance_reservations = finance_config.static_reservations().unwrap();
+        
+        assert!(finance_reservations.len() >= 1);
+        assert!(finance_reservations.iter().any(|r| r.hostname.contains("workstation")));
+    }
+
+    #[test]
+    fn test_dhcp_server_config_complete() {
+        let config = VlanConfig::new(100, "10.1.2.x".to_string(), "IT 100".to_string(), 1).unwrap();
+        let dhcp_config = config.dhcp_server_config().unwrap();
+        
+        assert!(dhcp_config.enabled);
+        assert_eq!(dhcp_config.range_start, "10.1.2.100");
+        assert_eq!(dhcp_config.range_end, "10.1.2.200");
+        assert_eq!(dhcp_config.lease_time, 86400); // IT department
+        assert_eq!(dhcp_config.max_lease_time, 172800);
+        assert_eq!(dhcp_config.domain_name, "it.company.local");
+        assert_eq!(dhcp_config.gateway, "10.1.2.1");
+        assert!(dhcp_config.dns_servers.len() >= 3);
+        assert!(dhcp_config.ntp_servers.len() >= 3);
+        assert!(dhcp_config.static_reservations.len() >= 2);
     }
 }
