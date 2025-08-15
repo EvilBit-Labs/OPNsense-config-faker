@@ -103,26 +103,32 @@ fn test_xml_engine_multiple_vlans() {
 fn test_enhanced_dhcp_xml_generation() {
     // Create a test VLAN configuration for IT department
     let config = VlanConfig::new(100, "10.1.2.x".to_string(), "IT 100".to_string(), 1).unwrap();
-    
+
     // Create XML generator with DHCP enabled
     let options = opnsense_config_faker::xml::generator::VlanGeneratorOptions {
         include_dhcp: true,
         ..Default::default()
     };
     let generator = VlanGenerator::with_options(config.clone(), options);
-    
+
     // Generate XML events
     let events = generator.generate_events().unwrap();
-    
+
     // Convert events to string for validation
     let mut xml_content = String::new();
     for event in events {
         match event {
             quick_xml::events::Event::Start(start) => {
-                xml_content.push_str(&format!("<{}>", String::from_utf8_lossy(start.name().as_ref())));
+                xml_content.push_str(&format!(
+                    "<{}>",
+                    String::from_utf8_lossy(start.name().as_ref())
+                ));
             }
             quick_xml::events::Event::End(end) => {
-                xml_content.push_str(&format!("</{}>", String::from_utf8_lossy(end.name().as_ref())));
+                xml_content.push_str(&format!(
+                    "</{}>",
+                    String::from_utf8_lossy(end.name().as_ref())
+                ));
             }
             quick_xml::events::Event::Text(text) => {
                 xml_content.push_str(&String::from_utf8_lossy(&text));
@@ -130,71 +136,97 @@ fn test_enhanced_dhcp_xml_generation() {
             _ => {}
         }
     }
-    
+
     println!("Generated XML content:\n{}", xml_content);
-    
+
     // Verify enhanced DHCP elements are present
-    assert!(xml_content.contains("<defaultleasetime>86400</defaultleasetime>"), 
-            "Should contain IT department lease time (24 hours)");
-    assert!(xml_content.contains("<maxleasetime>172800</maxleasetime>"), 
-            "Should contain max lease time (48 hours)");
-    assert!(xml_content.contains("<domain>it.company.local</domain>"), 
-            "Should contain department-specific domain");
-    assert!(xml_content.contains("<gateway>10.1.2.1</gateway>"), 
-            "Should contain gateway");
-    assert!(xml_content.contains("<dnsserver>10.1.2.1</dnsserver>"), 
-            "Should contain gateway as DNS server");
-    assert!(xml_content.contains("<dnsserver>8.8.8.8</dnsserver>"), 
-            "Should contain Google DNS");
-    assert!(xml_content.contains("<ntpserver>pool.ntp.org</ntpserver>"), 
-            "Should contain NTP server");
-    assert!(xml_content.contains("<staticmap>"), 
-            "Should contain static reservations");
-    assert!(xml_content.contains("<hostname>server-it-01</hostname>"), 
-            "Should contain IT-specific static reservation");
+    assert!(
+        xml_content.contains("<defaultleasetime>86400</defaultleasetime>"),
+        "Should contain IT department lease time (24 hours)"
+    );
+    assert!(
+        xml_content.contains("<maxleasetime>172800</maxleasetime>"),
+        "Should contain max lease time (48 hours)"
+    );
+    assert!(
+        xml_content.contains("<domain>it.company.local</domain>"),
+        "Should contain department-specific domain"
+    );
+    assert!(
+        xml_content.contains("<gateway>10.1.2.1</gateway>"),
+        "Should contain gateway"
+    );
+    assert!(
+        xml_content.contains("<dnsserver>10.1.2.1</dnsserver>"),
+        "Should contain gateway as DNS server"
+    );
+    assert!(
+        xml_content.contains("<dnsserver>8.8.8.8</dnsserver>"),
+        "Should contain Google DNS"
+    );
+    assert!(
+        xml_content.contains("<ntpserver>pool.ntp.org</ntpserver>"),
+        "Should contain NTP server"
+    );
+    assert!(
+        xml_content.contains("<staticmap>"),
+        "Should contain static reservations"
+    );
+    assert!(
+        xml_content.contains("<hostname>server-it-01</hostname>"),
+        "Should contain IT-specific static reservation"
+    );
 }
 
 #[test]
 fn test_enhanced_dhcp_different_departments() {
     // Test Sales department (shorter lease time)
-    let sales_config = VlanConfig::new(200, "10.1.3.x".to_string(), "Sales 200".to_string(), 1).unwrap();
-    let options = opnsense_config_faker::xml::generator::VlanGeneratorOptions { 
-        include_dhcp: true, 
-        ..Default::default() 
+    let sales_config =
+        VlanConfig::new(200, "10.1.3.x".to_string(), "Sales 200".to_string(), 1).unwrap();
+    let options = opnsense_config_faker::xml::generator::VlanGeneratorOptions {
+        include_dhcp: true,
+        ..Default::default()
     };
     let sales_generator = VlanGenerator::with_options(sales_config, options.clone());
     let sales_events = sales_generator.generate_events().unwrap();
-    
+
     let mut sales_xml = String::new();
     for event in sales_events {
-        match event {
-            quick_xml::events::Event::Text(text) => {
-                sales_xml.push_str(&String::from_utf8_lossy(&text));
-            }
-            _ => {}
+        if let quick_xml::events::Event::Text(text) = event {
+            sales_xml.push_str(&String::from_utf8_lossy(&text));
         }
     }
-    
+
     // Sales should have 8-hour lease time (28800 seconds)
-    assert!(sales_xml.contains("28800"), "Sales should have 8-hour lease time");
-    assert!(sales_xml.contains("sales.company.local"), "Sales should have sales domain");
-    
+    assert!(
+        sales_xml.contains("28800"),
+        "Sales should have 8-hour lease time"
+    );
+    assert!(
+        sales_xml.contains("sales.company.local"),
+        "Sales should have sales domain"
+    );
+
     // Test Security department (different lease time)
-    let security_config = VlanConfig::new(300, "10.1.4.x".to_string(), "Security 300".to_string(), 1).unwrap();
+    let security_config =
+        VlanConfig::new(300, "10.1.4.x".to_string(), "Security 300".to_string(), 1).unwrap();
     let security_generator = VlanGenerator::with_options(security_config, options);
     let security_events = security_generator.generate_events().unwrap();
-    
+
     let mut security_xml = String::new();
     for event in security_events {
-        match event {
-            quick_xml::events::Event::Text(text) => {
-                security_xml.push_str(&String::from_utf8_lossy(&text));
-            }
-            _ => {}
+        if let quick_xml::events::Event::Text(text) = event {
+            security_xml.push_str(&String::from_utf8_lossy(&text));
         }
     }
-    
+
     // Security should have 6-hour lease time (21600 seconds)
-    assert!(security_xml.contains("21600"), "Security should have 6-hour lease time");
-    assert!(security_xml.contains("security.company.local"), "Security should have security domain");
+    assert!(
+        security_xml.contains("21600"),
+        "Security should have 6-hour lease time"
+    );
+    assert!(
+        security_xml.contains("security.company.local"),
+        "Security should have security domain"
+    );
 }
