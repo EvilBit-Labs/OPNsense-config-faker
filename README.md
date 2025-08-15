@@ -217,6 +217,31 @@ cargo run --release -- xml --base-config config.xml --count 500 --output-dir loa
 # Test OPNsense performance with large configs
 ```
 
+### Firewall Rules Generation
+
+```bash
+# Generate configurations with firewall rules (default complexity)
+cargo run --release -- generate --count 25 --format csv --output config.csv --include-firewall-rules
+
+# Generate with specific firewall rule complexity
+cargo run --release -- generate --count 10 --format xml --base-config config.xml --include-firewall-rules --firewall-rule-complexity advanced
+
+# Limit firewall rules per VLAN (useful for testing with smaller rule sets)
+cargo run --release -- generate --count 5 --format csv --output config.csv --include-firewall-rules --firewall-rules-per-vlan 2
+
+# Generate XML with limited firewall rules per VLAN
+cargo run --release -- generate --count 10 --format xml --base-config config.xml --include-firewall-rules --firewall-rules-per-vlan 3 --firewall-rule-complexity intermediate
+```
+
+**Firewall Rules Per VLAN**: The `--firewall-rules-per-vlan` flag allows you to control the number of firewall rules generated per VLAN. This is useful for:
+
+- Testing with smaller, more manageable rule sets
+- Creating focused security scenarios
+- Reducing configuration complexity for specific use cases
+- Performance testing with controlled rule counts
+
+When specified, this flag overrides the default rule count based on complexity level and ensures priorities are reassigned sequentially (1, 2, 3, ...) for each VLAN.
+
 ## Troubleshooting
 
 ### Common Issues

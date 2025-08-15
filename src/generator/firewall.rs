@@ -215,8 +215,10 @@ impl FirewallGenerator {
         vlan_network: &str,
         complexity: FirewallComplexity,
         department: &str,
+        firewall_rules_per_vlan: Option<u16>,
     ) -> Result<Vec<FirewallRule>> {
-        let rules_count = complexity.rules_per_vlan();
+        let default_rules_count = complexity.rules_per_vlan();
+        let rules_count = firewall_rules_per_vlan.unwrap_or(default_rules_count);
         let mut rules = Vec::with_capacity(rules_count as usize);
 
         // Generate basic network access rules
@@ -261,7 +263,7 @@ impl FirewallGenerator {
             "any".to_string(),
             "pass".to_string(),
             "in".to_string(),
-            generate_rule_description(department, "Allow", "internal traffic"),
+            generate_rule_description(&mut self.rng, department, "Allow", "internal traffic"),
             true,
             Some(vlan_id),
             0, // Will be set later
@@ -277,7 +279,7 @@ impl FirewallGenerator {
             "53".to_string(),
             "pass".to_string(),
             "out".to_string(),
-            generate_rule_description(department, "Allow", "DNS queries"),
+            generate_rule_description(&mut self.rng, department, "Allow", "DNS queries"),
             true,
             Some(vlan_id),
             0, // Will be set later
@@ -293,7 +295,7 @@ impl FirewallGenerator {
             "80,443".to_string(),
             "pass".to_string(),
             "out".to_string(),
-            generate_rule_description(department, "Allow", "web access"),
+            generate_rule_description(&mut self.rng, department, "Allow", "web access"),
             true,
             Some(vlan_id),
             0, // Will be set later
@@ -321,7 +323,7 @@ impl FirewallGenerator {
             "123".to_string(),
             "pass".to_string(),
             "out".to_string(),
-            generate_rule_description(department, "Allow", "NTP synchronization"),
+            generate_rule_description(&mut self.rng, department, "Allow", "NTP synchronization"),
             false, // Don't log NTP traffic
             Some(vlan_id),
             0, // Will be set later
@@ -337,7 +339,7 @@ impl FirewallGenerator {
             "any".to_string(),
             "pass".to_string(),
             "out".to_string(),
-            generate_rule_description(department, "Allow", "ICMP diagnostics"),
+            generate_rule_description(&mut self.rng, department, "Allow", "ICMP diagnostics"),
             false, // Don't log ICMP traffic
             Some(vlan_id),
             0, // Will be set later
@@ -353,7 +355,7 @@ impl FirewallGenerator {
             "22,23,3389".to_string(), // SSH, Telnet, RDP
             "block".to_string(),
             "in".to_string(),
-            generate_rule_description(department, "Block", "remote access attempts"),
+            generate_rule_description(&mut self.rng, department, "Block", "remote access attempts"),
             true,
             Some(vlan_id),
             0, // Will be set later
@@ -370,7 +372,7 @@ impl FirewallGenerator {
             app_ports,
             "pass".to_string(),
             "out".to_string(),
-            generate_rule_description(department, "Allow", "application access"),
+            generate_rule_description(&mut self.rng, department, "Allow", "application access"),
             true,
             Some(vlan_id),
             0, // Will be set later
@@ -398,7 +400,7 @@ impl FirewallGenerator {
             "80,443".to_string(),
             "pass".to_string(),
             "out".to_string(),
-            generate_rule_description(department, "Rate-limited", "web access"),
+            generate_rule_description(&mut self.rng, department, "Rate-limited", "web access"),
             true,
             Some(vlan_id),
             0, // Will be set later
@@ -414,7 +416,7 @@ impl FirewallGenerator {
             "6881:6889,51413".to_string(), // BitTorrent ports
             "block".to_string(),
             "out".to_string(),
-            generate_rule_description(department, "Block", "P2P traffic"),
+            generate_rule_description(&mut self.rng, department, "Block", "P2P traffic"),
             true,
             Some(vlan_id),
             0, // Will be set later
@@ -431,7 +433,7 @@ impl FirewallGenerator {
                 "1194,500,4500".to_string(), // OpenVPN, IPSec
                 "pass".to_string(),
                 "out".to_string(),
-                generate_rule_description(department, "Allow", "VPN access"),
+                generate_rule_description(&mut self.rng, department, "Allow", "VPN access"),
                 true,
                 Some(vlan_id),
                 0, // Will be set later
@@ -449,7 +451,12 @@ impl FirewallGenerator {
                 "443".to_string(),
                 "block".to_string(),
                 "out".to_string(),
-                generate_rule_description(department, "Block", "social media access"),
+                generate_rule_description(
+                    &mut self.rng,
+                    department,
+                    "Block",
+                    "social media access",
+                ),
                 true,
                 Some(vlan_id),
                 0, // Will be set later
@@ -467,7 +474,7 @@ impl FirewallGenerator {
                 "21,22,445,139".to_string(), // FTP, SSH, SMB
                 "pass".to_string(),
                 "out".to_string(),
-                generate_rule_description(department, "Allow", "file sharing"),
+                generate_rule_description(&mut self.rng, department, "Allow", "file sharing"),
                 true,
                 Some(vlan_id),
                 0, // Will be set later
@@ -485,7 +492,7 @@ impl FirewallGenerator {
                 "27015:27018,25565,25575".to_string(), // Common gaming ports
                 "block".to_string(),
                 "out".to_string(),
-                generate_rule_description(department, "Block", "gaming traffic"),
+                generate_rule_description(&mut self.rng, department, "Block", "gaming traffic"),
                 true,
                 Some(vlan_id),
                 0, // Will be set later
@@ -502,7 +509,7 @@ impl FirewallGenerator {
             "161,162,514".to_string(), // SNMP, Syslog
             "pass".to_string(),
             "out".to_string(),
-            generate_rule_description(department, "Allow", "monitoring traffic"),
+            generate_rule_description(&mut self.rng, department, "Allow", "monitoring traffic"),
             false, // Don't log monitoring traffic
             Some(vlan_id),
             0, // Will be set later
@@ -518,7 +525,12 @@ impl FirewallGenerator {
             "any".to_string(),
             "block".to_string(),
             "out".to_string(),
-            generate_rule_description(department, "Default deny", "outbound traffic"),
+            generate_rule_description(
+                &mut self.rng,
+                department,
+                "Default deny",
+                "outbound traffic",
+            ),
             true,
             Some(vlan_id),
             0, // Will be set later
@@ -586,6 +598,7 @@ pub fn generate_firewall_rules(
     complexity: FirewallComplexity,
     seed: Option<u64>,
     progress_bar: Option<&ProgressBar>,
+    firewall_rules_per_vlan: Option<u16>,
 ) -> Result<Vec<FirewallRule>> {
     let mut generator = FirewallGenerator::new(seed);
     let mut all_rules = Vec::new();
@@ -606,14 +619,16 @@ pub fn generate_firewall_rules(
             ));
         }
 
-        // Get department name from VLAN description
-        let department = extract_department_from_description(&vlan_config.description);
+        // Get department name from VLAN description using generator's RNG
+        let department =
+            extract_department_from_description(&vlan_config.description, &mut generator.rng);
 
         let vlan_rules = generator.generate_vlan_rules(
             vlan_config.vlan_id,
             &vlan_config.ip_network,
             complexity,
             &department,
+            firewall_rules_per_vlan,
         )?;
 
         all_rules.extend(vlan_rules);
@@ -627,7 +642,10 @@ pub fn generate_firewall_rules(
 }
 
 /// Extract department name from VLAN description
-fn extract_department_from_description(description: &str) -> String {
+fn extract_department_from_description<R: rand::Rng + ?Sized>(
+    description: &str,
+    rng: &mut R,
+) -> String {
     // Common department patterns in descriptions
     let dept_patterns = [
         "IT",
@@ -652,12 +670,12 @@ fn extract_department_from_description(description: &str) -> String {
         }
     }
 
-    // Fallback to a realistic department name using fake crate
-    generate_department_name()
+    // Fallback to a realistic department name using fake crate with deterministic RNG
+    generate_department_name(rng)
 }
 
-/// Generate realistic department name using fake crate
-fn generate_department_name() -> String {
+/// Generate realistic department name using fake crate with deterministic RNG
+fn generate_department_name<R: rand::Rng + ?Sized>(rng: &mut R) -> String {
     use crate::generator::departments;
 
     // Get all available departments and filter to only those longer than 2 characters
@@ -668,31 +686,30 @@ fn generate_department_name() -> String {
         .copied()
         .collect();
 
-    // Simple random selection using the current time as a seed
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let seed = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_nanos() as usize;
-
     // Fallback to a longer department name if the filtered list is empty
     if valid_departments.is_empty() {
         "Information Technology".to_string()
     } else {
-        valid_departments[seed % valid_departments.len()].to_string()
+        valid_departments.choose(rng).unwrap().to_string()
     }
 }
 
-/// Generate realistic rule description using fake crate
-fn generate_rule_description(department: &str, action: &str, service: &str) -> String {
+/// Generate realistic rule description using fake crate with deterministic RNG
+fn generate_rule_description<R: rand::Rng + ?Sized>(
+    rng: &mut R,
+    department: &str,
+    action: &str,
+    service: &str,
+) -> String {
     use fake::faker::lorem::en::*;
-    let context = Words(2..4).fake::<Vec<String>>().join(" ");
+    let context = Words(2..4).fake_with_rng::<Vec<String>, _>(rng).join(" ");
     format!("{} {} {} - {}", action, department, service, context)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand_chacha::ChaCha8Rng;
 
     #[test]
     fn test_firewall_rule_creation() {
@@ -810,7 +827,13 @@ mod tests {
         let mut generator = FirewallGenerator::new(Some(12345));
 
         let rules = generator
-            .generate_vlan_rules(100, "192.168.100.0/24", FirewallComplexity::Basic, "IT")
+            .generate_vlan_rules(
+                100,
+                "192.168.100.0/24",
+                FirewallComplexity::Basic,
+                "IT",
+                None,
+            )
             .unwrap();
 
         assert!(!rules.is_empty());
@@ -822,7 +845,13 @@ mod tests {
         let mut generator = FirewallGenerator::new(Some(12345));
 
         let rules = generator
-            .generate_vlan_rules(100, "192.168.100.0/24", FirewallComplexity::Advanced, "IT")
+            .generate_vlan_rules(
+                100,
+                "192.168.100.0/24",
+                FirewallComplexity::Advanced,
+                "IT",
+                None,
+            )
             .unwrap();
 
         assert!(!rules.is_empty());
@@ -840,6 +869,7 @@ mod tests {
                 "192.168.100.0/24",
                 FirewallComplexity::Intermediate,
                 "IT",
+                None,
             )
             .unwrap();
 
@@ -849,6 +879,7 @@ mod tests {
                 "192.168.200.0/24",
                 FirewallComplexity::Intermediate,
                 "Sales",
+                None,
             )
             .unwrap();
 
@@ -858,6 +889,7 @@ mod tests {
                 "192.168.300.0/24",
                 FirewallComplexity::Intermediate,
                 "Engineering",
+                None,
             )
             .unwrap();
 
@@ -878,11 +910,23 @@ mod tests {
         let mut generator2 = FirewallGenerator::new(Some(seed));
 
         let rules1 = generator1
-            .generate_vlan_rules(100, "192.168.100.0/24", FirewallComplexity::Basic, "IT")
+            .generate_vlan_rules(
+                100,
+                "192.168.100.0/24",
+                FirewallComplexity::Basic,
+                "IT",
+                None,
+            )
             .unwrap();
 
         let rules2 = generator2
-            .generate_vlan_rules(100, "192.168.100.0/24", FirewallComplexity::Basic, "IT")
+            .generate_vlan_rules(
+                100,
+                "192.168.100.0/24",
+                FirewallComplexity::Basic,
+                "IT",
+                None,
+            )
             .unwrap();
 
         assert_eq!(rules1.len(), rules2.len());
@@ -896,13 +940,17 @@ mod tests {
 
     #[test]
     fn test_department_extraction() {
-        assert_eq!(extract_department_from_description("IT_VLAN_0100"), "IT");
+        let mut rng = ChaCha8Rng::seed_from_u64(12345);
         assert_eq!(
-            extract_department_from_description("Sales_VLAN_0200"),
+            extract_department_from_description("IT_VLAN_0100", &mut rng),
+            "IT"
+        );
+        assert_eq!(
+            extract_department_from_description("Sales_VLAN_0200", &mut rng),
             "Sales"
         );
         // Test that unknown descriptions return a realistic department name (not empty)
-        let unknown_dept = extract_department_from_description("Unknown_VLAN_0300");
+        let unknown_dept = extract_department_from_description("Unknown_VLAN_0300", &mut rng);
         assert!(!unknown_dept.is_empty());
         assert!(unknown_dept.len() > 2);
     }
@@ -991,8 +1039,9 @@ mod tests {
 
     #[test]
     fn test_generate_rule_description() {
-        let desc1 = generate_rule_description("IT", "Allow", "web traffic");
-        let desc2 = generate_rule_description("Sales", "Block", "file sharing");
+        let mut rng = ChaCha8Rng::seed_from_u64(12345);
+        let desc1 = generate_rule_description(&mut rng, "IT", "Allow", "web traffic");
+        let desc2 = generate_rule_description(&mut rng, "Sales", "Block", "file sharing");
 
         assert!(!desc1.is_empty());
         assert!(!desc2.is_empty());
@@ -1008,11 +1057,23 @@ mod tests {
         let mut generator2 = FirewallGenerator::new(Some(67890));
 
         let rules1 = generator1
-            .generate_vlan_rules(100, "192.168.100.0/24", FirewallComplexity::Basic, "IT")
+            .generate_vlan_rules(
+                100,
+                "192.168.100.0/24",
+                FirewallComplexity::Basic,
+                "IT",
+                None,
+            )
             .unwrap();
 
         let rules2 = generator2
-            .generate_vlan_rules(200, "192.168.200.0/24", FirewallComplexity::Basic, "Sales")
+            .generate_vlan_rules(
+                200,
+                "192.168.200.0/24",
+                FirewallComplexity::Basic,
+                "Sales",
+                None,
+            )
             .unwrap();
 
         assert_eq!(rules1.len(), rules2.len()); // Same number of rules
@@ -1026,7 +1087,13 @@ mod tests {
 
         // Test with maximum VLAN ID
         let rules = generator
-            .generate_vlan_rules(4094, "192.168.254.0/24", FirewallComplexity::Basic, "IT")
+            .generate_vlan_rules(
+                4094,
+                "192.168.254.0/24",
+                FirewallComplexity::Basic,
+                "IT",
+                None,
+            )
             .unwrap();
 
         assert!(!rules.is_empty());
@@ -1044,6 +1111,7 @@ mod tests {
                 "192.168.100.0/24",
                 FirewallComplexity::Intermediate,
                 "IT",
+                None,
             )
             .unwrap();
 
@@ -1073,9 +1141,14 @@ mod tests {
             .unwrap(),
         ];
 
-        let rules =
-            generate_firewall_rules(&vlan_configs, FirewallComplexity::Basic, Some(12345), None)
-                .unwrap();
+        let rules = generate_firewall_rules(
+            &vlan_configs,
+            FirewallComplexity::Basic,
+            Some(12345),
+            None,
+            None,
+        )
+        .unwrap();
 
         assert!(!rules.is_empty());
         assert!(rules.len() >= 6); // At least 3 rules per VLAN * 2 VLANs
@@ -1095,8 +1168,13 @@ mod tests {
 
         let vlan_configs = vec![invalid_vlan];
 
-        let result =
-            generate_firewall_rules(&vlan_configs, FirewallComplexity::Basic, Some(12345), None);
+        let result = generate_firewall_rules(
+            &vlan_configs,
+            FirewallComplexity::Basic,
+            Some(12345),
+            None,
+            None,
+        );
 
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
@@ -1118,8 +1196,13 @@ mod tests {
 
         let vlan_configs = vec![invalid_vlan];
 
-        let result =
-            generate_firewall_rules(&vlan_configs, FirewallComplexity::Basic, Some(12345), None);
+        let result = generate_firewall_rules(
+            &vlan_configs,
+            FirewallComplexity::Basic,
+            Some(12345),
+            None,
+            None,
+        );
 
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
@@ -1141,8 +1224,13 @@ mod tests {
 
         let vlan_configs = vec![invalid_vlan];
 
-        let result =
-            generate_firewall_rules(&vlan_configs, FirewallComplexity::Basic, Some(12345), None);
+        let result = generate_firewall_rules(
+            &vlan_configs,
+            FirewallComplexity::Basic,
+            Some(12345),
+            None,
+            None,
+        );
 
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
@@ -1164,12 +1252,178 @@ mod tests {
 
         let vlan_configs = vec![invalid_vlan];
 
-        let result =
-            generate_firewall_rules(&vlan_configs, FirewallComplexity::Basic, Some(12345), None);
+        let result = generate_firewall_rules(
+            &vlan_configs,
+            FirewallComplexity::Basic,
+            Some(12345),
+            None,
+            None,
+        );
 
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
         assert!(error_msg.contains("Invalid VLAN configuration for VLAN 100"));
         assert!(error_msg.contains("outside valid range 1-3"));
+    }
+
+    #[test]
+    fn test_firewall_rules_per_vlan_limit() {
+        use crate::generator::VlanConfig;
+
+        let vlan_configs = vec![
+            VlanConfig::new(
+                100,
+                "192.168.100.x".to_string(),
+                "IT_VLAN_0100".to_string(),
+                1,
+            )
+            .unwrap(),
+            VlanConfig::new(
+                200,
+                "192.168.200.x".to_string(),
+                "Sales_VLAN_0200".to_string(),
+                1,
+            )
+            .unwrap(),
+        ];
+
+        // Test with no limit (should use default complexity-based count)
+        let rules_no_limit = generate_firewall_rules(
+            &vlan_configs,
+            FirewallComplexity::Basic,
+            Some(12345),
+            None,
+            None,
+        )
+        .unwrap();
+
+        // Test with limit of 2 rules per VLAN
+        let rules_with_limit = generate_firewall_rules(
+            &vlan_configs,
+            FirewallComplexity::Basic,
+            Some(12345),
+            None,
+            Some(2),
+        )
+        .unwrap();
+
+        // Verify that the limited version has fewer total rules
+        assert!(rules_with_limit.len() < rules_no_limit.len());
+
+        // Verify that each VLAN has at most 2 rules in the limited version
+        let mut vlan_rule_counts = std::collections::HashMap::new();
+        for rule in &rules_with_limit {
+            if let Some(vlan_id) = rule.vlan_id {
+                *vlan_rule_counts.entry(vlan_id).or_insert(0) += 1;
+            }
+        }
+
+        for (vlan_id, count) in vlan_rule_counts {
+            assert!(
+                count <= 2,
+                "VLAN {} has {} rules, expected at most 2",
+                vlan_id,
+                count
+            );
+        }
+
+        // Verify that priorities are reassigned correctly (1, 2, 3, ...)
+        let mut vlan_priorities = std::collections::HashMap::new();
+        for rule in &rules_with_limit {
+            if let Some(vlan_id) = rule.vlan_id {
+                vlan_priorities
+                    .entry(vlan_id)
+                    .or_insert_with(Vec::new)
+                    .push(rule.priority);
+            }
+        }
+
+        for (vlan_id, priorities) in vlan_priorities {
+            let mut sorted_priorities = priorities.clone();
+            sorted_priorities.sort();
+            assert_eq!(
+                sorted_priorities,
+                (1..=priorities.len() as u16).collect::<Vec<_>>(),
+                "VLAN {} priorities are not sequential starting from 1: {:?}",
+                vlan_id,
+                priorities
+            );
+        }
+    }
+
+    #[test]
+    fn test_firewall_rules_per_vlan_with_different_complexities() {
+        use crate::generator::VlanConfig;
+
+        let vlan_configs = vec![VlanConfig::new(
+            100,
+            "192.168.100.x".to_string(),
+            "IT_VLAN_0100".to_string(),
+            1,
+        )
+        .unwrap()];
+
+        // Test that the limit is respected regardless of complexity
+        let basic_rules = generate_firewall_rules(
+            &vlan_configs,
+            FirewallComplexity::Basic,
+            Some(12345),
+            None,
+            Some(1),
+        )
+        .unwrap();
+
+        let intermediate_rules = generate_firewall_rules(
+            &vlan_configs,
+            FirewallComplexity::Intermediate,
+            Some(12345),
+            None,
+            Some(1),
+        )
+        .unwrap();
+
+        let advanced_rules = generate_firewall_rules(
+            &vlan_configs,
+            FirewallComplexity::Advanced,
+            Some(12345),
+            None,
+            Some(1),
+        )
+        .unwrap();
+
+        // All should have exactly 1 rule per VLAN due to the limit
+        assert_eq!(basic_rules.len(), 1);
+        assert_eq!(intermediate_rules.len(), 1);
+        assert_eq!(advanced_rules.len(), 1);
+
+        // Verify priorities are correctly assigned
+        assert_eq!(basic_rules[0].priority, 1);
+        assert_eq!(intermediate_rules[0].priority, 1);
+        assert_eq!(advanced_rules[0].priority, 1);
+    }
+
+    #[test]
+    fn test_firewall_rules_per_vlan_zero_limit() {
+        use crate::generator::VlanConfig;
+
+        let vlan_configs = vec![VlanConfig::new(
+            100,
+            "192.168.100.x".to_string(),
+            "IT_VLAN_0100".to_string(),
+            1,
+        )
+        .unwrap()];
+
+        // Test with limit of 0 (should result in no rules)
+        let rules = generate_firewall_rules(
+            &vlan_configs,
+            FirewallComplexity::Basic,
+            Some(12345),
+            None,
+            Some(0),
+        )
+        .unwrap();
+
+        assert_eq!(rules.len(), 0);
     }
 }
