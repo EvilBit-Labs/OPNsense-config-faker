@@ -2,7 +2,7 @@
 
 use crate::generator::{FirewallRule, VlanConfig};
 use crate::Result;
-use csv::{Reader, Writer};
+use csv::{Reader, Writer, WriterBuilder};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -276,9 +276,25 @@ impl From<FirewallRuleCsvRecord> for FirewallRule {
 /// Write firewall rules to a CSV file
 pub fn write_firewall_rules_csv<P: AsRef<Path>>(rules: &[FirewallRule], path: P) -> Result<()> {
     let file = File::create(path)?;
-    let mut writer = Writer::from_writer(file);
+    let mut writer = WriterBuilder::new().has_headers(false).from_writer(file);
 
-    // Write header and records
+    // Write header row with exact column names
+    writer.write_record([
+        "rule_id",
+        "source",
+        "destination",
+        "protocol",
+        "ports",
+        "action",
+        "direction",
+        "description",
+        "log",
+        "vlan_id",
+        "priority",
+        "interface",
+    ])?;
+
+    // Write records
     for rule in rules {
         let record = FirewallRuleCsvRecord::from(rule);
         writer.serialize(record)?;
