@@ -127,7 +127,7 @@ fn validate_csv(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
     }
 
     if error_count > 0 {
-        std::process::exit(1);
+        return Err(ConfigError::other(format!("Validation failed: {} error(s) found", error_count)));
     }
 
     Ok(())
@@ -151,7 +151,10 @@ fn validate_xml(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
         }
         Err(e) => {
             println!("❌ Invalid XML: {}", e);
-            std::process::exit(1);
+            return Err(ConfigError::invalid_parameter(
+                "input",
+                &format!("Invalid XML: {}", e),
+            ));
         }
     }
 
