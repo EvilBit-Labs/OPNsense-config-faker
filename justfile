@@ -123,6 +123,7 @@ coverage:
 coverage-ci:
     @echo "🔍 Running coverage for CI (generating lcov report)..."
     cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info --ignore-run-fail
+    @echo "ℹ️ This CI step does not enforce coverage thresholds. Run \`just coverage\` locally to gate on 80%."
     @echo "✅ Coverage report generated!"
 
 # Run coverage report in HTML format for local viewing

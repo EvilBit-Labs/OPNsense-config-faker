@@ -177,11 +177,13 @@ just coverage-html
 # CI-friendly coverage (ignores test failures)
 just coverage-ci
 
+Note: CI runs (`just coverage-ci`) will never fail on coverage drops. To enforce an 80% threshold locally, use `just coverage`.
+
 # Terminal coverage report
 just coverage-report
 ```
 
-The project enforces an **80% coverage threshold**. Coverage reports are generated using `cargo-llvm-cov`.
+The project enforces an **80% coverage threshold** locally via `just coverage`. CI runs (`just coverage-ci`) generate reports without threshold enforcement. Coverage reports are generated using `cargo-llvm-cov`.
 
 ### Linting and Formatting
 
@@ -319,7 +321,7 @@ The CI pipeline automatically:
 1. **Validates Formatting**: `just rust-fmt-check`
 2. **Runs Linting**: `just rust-clippy` with strict warnings
 3. **Executes Tests**: `just rust-test` with all features
-4. **Generates Coverage**: `just coverage-ci` with 80% threshold
+4. **Generates Coverage**: `just coverage-ci` generates lcov report (no threshold enforcement)
 5. **Respects Environment**: Adapts output based on `TERM` variable
 
 ## Test Data and Fixtures
