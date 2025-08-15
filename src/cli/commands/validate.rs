@@ -185,7 +185,6 @@ fn configure_terminal(global: &GlobalArgs) {
         env::set_var("NO_COLOR", "1");
     }
 }
-
 /// Create a progress bar with consistent styling
 fn create_progress_bar(message: &str) -> ProgressBar {
     let pb = ProgressBar::new_spinner();
