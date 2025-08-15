@@ -152,7 +152,8 @@ fn validate_xml(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
     // For now, just verify the file is valid XML
     let content = fs::read_to_string(&args.input)?;
 
-    match quick_xml::Reader::from_str(&content).read_event() {
+    let mut buf = Vec::new();
+    match quick_xml::Reader::from_str(&content).read_event(&mut buf) {
         Ok(_) => {
             if !global.quiet {
                 println!("✅ File is valid XML");
