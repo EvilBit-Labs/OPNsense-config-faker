@@ -1,12 +1,13 @@
 //! Shell completions generation command
 
 use crate::cli::{Cli, Shell};
+use anyhow::Result;
 use clap::CommandFactory;
 use clap_complete::{generate, Generator};
 use std::io;
 
 /// Generate shell completions for the specified shell
-pub fn execute(shell: Shell) -> crate::Result<()> {
+pub fn execute(shell: Shell) -> Result<()> {
     let mut app = Cli::command();
 
     match shell {
