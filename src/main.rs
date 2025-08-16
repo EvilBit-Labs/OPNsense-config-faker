@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 //! OPNsense Config Faker CLI Application
 //!
 //! Command-line interface for generating realistic network configuration test data.

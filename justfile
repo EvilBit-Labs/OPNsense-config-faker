@@ -147,6 +147,42 @@ coverage-clean:
     cargo llvm-cov clean --workspace
 
 # -----------------------------
+# 🔍 Fuzzing & Property Testing
+# -----------------------------
+
+# Install cargo-fuzz for fuzzing
+install-fuzz:
+    cargo install cargo-fuzz
+
+# Initialize fuzzing project
+fuzz-init:
+    cargo fuzz init
+
+# Run fuzzing for XML parsing
+fuzz-xml:
+    cargo fuzz run xml_parsing -- -max_total_time=300
+
+# Run fuzzing for CSV parsing
+fuzz-csv:
+    cargo fuzz run csv_parsing -- -max_total_time=300
+
+# Run fuzzing for VLAN generation
+fuzz-vlan:
+    cargo fuzz run vlan_generation -- -max_total_time=300
+
+# Run all fuzzing targets
+fuzz-all: fuzz-xml fuzz-csv fuzz-vlan
+    @echo "✅ All fuzzing targets completed!"
+
+# Run property-based tests with proptest
+test-property:
+    cargo test --test proptest_* --all-features
+
+# Run comprehensive testing including fuzzing and property tests
+test-comprehensive: test test-property
+    @echo "✅ Comprehensive testing completed!"
+
+# -----------------------------
 # 🔧 Building & Running
 # -----------------------------
 
