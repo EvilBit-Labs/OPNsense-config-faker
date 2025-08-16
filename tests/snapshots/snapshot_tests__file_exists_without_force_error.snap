@@ -2,4 +2,4 @@
 source: tests/snapshot_tests.rs
 expression: output.normalized_stderr()
 ---
-Error: Config { message: "Output file '<TEMP_FILE>' already exists. Use --force to overwrite." }
+Error: Failed to generate configurations Caused by: Configuration error: Output file '<TEMP_FILE>' already exists. Use --force to overwrite.

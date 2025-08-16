@@ -2,4 +2,4 @@
 source: tests/snapshot_tests.rs
 expression: output.normalized_stderr()
 ---
-Error: InvalidParameter { parameter: "output", reason: "Output file path is required for CSV format. Use --output or -o to specify." }
+Error: Failed to generate configurations Caused by: Invalid parameter 'output': Output file path is required for CSV format. Use --output or -o to specify.

@@ -4,6 +4,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
 
 pub mod commands;
+pub mod error;
 
 /// Maximum number of unique VLAN IDs that can be generated
 /// VLAN IDs range from 10-4094, giving us 4085 unique values

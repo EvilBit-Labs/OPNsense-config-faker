@@ -5,7 +5,7 @@ use crate::generator::vlan::generate_vlan_configurations;
 use crate::generator::{generate_firewall_rules, FirewallComplexity};
 use crate::io::csv::{read_csv, write_csv, write_firewall_rules_csv};
 use crate::xml::template::XmlTemplate;
-use crate::Result;
+use anyhow::{Context, Result};
 use console::{style, Term};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::env;
@@ -73,7 +73,7 @@ fn execute_internal(args: GenerateArgs, global: &GlobalArgs) -> Result<()> {
 
     // Validate VLAN ID constraints
     if let Err(e) = args.validate() {
-        return Err(crate::model::ConfigError::invalid_parameter("count", &e));
+        return Err(crate::model::ConfigError::invalid_parameter("count", &e).into());
     }
 
     // Execute based on format
@@ -143,7 +143,8 @@ fn validate_arguments(args: &GenerateArgs) -> Result<()> {
                 return Err(crate::model::ConfigError::invalid_parameter(
                     "output",
                     "Output file path is required for CSV format. Use --output or -o to specify.",
-                ));
+                )
+                .into());
             }
         }
         OutputFormat::Xml => {
@@ -152,7 +153,7 @@ fn validate_arguments(args: &GenerateArgs) -> Result<()> {
                 return Err(crate::model::ConfigError::invalid_parameter(
                     "base-config",
                     "Base configuration file is required for XML format. Use --base-config or -b to specify."
-                ));
+                ).into());
             }
 
             // Either count or csv_file must be specified
@@ -160,7 +161,8 @@ fn validate_arguments(args: &GenerateArgs) -> Result<()> {
                 return Err(crate::model::ConfigError::invalid_parameter(
                     "count or csv-file",
                     "Either --count or --csv-file must be specified for XML generation.",
-                ));
+                )
+                .into());
             }
         }
     }
@@ -181,19 +183,22 @@ fn execute_csv_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
         return Err(crate::model::ConfigError::config(format!(
             "Output file '{}' already exists. Use --force to overwrite.",
             output_file.display()
-        )));
+        ))
+        .into());
     }
 
     // Set up progress indicator
     let pb = create_progress_bar(args.count as u64, "Generating VLAN configurations...");
 
     // Generate VLAN configurations
-    let configs = generate_vlan_configurations(args.count, args.seed, Some(&pb))?;
+    let configs = generate_vlan_configurations(args.count, args.seed, Some(&pb))
+        .with_context(|| format!("Failed to generate {} VLAN configurations", args.count))?;
 
     pb.set_message("Writing CSV file...");
 
     // Write to CSV file
-    write_csv(&configs, output_file)?;
+    write_csv(&configs, output_file)
+        .with_context(|| format!("Failed to write CSV to {:?}", output_file))?;
 
     pb.finish_with_message(format!(
         "✅ Generated {} VLAN configurations in '{}'",
@@ -235,7 +240,8 @@ fn execute_csv_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
             output_file.file_stem().unwrap().to_str().unwrap()
         ));
 
-        write_firewall_rules_csv(&firewall_rules, &firewall_output)?;
+        write_firewall_rules_csv(&firewall_rules, &firewall_output)
+            .with_context(|| format!("Failed to write firewall rules to {:?}", firewall_output))?;
 
         println!(
             "📄 Firewall rules written to: {}",
@@ -259,7 +265,8 @@ fn execute_xml_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
     if !base_config.exists() {
         return Err(crate::model::ConfigError::ConfigNotFound {
             path: base_config.display().to_string(),
-        });
+        }
+        .into());
     }
 
     // Create output directory if it doesn't exist
@@ -270,12 +277,13 @@ fn execute_xml_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
     // Generate or load VLAN configurations
     let configs = if let Some(csv_file) = &args.csv_file {
         println!("📄 Loading configurations from CSV: {}", csv_file.display());
-        read_csv(csv_file)?
+        read_csv(csv_file).with_context(|| format!("Failed to read CSV file: {:?}", csv_file))?
     } else {
         println!("🔄 Generating {} VLAN configurations...", args.count);
 
         let pb = create_progress_bar(args.count as u64, "Generating configurations...");
-        let configs = generate_vlan_configurations(args.count, args.seed, Some(&pb))?;
+        let configs = generate_vlan_configurations(args.count, args.seed, Some(&pb))
+            .with_context(|| format!("Failed to generate {} VLAN configurations", args.count))?;
         pb.finish_with_message("✅ Configurations generated");
         configs
     };
@@ -317,8 +325,10 @@ fn execute_xml_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
     };
 
     // Load base XML template
-    let base_xml = fs::read_to_string(base_config)?;
-    let mut template = XmlTemplate::new(base_xml)?;
+    let base_xml = fs::read_to_string(base_config)
+        .with_context(|| format!("Failed to read base config file: {:?}", base_config))?;
+    let mut template = XmlTemplate::new(base_xml)
+        .with_context(|| "Failed to create XML template from base configuration")?;
 
     // Set up progress for XML generation
     let pb = create_progress_bar(configs.len() as u64, "Generating XML configurations...");
@@ -344,7 +354,8 @@ fn execute_xml_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
             return Err(crate::model::ConfigError::config(format!(
                 "Output file '{}' already exists. Use --force to overwrite.",
                 output_file.display()
-            )));
+            ))
+            .into());
         }
 
         fs::write(&output_file, output_xml)?;

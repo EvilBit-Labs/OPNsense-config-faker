@@ -6,7 +6,7 @@
 use crate::cli::{GlobalArgs, ValidateArgs, ValidationFormat};
 use crate::model::ConfigError;
 use crate::validate::ValidationEngine;
-use crate::Result;
+use anyhow::Result;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::env;
 use std::fs;
@@ -46,7 +46,8 @@ pub fn execute(args: ValidateArgs, global: &GlobalArgs) -> Result<()> {
         ValidationFormat::Auto => Err(ConfigError::invalid_parameter(
             "format",
             "Could not automatically determine format. Please specify --format csv or --format xml",
-        )),
+        )
+        .into()),
     }
 }
 
@@ -64,7 +65,7 @@ fn validate_csv(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
         Ok(configs) => configs,
         Err(e) => {
             println!("❌ Failed to read CSV: {}", e);
-            return Err(e);
+            return Err(e.into());
         }
     };
 
@@ -134,7 +135,8 @@ fn validate_csv(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
         return Err(ConfigError::config(format!(
             "Validation failed: {} error(s) found",
             error_count
-        )));
+        ))
+        .into());
     }
 
     Ok(())
@@ -158,10 +160,9 @@ fn validate_xml(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
         }
         Err(e) => {
             println!("❌ Invalid XML: {}", e);
-            return Err(ConfigError::invalid_parameter(
-                "input",
-                format!("Invalid XML: {}", e),
-            ));
+            return Err(
+                ConfigError::invalid_parameter("input", format!("Invalid XML: {}", e)).into(),
+            );
         }
     }
 
@@ -177,7 +178,8 @@ fn determine_format(input: &Path, format: &ValidationFormat) -> Result<Validatio
             _ => Err(ConfigError::invalid_parameter(
                 "input",
                 "Could not determine format from file extension. Please specify --format",
-            )),
+            )
+            .into()),
         },
         other => Ok(other.clone()),
     }
