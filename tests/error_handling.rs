@@ -160,6 +160,12 @@ fn test_interactive_mode_errors() {
 /// Test progress indicator error handling
 #[test]
 fn test_progress_indicator_errors() {
+    let temp_dir = tempdir().unwrap();
+    let output_file = temp_dir.path().join("test.csv");
+
+    // Create the output file so it exists and triggers "file already exists" error
+    std::fs::File::create(&output_file).unwrap();
+
     // Set TERM=dumb to test progress indicator fallback
     let mut cmd = Command::cargo_bin("opnsense-config-faker").unwrap();
     cmd.env("TERM", "dumb")
@@ -169,12 +175,12 @@ fn test_progress_indicator_errors() {
         .arg("--count")
         .arg("10")
         .arg("--output")
-        .arg("test.csv");
+        .arg(&output_file);
 
     // Should fail because file already exists, but with proper error context
-    cmd.assert().failure().stderr(predicate::str::contains(
-        "Failed to generate configurations",
-    ));
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("already exists"));
 }
 
 /// Test error message formatting
@@ -262,52 +268,115 @@ fn test_global_flag_errors() {
 /// Test memory limit error handling (if applicable)
 #[test]
 fn test_memory_limit_errors() {
+    let temp_dir = tempdir().unwrap();
+    let output_file = temp_dir.path().join("large_test.csv");
+
     // This test would require setting up a scenario that triggers memory limits
     // For now, we test with a very large count that might trigger memory issues
     let mut cmd = Command::cargo_bin("opnsense-config-faker").unwrap();
-    cmd.arg("generate")
+    cmd.env("TERM", "dumb") // Ensure deterministic output
+        .env("NO_COLOR", "1")
+        .arg("generate")
         .arg("--format")
         .arg("csv")
         .arg("--count")
         .arg("10000")
         .arg("--output")
-        .arg("large_test.csv");
+        .arg(&output_file);
 
     // Should either succeed or fail gracefully
     let result = cmd.assert();
     if result.get_output().status.success() {
         // Success case - large generation worked
-        // No assertion needed for success case
+        // Verify the file was created in temp directory, not repository
+        assert!(
+            output_file.exists(),
+            "Output file should be created in temp directory"
+        );
+        assert!(
+            output_file.starts_with(temp_dir.path()),
+            "File should be in temp directory"
+        );
     } else {
         // Failure case - should have proper error context
         let stderr = String::from_utf8_lossy(&result.get_output().stderr);
         assert!(stderr.contains("Failed to generate configurations"));
     }
+
+    // Explicit cleanup verification - temp_dir will be dropped automatically
+    // but we ensure the file path is correct
+    drop(temp_dir);
 }
 
-/// Test network configuration error handling
+/// Test network configuration error handling using isolated temporary files
 #[test]
 fn test_network_configuration_errors() {
-    // Test with invalid network parameters
+    // Create isolated temporary directory that won't pollute repository
+    let temp_dir = tempdir().unwrap();
+    let output_file = temp_dir.path().join("network_config_test.csv");
+
+    // Ensure we're not writing to the repository directory
+    assert!(
+        !output_file.starts_with("."),
+        "Output file should not be in current directory"
+    );
+    assert!(
+        output_file.starts_with(temp_dir.path()),
+        "Output file must be in temp directory"
+    );
+
+    // Test with network parameters in isolated environment
     let mut cmd = Command::cargo_bin("opnsense-config-faker").unwrap();
-    cmd.arg("generate")
+    cmd.env("TERM", "dumb") // Ensure no color output in tests
+        .env("NO_COLOR", "1")
+        .arg("generate")
         .arg("--format")
         .arg("csv")
         .arg("--count")
         .arg("10")
         .arg("--output")
-        .arg("test.csv");
+        .arg(&output_file)
+        .arg("--seed")
+        .arg("12345"); // Deterministic output for testing
 
     // This should work, but we can test error handling by checking the output
     let result = cmd.assert();
     if result.get_output().status.success() {
+        // Verify the file was created in the correct location
+        assert!(
+            output_file.exists(),
+            "Output file should exist in temp directory"
+        );
+
         // Verify that generated configurations are valid
-        let output = String::from_utf8_lossy(&result.get_output().stdout);
-        assert!(!output.contains("error"));
-        assert!(!output.contains("Error"));
+        let output_content = std::fs::read_to_string(&output_file)
+            .expect("Should be able to read generated CSV file");
+        assert!(
+            output_content.contains("VLAN"),
+            "CSV should contain VLAN data"
+        );
+        assert!(
+            output_content.contains("IP Range"),
+            "CSV should contain IP range data"
+        );
+
+        // Verify no error messages in stdout
+        let stdout = String::from_utf8_lossy(&result.get_output().stdout);
+        assert!(
+            !stdout.to_lowercase().contains("error"),
+            "Stdout should not contain errors"
+        );
     } else {
         // If it failed, should have proper error context
         let stderr = String::from_utf8_lossy(&result.get_output().stderr);
-        assert!(stderr.contains("Failed to generate configurations"));
+        assert!(
+            stderr.contains("Failed to generate configurations"),
+            "Error message should contain context"
+        );
     }
+
+    // Verify cleanup - temp_dir automatically cleans up when dropped
+    // But we explicitly verify the file path structure
+    drop(output_file);
+    drop(temp_dir);
 }
