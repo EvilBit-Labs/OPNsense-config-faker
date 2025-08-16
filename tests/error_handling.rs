@@ -4,7 +4,7 @@
 //! including proper error context preservation and user-friendly error messages.
 
 use assert_cmd::prelude::*;
-use predicates::prelude::*;
+use predicates as predicate;
 use std::process::Command;
 use tempfile::tempdir;
 

@@ -8,7 +8,7 @@ use console::style;
 pub fn handle_deprecated_csv(args: CsvArgs) -> Result<()> {
     // Validate arguments before showing deprecation message
     if let Err(e) = args.validate() {
-        return Err(crate::model::ConfigError::invalid_parameter("count", &e).into());
+        return Err(crate::model::ConfigError::invalid_parameter("count", e.to_string()).into());
     }
 
     println!("{}", style("⚠️  DEPRECATED COMMAND").bold().yellow());
@@ -59,7 +59,7 @@ pub fn handle_deprecated_csv(args: CsvArgs) -> Result<()> {
 pub fn handle_deprecated_xml(args: XmlArgs) -> Result<()> {
     // Validate arguments before showing deprecation message
     if let Err(e) = args.validate() {
-        return Err(crate::model::ConfigError::invalid_parameter("count", &e).into());
+        return Err(crate::model::ConfigError::invalid_parameter("count", e.to_string()).into());
     }
 
     println!("{}", style("⚠️  DEPRECATED COMMAND").bold().yellow());
