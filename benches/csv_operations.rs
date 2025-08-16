@@ -1,3 +1,7 @@
+#[path = "_common/mod.rs"]
+mod bench_common;
+
+use bench_common::{ci_or_local, criterion_for_env};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use opnsense_config_faker::generator::vlan::generate_vlan_configurations;
 use opnsense_config_faker::io::csv::{
@@ -9,7 +13,9 @@ use tempfile::NamedTempFile;
 fn bench_csv_serialization(c: &mut Criterion) {
     let mut group = c.benchmark_group("csv_serialization");
 
-    for count in [100, 500, 1000, 2000].iter() {
+    // Use CI-appropriate dataset sizes for CSV operations
+    let counts = ci_or_local(&[100, 500], &[100, 500, 1000, 2000]);
+    for count in counts.iter() {
         let configs = generate_vlan_configurations(*count, Some(42), None).unwrap();
 
         group.bench_with_input(BenchmarkId::new("write_csv", count), count, |b, _| {
@@ -38,7 +44,9 @@ fn bench_csv_serialization(c: &mut Criterion) {
 fn bench_csv_deserialization(c: &mut Criterion) {
     let mut group = c.benchmark_group("csv_deserialization");
 
-    for count in [100, 500, 1000, 2000].iter() {
+    // Use CI-appropriate dataset sizes for CSV operations
+    let counts = ci_or_local(&[100, 500], &[100, 500, 1000, 2000]);
+    for count in counts.iter() {
         let configs = generate_vlan_configurations(*count, Some(42), None).unwrap();
         let temp_file = NamedTempFile::new().unwrap();
         write_csv(&configs, temp_file.path()).unwrap();
@@ -71,7 +79,9 @@ fn bench_csv_deserialization(c: &mut Criterion) {
 fn bench_csv_round_trip(c: &mut Criterion) {
     let mut group = c.benchmark_group("csv_round_trip");
 
-    for count in [100, 500, 1000].iter() {
+    // Use CI-appropriate dataset sizes for round-trip tests
+    let counts = ci_or_local(&[100, 500], &[100, 500, 1000]);
+    for count in counts.iter() {
         let configs = generate_vlan_configurations(*count, Some(42), None).unwrap();
 
         group.bench_with_input(BenchmarkId::new("round_trip", count), count, |b, _| {
@@ -104,10 +114,11 @@ fn bench_csv_round_trip(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(
-    benches,
-    bench_csv_serialization,
-    bench_csv_deserialization,
-    bench_csv_round_trip
-);
+criterion_group! {
+    name = benches;
+    config = criterion_for_env();
+    targets = bench_csv_serialization,
+        bench_csv_deserialization,
+        bench_csv_round_trip
+}
 criterion_main!(benches);

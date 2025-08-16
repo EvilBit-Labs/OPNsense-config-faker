@@ -4,6 +4,10 @@
 //! the Rust implementation against the Python reference implementation
 //! to validate the claimed 3-5x performance improvements.
 
+#[path = "_common/mod.rs"]
+mod bench_common;
+
+use bench_common::{ci_or_local, criterion_for_env};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use opnsense_config_faker::generator::performance::PerformantConfigGenerator;
 use opnsense_config_faker::generator::vlan::generate_vlan_configurations;
@@ -86,8 +90,8 @@ fn bench_python_implementation(config: &BenchmarkConfig) -> Duration {
 fn bench_migration_performance_comparison(c: &mut Criterion) {
     let mut group = c.benchmark_group("migration_performance_comparison");
 
-    // Test different scales to validate performance claims
-    let test_scales = vec![10, 50, 100, 250, 500];
+    // Use CI-appropriate scales to validate performance claims
+    let test_scales = ci_or_local(&[10, 50, 100], &[10, 50, 100, 250, 500]);
 
     for scale in test_scales {
         let config = BenchmarkConfig::new(scale, Some(42));
@@ -130,8 +134,8 @@ fn bench_migration_performance_comparison(c: &mut Criterion) {
 fn bench_memory_efficiency_comparison(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_efficiency_comparison");
 
-    // Test memory usage patterns for different scales
-    let test_scales = vec![100, 500, 1000];
+    // Use CI-appropriate scales for memory efficiency tests
+    let test_scales = ci_or_local(&[100, 500], &[100, 500, 1000]);
 
     for scale in test_scales {
         let config = BenchmarkConfig::new(scale, Some(123));
@@ -178,13 +182,19 @@ fn bench_memory_efficiency_comparison(c: &mut Criterion) {
 fn bench_throughput_validation(c: &mut Criterion) {
     let mut group = c.benchmark_group("throughput_validation");
 
-    // Set longer measurement time for accurate throughput measurement
-    group.measurement_time(Duration::from_secs(15));
+    // Set CI-appropriate measurement time for throughput measurement
+    let measurement_time = if bench_common::is_ci() {
+        Duration::from_secs(5)
+    } else {
+        Duration::from_secs(15)
+    };
+    group.measurement_time(measurement_time);
 
-    // Large scale throughput tests
-    let config = BenchmarkConfig::new(1000, Some(456));
+    // Use CI-appropriate scale for throughput tests
+    let throughput_size = ci_or_local(&[500], &[1000])[0];
+    let config = BenchmarkConfig::new(throughput_size, Some(456));
 
-    group.bench_function("python_throughput_1000", |b| {
+    group.bench_function(format!("python_throughput_{}", throughput_size), |b| {
         b.iter_custom(|iters| {
             let mut total_duration = Duration::new(0, 0);
             for _ in 0..iters {
@@ -194,7 +204,7 @@ fn bench_throughput_validation(c: &mut Criterion) {
         });
     });
 
-    group.bench_function("rust_throughput_1000", |b| {
+    group.bench_function(format!("rust_throughput_{}", throughput_size), |b| {
         b.iter_custom(|iters| {
             let mut total_duration = Duration::new(0, 0);
             for _ in 0..iters {
@@ -204,15 +214,18 @@ fn bench_throughput_validation(c: &mut Criterion) {
         });
     });
 
-    group.bench_function("rust_optimized_throughput_1000", |b| {
-        b.iter_custom(|iters| {
-            let mut total_duration = Duration::new(0, 0);
-            for _ in 0..iters {
-                total_duration += bench_rust_optimized_implementation(black_box(&config));
-            }
-            total_duration
-        });
-    });
+    group.bench_function(
+        format!("rust_optimized_throughput_{}", throughput_size),
+        |b| {
+            b.iter_custom(|iters| {
+                let mut total_duration = Duration::new(0, 0);
+                for _ in 0..iters {
+                    total_duration += bench_rust_optimized_implementation(black_box(&config));
+                }
+                total_duration
+            });
+        },
+    );
 
     group.finish();
 }
@@ -221,12 +234,18 @@ fn bench_throughput_validation(c: &mut Criterion) {
 fn bench_regression_detection(c: &mut Criterion) {
     let mut group = c.benchmark_group("regression_detection");
 
-    // Baseline performance tests that should consistently pass
-    let baseline_configs = [
-        BenchmarkConfig::new(50, Some(100)),
-        BenchmarkConfig::new(100, Some(200)),
-        BenchmarkConfig::new(200, Some(300)),
-    ];
+    // Use CI-appropriate baseline configurations for regression detection
+    let baseline_configs = ci_or_local(
+        &[
+            BenchmarkConfig::new(25, Some(100)),
+            BenchmarkConfig::new(50, Some(200)),
+        ],
+        &[
+            BenchmarkConfig::new(50, Some(100)),
+            BenchmarkConfig::new(100, Some(200)),
+            BenchmarkConfig::new(200, Some(300)),
+        ],
+    );
 
     for (i, config) in baseline_configs.iter().enumerate() {
         group.bench_with_input(
@@ -246,11 +265,12 @@ fn bench_regression_detection(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(
-    migration_benchmarks,
-    bench_migration_performance_comparison,
-    bench_memory_efficiency_comparison,
-    bench_throughput_validation,
-    bench_regression_detection
-);
+criterion_group! {
+    name = migration_benchmarks;
+    config = criterion_for_env();
+    targets = bench_migration_performance_comparison,
+        bench_memory_efficiency_comparison,
+        bench_throughput_validation,
+        bench_regression_detection
+}
 criterion_main!(migration_benchmarks);
