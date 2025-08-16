@@ -141,20 +141,30 @@ fn test_validation_errors() {
     cmd.assert().success();
 }
 
-/// Test interactive mode error handling
+/// Test interactive mode behavior (should succeed with defaults when no input)
 #[test]
-fn test_interactive_mode_errors() {
+fn test_interactive_mode_behavior() {
+    let temp_dir = tempdir().unwrap();
+    let expected_output = temp_dir.path().join("vlan_configs.csv");
+
     let mut cmd = Command::cargo_bin("opnsense-config-faker").unwrap();
-    cmd.arg("generate")
+    cmd.current_dir(&temp_dir)
+        .arg("generate")
         .arg("--format")
         .arg("csv")
-        .arg("--interactive");
+        .arg("--interactive")
+        .stdin(std::process::Stdio::null()); // No user input - should use defaults
 
-    // This test would require mocking user input
-    // For now, we just verify the command doesn't panic
-    cmd.assert().failure().stderr(predicate::str::contains(
-        "Failed to generate configurations",
+    // Interactive mode should succeed with defaults when no input is provided
+    cmd.assert().success().stdout(predicate::str::contains(
+        "OPNsense Config Faker - Configuration Generator",
     ));
+
+    // Verify output file was created with default name
+    assert!(
+        expected_output.exists(),
+        "Default output file should be created"
+    );
 }
 
 /// Test progress indicator error handling
