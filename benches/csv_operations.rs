@@ -14,7 +14,7 @@ fn bench_csv_serialization(c: &mut Criterion) {
     let mut group = c.benchmark_group("csv_serialization");
 
     // Use CI-appropriate dataset sizes for CSV operations
-    let counts = ci_or_local(&[100, 500], &[100, 500, 1000, 2000]);
+    let counts = ci_or_local(&[100u16, 500u16], &[100u16, 500u16, 1000u16, 2000u16]);
     for count in counts.iter() {
         let configs = generate_vlan_configurations(*count, Some(42), None).unwrap();
 
@@ -45,7 +45,7 @@ fn bench_csv_deserialization(c: &mut Criterion) {
     let mut group = c.benchmark_group("csv_deserialization");
 
     // Use CI-appropriate dataset sizes for CSV operations
-    let counts = ci_or_local(&[100, 500], &[100, 500, 1000, 2000]);
+    let counts = ci_or_local(&[100u16, 500u16], &[100u16, 500u16, 1000u16, 2000u16]);
     for count in counts.iter() {
         let configs = generate_vlan_configurations(*count, Some(42), None).unwrap();
         let temp_file = NamedTempFile::new().unwrap();
@@ -80,7 +80,7 @@ fn bench_csv_round_trip(c: &mut Criterion) {
     let mut group = c.benchmark_group("csv_round_trip");
 
     // Use CI-appropriate dataset sizes for round-trip tests
-    let counts = ci_or_local(&[100, 500], &[100, 500, 1000]);
+    let counts = ci_or_local(&[100u16, 500u16], &[100u16, 500u16, 1000u16]);
     for count in counts.iter() {
         let configs = generate_vlan_configurations(*count, Some(42), None).unwrap();
 
