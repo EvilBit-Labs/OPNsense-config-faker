@@ -4,6 +4,10 @@
 //! different scales and configurations to validate the 3-5x performance
 //! improvement targets over the Python baseline.
 
+#[path = "_common/mod.rs"]
+mod bench_common;
+
+use bench_common::{ci_counts, ci_or_local, criterion_for_env};
 use criterion::{criterion_group, criterion_main, Criterion};
 use opnsense_config_faker::generator::performance::PerformantConfigGenerator;
 use opnsense_config_faker::generator::vlan::{generate_vlan_configurations, VlanGenerator};
@@ -15,8 +19,9 @@ const MEMORY_LIMIT_MB: usize = 512; // 512MB memory limit for large datasets
 fn bench_vlan_generation_scalability(c: &mut Criterion) {
     let mut group = c.benchmark_group("vlan_generation_scalability");
 
-    // Test different dataset sizes
-    for count in [10, 50, 100, 500, 1000] {
+    // Use CI-appropriate dataset sizes
+    let counts = ci_counts();
+    for count in counts.medium {
         group.bench_function(format!("sequential/{}", count), |b| {
             b.iter(|| {
                 let configs =
@@ -40,8 +45,9 @@ fn bench_vlan_generation_scalability(c: &mut Criterion) {
 fn bench_memory_efficiency(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_efficiency");
 
-    // Test memory usage patterns
-    for count in [100, 500, 1000] {
+    // Use CI-appropriate dataset sizes for memory tests
+    let counts = ci_or_local(&[100, 500], &[100, 500, 1000]);
+    for count in counts {
         group.bench_function(format!("memory_usage/{}", count), |b| {
             b.iter(|| {
                 let configs =
@@ -69,19 +75,21 @@ fn bench_memory_efficiency(c: &mut Criterion) {
 fn bench_vlan_id_allocation(c: &mut Criterion) {
     let mut group = c.benchmark_group("vlan_id_allocation");
 
-    // Benchmark VLAN ID uniqueness checking
-    group.bench_function("generate_unique_vlan_ids_1000", |b| {
+    // Benchmark VLAN ID uniqueness checking with CI-appropriate sizes
+    let test_size = ci_or_local(&[500], &[1000])[0];
+
+    group.bench_function(format!("generate_unique_vlan_ids_{}", test_size), |b| {
         b.iter(|| {
             let mut generator = VlanGenerator::new(Some(42));
-            let configs = generator.generate_batch(black_box(1000)).unwrap();
+            let configs = generator.generate_batch(black_box(test_size)).unwrap();
             black_box(configs)
         })
     });
 
-    group.bench_function("optimized_vlan_id_allocation_1000", |b| {
+    group.bench_function(format!("optimized_vlan_id_allocation_{}", test_size), |b| {
         b.iter(|| {
             let mut generator = PerformantConfigGenerator::new(Some(42));
-            let configs = generator.generate_batch(black_box(1000)).unwrap();
+            let configs = generator.generate_batch(black_box(test_size)).unwrap();
             black_box(configs)
         })
     });
@@ -92,11 +100,13 @@ fn bench_vlan_id_allocation(c: &mut Criterion) {
 fn bench_ip_network_generation(c: &mut Criterion) {
     let mut group = c.benchmark_group("ip_network_generation");
 
-    // Benchmark RFC 1918 network generation and validation
-    group.bench_function("rfc1918_network_generation_1000", |b| {
+    // Benchmark RFC 1918 network generation and validation with CI-appropriate sizes
+    let test_size = ci_or_local(&[500], &[1000])[0];
+
+    group.bench_function(format!("rfc1918_network_generation_{}", test_size), |b| {
         b.iter(|| {
             let mut generator = VlanGenerator::new(Some(42));
-            let configs = generator.generate_batch(black_box(1000)).unwrap();
+            let configs = generator.generate_batch(black_box(test_size)).unwrap();
 
             // Validate all networks are RFC 1918 compliant
             for config in &configs {
@@ -106,10 +116,10 @@ fn bench_ip_network_generation(c: &mut Criterion) {
         })
     });
 
-    group.bench_function("optimized_ip_generation_1000", |b| {
+    group.bench_function(format!("optimized_ip_generation_{}", test_size), |b| {
         b.iter(|| {
             let mut generator = PerformantConfigGenerator::new(Some(42));
-            let configs = generator.generate_batch(black_box(1000)).unwrap();
+            let configs = generator.generate_batch(black_box(test_size)).unwrap();
 
             // Focus on generation performance
             black_box(configs)
@@ -122,11 +132,13 @@ fn bench_ip_network_generation(c: &mut Criterion) {
 fn bench_string_operations(c: &mut Criterion) {
     let mut group = c.benchmark_group("string_operations");
 
-    // Benchmark string allocation patterns
-    group.bench_function("description_generation_1000", |b| {
+    // Benchmark string allocation patterns with CI-appropriate sizes
+    let test_size = ci_or_local(&[500], &[1000])[0];
+
+    group.bench_function(format!("description_generation_{}", test_size), |b| {
         b.iter(|| {
             let mut generator = VlanGenerator::new(Some(42));
-            let configs = generator.generate_batch(black_box(1000)).unwrap();
+            let configs = generator.generate_batch(black_box(test_size)).unwrap();
 
             // Focus on string operations
             let descriptions: Vec<String> = configs.iter().map(|c| c.description.clone()).collect();
@@ -134,16 +146,20 @@ fn bench_string_operations(c: &mut Criterion) {
         })
     });
 
-    group.bench_function("optimized_description_generation_1000", |b| {
-        b.iter(|| {
-            let mut generator = PerformantConfigGenerator::new(Some(42));
-            let configs = generator.generate_batch(black_box(1000)).unwrap();
+    group.bench_function(
+        format!("optimized_description_generation_{}", test_size),
+        |b| {
+            b.iter(|| {
+                let mut generator = PerformantConfigGenerator::new(Some(42));
+                let configs = generator.generate_batch(black_box(test_size)).unwrap();
 
-            // Focus on string operations
-            let descriptions: Vec<String> = configs.iter().map(|c| c.description.clone()).collect();
-            black_box(descriptions)
-        })
-    });
+                // Focus on string operations
+                let descriptions: Vec<String> =
+                    configs.iter().map(|c| c.description.clone()).collect();
+                black_box(descriptions)
+            })
+        },
+    );
 
     group.finish();
 }
@@ -171,41 +187,53 @@ fn bench_cold_start_performance(c: &mut Criterion) {
 fn bench_performance_regression_tests(c: &mut Criterion) {
     let mut group = c.benchmark_group("performance_regression");
 
-    // Regression test for 100 VLANs (should complete in reasonable time)
-    group.bench_function("regression_100_vlans", |b| {
+    // Use CI-appropriate sizes for regression testing
+    let small_size = ci_or_local(&[50], &[100])[0];
+    let throughput_size = ci_or_local(&[100], &[150])[0];
+
+    // Regression test (should complete in reasonable time)
+    group.bench_function(format!("regression_{}_vlans", small_size), |b| {
         b.iter(|| {
-            let configs = generate_vlan_configurations(black_box(100), Some(42), None).unwrap();
+            let configs =
+                generate_vlan_configurations(black_box(small_size), Some(42), None).unwrap();
             black_box(configs)
         })
     });
 
     // Throughput validation
-    group.bench_function("throughput_validation", |b| {
+    group.bench_function(format!("throughput_validation_{}", throughput_size), |b| {
         b.iter(|| {
-            let configs = generate_vlan_configurations(black_box(150), Some(42), None).unwrap();
+            let configs =
+                generate_vlan_configurations(black_box(throughput_size), Some(42), None).unwrap();
             black_box(configs)
         })
     });
 
-    group.bench_function("optimized_throughput_validation", |b| {
-        b.iter(|| {
-            let mut generator = PerformantConfigGenerator::new(Some(42));
-            let configs = generator.generate_batch(black_box(150)).unwrap();
-            black_box(configs)
-        })
-    });
+    group.bench_function(
+        format!("optimized_throughput_validation_{}", throughput_size),
+        |b| {
+            b.iter(|| {
+                let mut generator = PerformantConfigGenerator::new(Some(42));
+                let configs = generator
+                    .generate_batch(black_box(throughput_size as usize))
+                    .unwrap();
+                black_box(configs)
+            })
+        },
+    );
 
     group.finish();
 }
 
-criterion_group!(
-    benches,
-    bench_vlan_generation_scalability,
-    bench_memory_efficiency,
-    bench_vlan_id_allocation,
-    bench_ip_network_generation,
-    bench_string_operations,
-    bench_cold_start_performance,
-    bench_performance_regression_tests
-);
+criterion_group! {
+    name = benches;
+    config = criterion_for_env();
+    targets = bench_vlan_generation_scalability,
+        bench_memory_efficiency,
+        bench_vlan_id_allocation,
+        bench_ip_network_generation,
+        bench_string_operations,
+        bench_cold_start_performance,
+        bench_performance_regression_tests
+}
 criterion_main!(benches);

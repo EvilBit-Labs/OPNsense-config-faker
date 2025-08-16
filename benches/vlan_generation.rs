@@ -1,58 +1,43 @@
+#[path = "_common/mod.rs"]
+mod bench_common;
+
+use bench_common::{ci_or_local, criterion_for_env};
 use criterion::{criterion_group, criterion_main, Criterion};
 use opnsense_config_faker::generator::vlan::{generate_vlan_configurations, VlanGenerator};
 use std::hint::black_box;
 
 fn bench_vlan_generation(c: &mut Criterion) {
-    c.bench_function("generate_10_vlans", |b| {
-        b.iter(|| {
-            let configs = generate_vlan_configurations(black_box(10), Some(42), None).unwrap();
-            black_box(configs)
-        })
-    });
+    // Use CI-appropriate dataset sizes
+    let sizes = ci_or_local(&[10, 100], &[10, 100, 1000]);
 
-    c.bench_function("generate_100_vlans", |b| {
-        b.iter(|| {
-            let configs = generate_vlan_configurations(black_box(100), Some(42), None).unwrap();
-            black_box(configs)
-        })
-    });
-
-    c.bench_function("generate_1000_vlans", |b| {
-        b.iter(|| {
-            let configs = generate_vlan_configurations(black_box(1000), Some(42), None).unwrap();
-            black_box(configs)
-        })
-    });
+    for &size in &sizes {
+        c.bench_function(&format!("generate_{}_vlans", size), |b| {
+            b.iter(|| {
+                let configs =
+                    generate_vlan_configurations(black_box(size), Some(42), None).unwrap();
+                black_box(configs)
+            })
+        });
+    }
 
     // Enhanced benchmarks with new functionality
-    c.bench_function("generate_10_vlans_enhanced", |b| {
-        b.iter(|| {
-            let mut generator = VlanGenerator::new(Some(42));
-            let configs = generator.generate_batch_enhanced(black_box(10)).unwrap();
-            black_box(configs)
-        })
-    });
+    for &size in &sizes {
+        c.bench_function(&format!("generate_{}_vlans_enhanced", size), |b| {
+            b.iter(|| {
+                let mut generator = VlanGenerator::new(Some(42));
+                let configs = generator
+                    .generate_batch_enhanced(black_box(size as usize))
+                    .unwrap();
+                black_box(configs)
+            })
+        });
+    }
 
-    c.bench_function("generate_100_vlans_enhanced", |b| {
-        b.iter(|| {
-            let mut generator = VlanGenerator::new(Some(42));
-            let configs = generator.generate_batch_enhanced(black_box(100)).unwrap();
-            black_box(configs)
-        })
-    });
-
-    c.bench_function("generate_1000_vlans_enhanced", |b| {
-        b.iter(|| {
-            let mut generator = VlanGenerator::new(Some(42));
-            let configs = generator.generate_batch_enhanced(black_box(1000)).unwrap();
-            black_box(configs)
-        })
-    });
-
-    // RFC 1918 validation benchmarks
-    c.bench_function("rfc1918_validation_100", |b| {
+    // RFC 1918 validation benchmarks with CI-appropriate size
+    let validation_size = ci_or_local(&[50], &[100])[0];
+    c.bench_function(&format!("rfc1918_validation_{}", validation_size), |b| {
         let mut generator = VlanGenerator::new(Some(42));
-        let configs = generator.generate_batch(100).unwrap();
+        let configs = generator.generate_batch(validation_size).unwrap();
 
         b.iter(|| {
             for config in &configs {
@@ -62,14 +47,24 @@ fn bench_vlan_generation(c: &mut Criterion) {
     });
 
     // Memory efficiency test for large batches (within VLAN ID limits)
-    c.bench_function("generate_3000_vlans_memory_test", |b| {
-        b.iter(|| {
-            let mut generator = VlanGenerator::new(Some(42));
-            let configs = generator.generate_batch(black_box(3000)).unwrap();
-            black_box(configs)
-        })
-    });
+    let memory_test_size = ci_or_local(&[1000], &[3000])[0];
+    c.bench_function(
+        &format!("generate_{}_vlans_memory_test", memory_test_size),
+        |b| {
+            b.iter(|| {
+                let mut generator = VlanGenerator::new(Some(42));
+                let configs = generator
+                    .generate_batch(black_box(memory_test_size))
+                    .unwrap();
+                black_box(configs)
+            })
+        },
+    );
 }
 
-criterion_group!(benches, bench_vlan_generation);
+criterion_group! {
+    name = benches;
+    config = criterion_for_env();
+    targets = bench_vlan_generation
+}
 criterion_main!(benches);
