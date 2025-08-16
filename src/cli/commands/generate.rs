@@ -5,7 +5,7 @@ use crate::generator::vlan::generate_vlan_configurations;
 use crate::generator::{generate_firewall_rules, FirewallComplexity};
 use crate::io::csv::{read_csv, write_csv, write_firewall_rules_csv};
 use crate::xml::template::XmlTemplate;
-use crate::Result;
+use anyhow::{Context, Result};
 use console::{style, Term};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::env;
@@ -24,6 +24,10 @@ pub fn execute_with_global(mut args: GenerateArgs, global: &GlobalArgs) -> Resul
     if let Some(ref global_output) = global.output {
         if args.output.is_none() {
             args.output = Some(global_output.clone());
+        }
+        // Also apply to XML output_dir when format is XML
+        if matches!(args.format, OutputFormat::Xml) {
+            args.output_dir = global_output.clone();
         }
     }
 
@@ -47,9 +51,6 @@ pub fn execute(args: GenerateArgs) -> Result<()> {
 
 /// Internal execution with global context
 fn execute_internal(args: GenerateArgs, global: &GlobalArgs) -> Result<()> {
-    // Handle terminal compatibility
-    configure_terminal_with_global(&args, global);
-
     // Show header unless quiet
     if !global.quiet {
         println!(
@@ -73,7 +74,7 @@ fn execute_internal(args: GenerateArgs, global: &GlobalArgs) -> Result<()> {
 
     // Validate VLAN ID constraints
     if let Err(e) = args.validate() {
-        return Err(crate::model::ConfigError::invalid_parameter("count", &e));
+        return Err(crate::model::ConfigError::invalid_parameter("count", &e).into());
     }
 
     // Execute based on format
@@ -143,7 +144,8 @@ fn validate_arguments(args: &GenerateArgs) -> Result<()> {
                 return Err(crate::model::ConfigError::invalid_parameter(
                     "output",
                     "Output file path is required for CSV format. Use --output or -o to specify.",
-                ));
+                )
+                .into());
             }
         }
         OutputFormat::Xml => {
@@ -152,7 +154,7 @@ fn validate_arguments(args: &GenerateArgs) -> Result<()> {
                 return Err(crate::model::ConfigError::invalid_parameter(
                     "base-config",
                     "Base configuration file is required for XML format. Use --base-config or -b to specify."
-                ));
+                ).into());
             }
 
             // Either count or csv_file must be specified
@@ -160,7 +162,8 @@ fn validate_arguments(args: &GenerateArgs) -> Result<()> {
                 return Err(crate::model::ConfigError::invalid_parameter(
                     "count or csv-file",
                     "Either --count or --csv-file must be specified for XML generation.",
-                ));
+                )
+                .into());
             }
         }
     }
@@ -181,19 +184,26 @@ fn execute_csv_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
         return Err(crate::model::ConfigError::config(format!(
             "Output file '{}' already exists. Use --force to overwrite.",
             output_file.display()
-        )));
+        ))
+        .into());
     }
 
     // Set up progress indicator
-    let pb = create_progress_bar(args.count as u64, "Generating VLAN configurations...");
+    let pb = create_progress_bar(
+        args.count as u64,
+        "Generating VLAN configurations...",
+        global.quiet,
+    );
 
     // Generate VLAN configurations
-    let configs = generate_vlan_configurations(args.count, args.seed, Some(&pb))?;
+    let configs = generate_vlan_configurations(args.count, args.seed, Some(&pb))
+        .with_context(|| format!("Failed to generate {} VLAN configurations", args.count))?;
 
     pb.set_message("Writing CSV file...");
 
     // Write to CSV file
-    write_csv(&configs, output_file)?;
+    write_csv(&configs, output_file)
+        .with_context(|| format!("Failed to write CSV to {:?}", output_file))?;
 
     pb.finish_with_message(format!(
         "✅ Generated {} VLAN configurations in '{}'",
@@ -201,12 +211,16 @@ fn execute_csv_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
         output_file.display()
     ));
 
-    print_csv_summary(&configs, output_file);
+    if !global.quiet {
+        print_csv_summary(&configs, output_file);
+    }
 
     // Generate firewall rules if requested
     if args.include_firewall_rules {
-        println!();
-        println!("🔥 Generating firewall rules...");
+        if !global.quiet {
+            println!();
+            println!("🔥 Generating firewall rules...");
+        }
 
         // Parse complexity level
         let complexity: FirewallComplexity =
@@ -215,7 +229,11 @@ fn execute_csv_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
             })?;
 
         // Generate firewall rules
-        let firewall_pb = create_progress_bar(configs.len() as u64, "Generating firewall rules...");
+        let firewall_pb = create_progress_bar(
+            configs.len() as u64,
+            "Generating firewall rules...",
+            global.quiet,
+        );
         let firewall_rules = generate_firewall_rules(
             &configs,
             complexity,
@@ -235,13 +253,16 @@ fn execute_csv_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
             output_file.file_stem().unwrap().to_str().unwrap()
         ));
 
-        write_firewall_rules_csv(&firewall_rules, &firewall_output)?;
+        write_firewall_rules_csv(&firewall_rules, &firewall_output)
+            .with_context(|| format!("Failed to write firewall rules to {:?}", firewall_output))?;
 
-        println!(
-            "📄 Firewall rules written to: {}",
-            firewall_output.display()
-        );
-        print_firewall_summary(&firewall_rules, &firewall_output);
+        if !global.quiet {
+            println!(
+                "📄 Firewall rules written to: {}",
+                firewall_output.display()
+            );
+            print_firewall_summary(&firewall_rules, &firewall_output);
+        }
     }
 
     Ok(())
@@ -255,13 +276,6 @@ fn execute_xml_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
         println!("🔧 Generating OPNsense XML configuration...");
     }
 
-    // Validate base configuration file exists
-    if !base_config.exists() {
-        return Err(crate::model::ConfigError::ConfigNotFound {
-            path: base_config.display().to_string(),
-        });
-    }
-
     // Create output directory if it doesn't exist
     if !args.output_dir.exists() {
         fs::create_dir_all(&args.output_dir)?;
@@ -269,22 +283,35 @@ fn execute_xml_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
 
     // Generate or load VLAN configurations
     let configs = if let Some(csv_file) = &args.csv_file {
-        println!("📄 Loading configurations from CSV: {}", csv_file.display());
-        read_csv(csv_file)?
+        if !global.quiet {
+            println!("📄 Loading configurations from CSV: {}", csv_file.display());
+        }
+        read_csv(csv_file).with_context(|| format!("Failed to read CSV file: {:?}", csv_file))?
     } else {
-        println!("🔄 Generating {} VLAN configurations...", args.count);
+        if !global.quiet {
+            println!("🔄 Generating {} VLAN configurations...", args.count);
+        }
 
-        let pb = create_progress_bar(args.count as u64, "Generating configurations...");
-        let configs = generate_vlan_configurations(args.count, args.seed, Some(&pb))?;
+        let pb = create_progress_bar(
+            args.count as u64,
+            "Generating configurations...",
+            global.quiet,
+        );
+        let configs = generate_vlan_configurations(args.count, args.seed, Some(&pb))
+            .with_context(|| format!("Failed to generate {} VLAN configurations", args.count))?;
         pb.finish_with_message("✅ Configurations generated");
         configs
     };
 
-    println!("📝 Processing {} configurations...", configs.len());
+    if !global.quiet {
+        println!("📝 Processing {} configurations...", configs.len());
+    }
 
     // Generate firewall rules if requested
     let firewall_rules = if args.include_firewall_rules {
-        println!("🔥 Generating firewall rules...");
+        if !global.quiet {
+            println!("🔥 Generating firewall rules...");
+        }
 
         // Parse complexity level
         let complexity: FirewallComplexity =
@@ -293,7 +320,11 @@ fn execute_xml_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
             })?;
 
         // Generate firewall rules
-        let firewall_pb = create_progress_bar(configs.len() as u64, "Generating firewall rules...");
+        let firewall_pb = create_progress_bar(
+            configs.len() as u64,
+            "Generating firewall rules...",
+            global.quiet,
+        );
         let rules = generate_firewall_rules(
             &configs,
             complexity,
@@ -309,7 +340,9 @@ fn execute_xml_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
             .output_dir
             .join(format!("firewall_{}_rules.csv", args.firewall_nr));
         write_firewall_rules_csv(&rules, &firewall_csv)?;
-        println!("📄 Firewall rules CSV: {}", firewall_csv.display());
+        if !global.quiet {
+            println!("📄 Firewall rules CSV: {}", firewall_csv.display());
+        }
 
         Some(rules)
     } else {
@@ -317,11 +350,17 @@ fn execute_xml_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
     };
 
     // Load base XML template
-    let base_xml = fs::read_to_string(base_config)?;
-    let mut template = XmlTemplate::new(base_xml)?;
+    let base_xml = fs::read_to_string(base_config)
+        .with_context(|| format!("Failed to read base config file: {:?}", base_config))?;
+    let mut template = XmlTemplate::new(base_xml)
+        .with_context(|| "Failed to create XML template from base configuration")?;
 
     // Set up progress for XML generation
-    let pb = create_progress_bar(configs.len() as u64, "Generating XML configurations...");
+    let pb = create_progress_bar(
+        configs.len() as u64,
+        "Generating XML configurations...",
+        global.quiet,
+    );
 
     // Generate XML configurations
     for (index, config) in configs.iter().enumerate() {
@@ -344,7 +383,8 @@ fn execute_xml_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
             return Err(crate::model::ConfigError::config(format!(
                 "Output file '{}' already exists. Use --force to overwrite.",
                 output_file.display()
-            )));
+            ))
+            .into());
         }
 
         fs::write(&output_file, output_xml)?;
@@ -353,21 +393,29 @@ fn execute_xml_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
 
     pb.finish_with_message("✅ XML configurations generated");
 
-    print_xml_summary(&configs, &args.output_dir, args.firewall_nr);
+    if !global.quiet {
+        print_xml_summary(&configs, &args.output_dir, args.firewall_nr);
+    }
 
     // Print firewall summary if rules were generated
     if let Some(ref rules) = firewall_rules {
         let firewall_csv = args
             .output_dir
             .join(format!("firewall_{}_rules.csv", args.firewall_nr));
-        print_firewall_summary(rules, &firewall_csv);
+        if !global.quiet {
+            print_firewall_summary(rules, &firewall_csv);
+        }
     }
 
     Ok(())
 }
 
 /// Create a progress bar with consistent styling
-fn create_progress_bar(total: u64, message: &str) -> ProgressBar {
+fn create_progress_bar(total: u64, message: &str, quiet: bool) -> ProgressBar {
+    if quiet {
+        return ProgressBar::hidden();
+    }
+
     let pb = ProgressBar::new(total);
 
     // Check if we should disable progress bar for non-interactive terminals

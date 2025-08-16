@@ -167,7 +167,7 @@ jobs:
           key: bench-${{ hashFiles('**/Cargo.toml') }}
 
       - name: Run benchmarks
-        run: cargo bench
+        run: cargo bench --benches --quiet
         env:
           CARGO_TERM_COLOR: never
           TERM: dumb

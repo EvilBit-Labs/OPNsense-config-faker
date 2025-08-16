@@ -27,7 +27,7 @@ When rules conflict, always follow the rule with higher precedence.
 ### EvilBit Labs Brand Principles
 
 - **Trust the Operator**: Full control, no black boxes
-- **Polish Over Scale**: Quality over feature-bloat  
+- **Polish Over Scale**: Quality over feature-bloat
 - **Realistic Data**: Generate configurations that mirror real-world networks
 - **Sane Defaults**: Clean outputs, CLI help that's actually helpful
 - **Testing Focus**: Built specifically for comprehensive network testing scenarios
@@ -52,7 +52,7 @@ When rules conflict, always follow the rule with higher precedence.
 - **Error Handling**: Use `Result<T, E>` types and `?` operator, create custom error types with `thiserror`
 - **Documentation**: Comprehensive `///` doc comments for all public APIs
 - **Testing**: Unit tests co-located with code, integration tests in separate files
-- **Logging**: Use `console` crate for user-facing output and `indicatif` for progress indication
+- **User Output**: Use `console` crate for styled output and `indicatif` for progress indication
 
 ### Architecture Patterns
 
@@ -98,7 +98,7 @@ impl VlanConfig {
         if id == 0 || id > 4094 {
             return Err(ConfigError::InvalidVlanId(id));
         }
-        
+
         Ok(Self {
             id,
             name,
@@ -107,16 +107,16 @@ impl VlanConfig {
             network,
         })
     }
-    
+
     pub fn validate(&self) -> Result<()> {
         if self.id == 0 || self.id > 4094 {
             return Err(ConfigError::InvalidVlanId(self.id));
         }
-        
+
         if self.name.is_empty() {
             return Err(ConfigError::EmptyName);
         }
-        
+
         Ok(())
     }
 }
@@ -149,7 +149,7 @@ mod tests {
 
     #[test]
     fn test_vlan_creation() {
-        let vlan = VlanConfig::new(100, "Test VLAN".to_string(), "em0".to_string(), 
+        let vlan = VlanConfig::new(100, "Test VLAN".to_string(), "em0".to_string(),
                                   "192.168.1.0/24".parse().unwrap()).unwrap();
         assert_eq!(vlan.id, 100);
         assert_eq!(vlan.name, "Test VLAN");
@@ -162,7 +162,7 @@ mod tests {
                                      "192.168.1.0/24".parse().unwrap());
             prop_assert!(vlan.is_ok());
         }
-        
+
         #[test]
         fn test_invalid_vlan_id(id in 0u16..1u16) {
             let vlan = VlanConfig::new(id, "Test".to_string(), "em0".to_string(),
@@ -246,12 +246,12 @@ let network = "192.168.1.0/24";
 // ✅ Correct: Configurable, non-conflicting ranges
 let network = generate_test_network_range(base_network, subnet_size);
 
-// ❌ Avoid: Unclear CLI error messages  
+// ❌ Avoid: Unclear CLI error messages
 return Err("Invalid input".into());
 
 // ✅ Correct: Actionable error messages
-return Err(ConfigError::InvalidVlanCount { 
-    count, 
+return Err(ConfigError::InvalidVlanCount {
+    count,
     max: MAX_VLANS,
     suggestion: "Reduce the count or split into multiple files".to_string()
 });
@@ -324,7 +324,7 @@ When encountering problems:
 
 1. **Network Validity First**: Every change must maintain realistic, valid network configurations
 2. **Zero Warnings**: `cargo clippy -- -D warnings` must pass
-3. **CLI Usability**: Commands must be intuitive with clear help and error messages  
+3. **CLI Usability**: Commands must be intuitive with clear help and error messages
 4. **Testing Coverage**: Comprehensive unit, integration, and property-based tests
 5. **Quality Focus**: Build for network professionals who need reliable test data
 6. **Documentation**: Clear docs for all public APIs and CLI usage
