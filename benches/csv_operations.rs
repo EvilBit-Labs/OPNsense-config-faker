@@ -46,12 +46,12 @@ fn bench_csv_deserialization(c: &mut Criterion) {
 
     // Use CI-appropriate dataset sizes for CSV operations
     let counts = ci_or_local(&[100u16, 500u16], &[100u16, 500u16, 1000u16, 2000u16]);
-    for count in counts.iter() {
-        let configs = generate_vlan_configurations(*count, Some(42), None).unwrap();
+    for count in counts.iter().copied().map(|c| c as usize) {
+        let configs = generate_vlan_configurations(count as u16, Some(42), None).unwrap();
         let temp_file = NamedTempFile::new().unwrap();
         write_csv(&configs, temp_file.path()).unwrap();
 
-        group.bench_with_input(BenchmarkId::new("read_csv", count), count, |b, _| {
+        group.bench_with_input(BenchmarkId::new("read_csv", count), &count, |b, _| {
             b.iter(|| {
                 read_csv(black_box(temp_file.path())).unwrap();
             })
@@ -59,7 +59,7 @@ fn bench_csv_deserialization(c: &mut Criterion) {
 
         group.bench_with_input(
             BenchmarkId::new("read_csv_streaming", count),
-            count,
+            &count,
             |b, _| {
                 b.iter(|| {
                     let mut counter = 0;
@@ -81,10 +81,10 @@ fn bench_csv_round_trip(c: &mut Criterion) {
 
     // Use CI-appropriate dataset sizes for round-trip tests
     let counts = ci_or_local(&[100u16, 500u16], &[100u16, 500u16, 1000u16]);
-    for count in counts.iter() {
-        let configs = generate_vlan_configurations(*count, Some(42), None).unwrap();
+    for count in counts.iter().copied().map(|c| c as usize) {
+        let configs = generate_vlan_configurations(count as u16, Some(42), None).unwrap();
 
-        group.bench_with_input(BenchmarkId::new("round_trip", count), count, |b, _| {
+        group.bench_with_input(BenchmarkId::new("round_trip", count), &count, |b, _| {
             b.iter(|| {
                 let temp_file = NamedTempFile::new().unwrap();
                 write_csv(black_box(&configs), temp_file.path()).unwrap();
@@ -94,7 +94,7 @@ fn bench_csv_round_trip(c: &mut Criterion) {
 
         group.bench_with_input(
             BenchmarkId::new("round_trip_streaming", count),
-            count,
+            &count,
             |b, _| {
                 b.iter(|| {
                     let temp_file = NamedTempFile::new().unwrap();
