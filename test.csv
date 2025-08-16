@@ -1,4 +1,0 @@
-VLAN,IP Range,Beschreibung,WAN
-912,10.53.124.x,Training VLAN 912,2
-2584,10.56.241.x,IT VLAN 2584,1
-3103,10.219.183.x,Marketing VLAN 3103,2

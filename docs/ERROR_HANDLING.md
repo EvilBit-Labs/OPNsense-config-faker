@@ -222,19 +222,44 @@ proptest! {
 
 ## Error Logging
 
-### Structured Logging
+### Error Output
 
-Use structured logging for error reporting:
+Use `eprintln!` for error output to stderr:
 
 ```rust
-use console::error;
+// Option 1: Using the log crate
+use log::{error, info};
 
-// Log errors with context
-error!("Failed to generate VLAN configurations", {
-    count: args.count,
-    base_id: args.base_id,
-    error: &e
-});
+error!("Failed to generate VLAN configurations: count={}, base_id={}, error={}", 
+    args.count, args.base_id, e);
+
+// Option 2: Using tracing crate
+use tracing::{error, info};
+
+error!(count = args.count, base_id = args.base_id, error = ?e, 
+    "Failed to generate VLAN configurations");
+```
+
+### Console Styling for User-Facing Messages
+
+Use `console::style` for styled error messages in CLI output:
+
+```rust
+use console::style;
+
+// Styled error message for user display
+eprintln!(
+    "{} {}",
+    style("❌ Error:").red().bold(),
+    style("Failed to generate VLAN configurations").red()
+);
+
+// Styled warning message
+eprintln!(
+    "{} {}",
+    style("⚠️  Warning:").yellow().bold(),
+    style("Some configurations may be invalid").yellow()
+);
 ```
 
 ### Error Chain Preservation
@@ -254,8 +279,9 @@ for error in e.chain() {
 ### File Operations
 
 ```rust
-fs::read_to_string(&path)
-    .with_context(|| format!("Failed to read file: {:?}", path))?
+// File reading with context
+let content = std::fs::read_to_string(&path)
+    .with_context(|| format!("Failed to read file: {:?}", path))?;
 ```
 
 ### Network Configuration Validation
@@ -265,18 +291,18 @@ vlan.validate()
     .with_context(|| format!("VLAN {} validation failed", vlan.id))?
 ```
 
-### CLI Argument Validation
+### Argument Validation
 
 ```rust
 args.validate()
     .map_err(|e| CliError::invalid_argument(e))?
 ```
 
-### Progress Indicator Errors
+### Progress Indicator Creation
 
 ```rust
-ProgressBar::new(count)
-    .map_err(|e| CliError::progress(format!("Failed to create progress bar: {}", e)))?
+// ProgressBar::new is infallible - no error handling needed
+let pb = ProgressBar::new(count);
 ```
 
 ## Error Recovery Strategies
@@ -286,8 +312,31 @@ ProgressBar::new(count)
 When possible, provide fallback behavior:
 
 ```rust
-// Try to create progress bar, fall back to hidden if it fails
-let pb = ProgressBar::new(count).unwrap_or_else(|_| ProgressBar::hidden());
+// Detect dumb terminal and provide appropriate fallback
+// Note: unwrap_or_default() is applied to env::var(), not ProgressBar::new()
+let pb = if std::env::var("TERM").unwrap_or_default() == "dumb" {
+    ProgressBar::hidden()  // Hidden for dumb terminals
+} else {
+    ProgressBar::new(count)  // Visible progress bar for interactive terminals
+};
+
+// Alternative: More comprehensive terminal detection
+use std::env;
+let pb = if env::var("NO_COLOR").is_ok() 
+    || env::var("TERM").unwrap_or_default() == "dumb"
+    || !atty::is(atty::Stream::Stderr) {
+    ProgressBar::hidden()
+} else {
+    ProgressBar::new(count)
+};
+
+// Alternative: Use isatty/atty crate for robust terminal detection
+use atty::Stream;
+let pb = if atty::is(Stream::Stdout) && atty::is(Stream::Stderr) {
+    ProgressBar::new(count)  // Interactive terminal
+} else {
+    ProgressBar::hidden()    // Non-interactive (pipes, redirects, etc.)
+};
 ```
 
 ### User-Friendly Messages
