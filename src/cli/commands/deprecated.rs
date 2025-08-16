@@ -1,14 +1,14 @@
 //! Deprecation handlers for legacy command structure
 
 use crate::cli::{CsvArgs, XmlArgs};
-use crate::Result;
+use anyhow::Result;
 use console::style;
 
 /// Handle deprecated CSV command with migration guidance
 pub fn handle_deprecated_csv(args: CsvArgs) -> Result<()> {
     // Validate arguments before showing deprecation message
     if let Err(e) = args.validate() {
-        return Err(crate::model::ConfigError::invalid_parameter("count", &e));
+        return Err(crate::model::ConfigError::invalid_parameter("count", e.to_string()).into());
     }
 
     println!("{}", style("⚠️  DEPRECATED COMMAND").bold().yellow());
@@ -51,14 +51,15 @@ pub fn handle_deprecated_csv(args: CsvArgs) -> Result<()> {
 
     Err(crate::model::ConfigError::config(
         "Please use the new 'generate' command format. See migration guide above.",
-    ))
+    )
+    .into())
 }
 
 /// Handle deprecated XML command with migration guidance
 pub fn handle_deprecated_xml(args: XmlArgs) -> Result<()> {
     // Validate arguments before showing deprecation message
     if let Err(e) = args.validate() {
-        return Err(crate::model::ConfigError::invalid_parameter("count", &e));
+        return Err(crate::model::ConfigError::invalid_parameter("count", e.to_string()).into());
     }
 
     println!("{}", style("⚠️  DEPRECATED COMMAND").bold().yellow());
@@ -129,5 +130,6 @@ pub fn handle_deprecated_xml(args: XmlArgs) -> Result<()> {
 
     Err(crate::model::ConfigError::config(
         "Please use the new 'generate' command format. See migration guide above.",
-    ))
+    )
+    .into())
 }
