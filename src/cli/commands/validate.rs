@@ -6,7 +6,7 @@
 use crate::cli::{GlobalArgs, ValidateArgs, ValidationFormat};
 use crate::model::ConfigError;
 use crate::validate::ValidationEngine;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::env;
 use std::fs;
@@ -54,20 +54,15 @@ pub fn execute(args: ValidateArgs, global: &GlobalArgs) -> Result<()> {
 /// Validate CSV configuration data
 fn validate_csv(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
     let mut engine = ValidationEngine::new();
-    let mut error_count = 0;
+    let mut error_count: u32 = 0;
 
     if !global.quiet {
         println!("📄 Reading CSV file: {}", args.input.display());
     }
 
-    // Use the existing CSV reader function
-    let configs = match crate::io::csv::read_csv(&args.input) {
-        Ok(configs) => configs,
-        Err(e) => {
-            println!("❌ Failed to read CSV: {}", e);
-            return Err(e.into());
-        }
-    };
+    // Use the existing CSV reader function with proper error chaining
+    let configs = crate::io::csv::read_csv(&args.input)
+        .with_context(|| format!("Failed to read CSV: {}", args.input.display()))?;
 
     if !global.quiet {
         println!(
@@ -98,7 +93,7 @@ fn validate_csv(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
         if let Err(e) = engine.validate_config(config) {
             error_count += 1;
             if args.verbose || !global.quiet {
-                println!("❌ Configuration {}: {}", index + 1, e);
+                eprintln!("❌ Error in configuration {}: {}", index + 1, e);
             }
         } else {
             valid_configs.push(config.clone());
@@ -107,15 +102,9 @@ fn validate_csv(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
         pb.inc(1);
     }
 
-    pb.finish_and_clear();
+    pb.finish_with_message("✅ Validation complete");
 
-    // Report results
     if !global.quiet {
-        println!();
-        println!("📊 Validation Results:");
-        println!("  ✅ Valid configurations: {}", valid_configs.len());
-        println!("  ❌ Errors found: {}", error_count);
-
         if error_count == 0 {
             println!("🎉 All configurations are valid!");
         } else {
@@ -152,18 +141,24 @@ fn validate_xml(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
     // For now, just verify the file is valid XML
     let content = fs::read_to_string(&args.input)?;
 
-    match quick_xml::Reader::from_str(&content).read_event() {
-        Ok(_) => {
-            if !global.quiet {
-                println!("✅ File is valid XML");
+    let mut reader = quick_xml::Reader::from_str(&content);
+    let mut buf = Vec::new();
+
+    loop {
+        match reader.read_event_into(&mut buf) {
+            Ok(quick_xml::events::Event::Eof) => break,
+            Ok(_) => continue,
+            Err(e) => {
+                eprintln!("❌ Invalid XML: {}", e);
+                return Err(
+                    ConfigError::invalid_parameter("input", format!("Invalid XML: {}", e)).into(),
+                );
             }
         }
-        Err(e) => {
-            println!("❌ Invalid XML: {}", e);
-            return Err(
-                ConfigError::invalid_parameter("input", format!("Invalid XML: {}", e)).into(),
-            );
-        }
+    }
+
+    if !global.quiet {
+        println!("✅ File is valid XML");
     }
 
     Ok(())
@@ -219,35 +214,27 @@ fn write_validation_report(
     configs: &[crate::generator::VlanConfig],
     error_count: u32,
 ) -> Result<()> {
-    use std::io::Write;
-
-    let mut file = fs::File::create(path)?;
-
-    writeln!(file, "# OPNsense Config Faker - Validation Report")?;
-    writeln!(
-        file,
-        "Generated: {}",
-        chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
-    )?;
-    writeln!(file)?;
-    writeln!(file, "## Summary")?;
-    writeln!(file, "- Valid configurations: {}", configs.len())?;
-    writeln!(file, "- Errors found: {}", error_count)?;
-    writeln!(file)?;
-
-    if !configs.is_empty() {
-        writeln!(file, "## Valid Configurations")?;
-        writeln!(file, "| VLAN ID | IP Network | Description | WAN |")?;
-        writeln!(file, "|---------|------------|-------------|-----|")?;
-
-        for config in configs {
-            writeln!(
-                file,
-                "| {} | {} | {} | {} |",
-                config.vlan_id, config.ip_network, config.description, config.wan_assignment
-            )?;
-        }
+    // Ensure parent directories exist
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).with_context(|| {
+            format!("Failed to create parent directories for {}", path.display())
+        })?;
     }
+
+    let report_content = format!(
+        "Validation Report\n\
+         ================\n\
+         \n\
+         Valid configurations: {}\n\
+         Error count: {}\n\
+         \n\
+         Valid VLAN configurations:\n",
+        configs.len(),
+        error_count
+    );
+
+    fs::write(path, report_content)
+        .with_context(|| format!("writing validation report to {}", path.display()))?;
 
     Ok(())
 }

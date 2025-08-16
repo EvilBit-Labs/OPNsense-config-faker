@@ -40,7 +40,7 @@ When AI agents contribute to this project, they **MUST**:
 04. **Use the preferred tooling commands** (see justfile)
 05. **Write comprehensive tests** for new functionality (unit, integration, property-based)
 06. **Include proper error handling** with context using `thiserror`
-07. **Add structured logging** for important operations using console and indicatif
+07. **Add user-facing output** for important operations using console styling and indicatif progress indicators
 08. **Validate all inputs** and handle edge cases securely
 09. **Document new functions and types** following Rust `///` conventions
 10. **Never hardcode configuration** - use appropriate data generation patterns
