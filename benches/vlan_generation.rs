@@ -8,7 +8,7 @@ use std::hint::black_box;
 
 fn bench_vlan_generation(c: &mut Criterion) {
     // Use CI-appropriate dataset sizes
-    let sizes = ci_or_local(&[10, 100], &[10, 100, 1000]);
+    let sizes = ci_or_local(&[10u16, 100u16], &[10u16, 100u16, 1000u16]);
 
     for &size in &sizes {
         c.bench_function(&format!("generate_{}_vlans", size), |b| {
@@ -34,7 +34,7 @@ fn bench_vlan_generation(c: &mut Criterion) {
     }
 
     // RFC 1918 validation benchmarks with CI-appropriate size
-    let validation_size = ci_or_local(&[50], &[100])[0];
+    let validation_size = ci_or_local(&[50usize], &[100usize])[0];
     c.bench_function(&format!("rfc1918_validation_{}", validation_size), |b| {
         let mut generator = VlanGenerator::new(Some(42));
         let configs = generator.generate_batch(validation_size).unwrap();
@@ -47,7 +47,7 @@ fn bench_vlan_generation(c: &mut Criterion) {
     });
 
     // Memory efficiency test for large batches (within VLAN ID limits)
-    let memory_test_size = ci_or_local(&[1000], &[3000])[0];
+    let memory_test_size = ci_or_local(&[1000usize], &[3000usize])[0];
     c.bench_function(
         &format!("generate_{}_vlans_memory_test", memory_test_size),
         |b| {
