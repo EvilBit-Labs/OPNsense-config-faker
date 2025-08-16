@@ -65,7 +65,7 @@ fn validate_csv(args: &ValidateArgs, global: &GlobalArgs) -> Result<()> {
         Ok(configs) => configs,
         Err(e) => {
             println!("❌ Failed to read CSV: {}", e);
-            return Err(e);
+            return Err(e.into());
         }
     };
 
