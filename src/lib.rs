@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 //! OPNsense Config Faker Library
 //!
 //! A flexible tool for generating realistic network configuration test data for OPNsense.

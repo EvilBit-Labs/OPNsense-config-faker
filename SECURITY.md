@@ -38,10 +38,10 @@ Please provide as much detail as possible:
 
 #### Response Timeline
 
-- **Initial Response**: Within 48-72 hours (weekdays)
-- **Status Updates**: Weekly until resolution
+- **Initial Response**: Within 48-72 hours (Monday–Friday, 09:00–17:00 EST/EDT)
+- **Status Updates**: Weekly until resolution (Monday–Friday, 09:00–17:00 EST/EDT)
 - **Fix Timeline**: Depends on severity and complexity
-- **Public Disclosure**: After fix is available and tested
+- **Coordinated Disclosure**: Disclosure will be coordinated with the reporter and only after an agreed embargo or once a fix is available and tested
 
 ### For Contributors
 
@@ -61,12 +61,12 @@ If you discover a security issue while contributing:
 - **Generates test data only**: All output is fake, non-functional configuration data
 - **No network access**: Tool operates entirely offline
 - **No data collection**: No telemetry, logging, or data transmission
-- **Read-only operations**: Only reads input files, never modifies existing configurations
+- **No in-place mutations**: Reads input files and writes outputs to new files; never overwrites existing configurations
 - **Deterministic output**: Same inputs produce same outputs (when seeded)
 
 #### Security Considerations
 
-- **File system access**: Tool reads input files and writes output files
+- **File system access**: Reads input files and writes new output files (no in-place edits or overwrites)
 - **XML parsing**: Processes XML files which could contain malicious content
 - **Memory usage**: Large configurations may consume significant memory
 - **Temporary files**: May create temporary files during processing
@@ -94,7 +94,8 @@ If you discover a security issue while contributing:
 2. **Input Validation**: All user inputs are validated and sanitized
 3. **Error Handling**: Comprehensive error handling prevents information disclosure
 4. **Memory Safety**: Rust's memory safety prevents common vulnerabilities
-5. **No Unsafe Code**: Project avoids `unsafe` Rust code where possible
+5. **No Unsafe Code**: The codebase forbids `unsafe` in CI (e.g., `#![forbid(unsafe_code)]` and lint checks)
+6. **Fuzzing & Property Tests**: Fuzz parsers and generators (e.g., cargo-fuzz) and add property-based tests (e.g., proptest) for robustness
 
 ### Known Security Limitations
 
@@ -216,7 +217,40 @@ This project leverages Rust's security features:
 
 ```text
 -----BEGIN PGP PUBLIC KEY BLOCK-----
-[PGP key will be added when available]
+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
+wD2hQEk3TLYp4Q==
+=o/Ga
 -----END PGP PUBLIC KEY BLOCK-----
 ```
 
