@@ -34,6 +34,21 @@ pub const MAX_UNIQUE_VLAN_IDS: u16 = 4085;
   Generate advanced firewall rules:
     opnsense-config-faker generate --count 10 --format xml --base-config config.xml --include-firewall-rules --firewall-rule-complexity advanced
 
+  Generate from VLAN ranges:
+    opnsense-config-faker generate --format csv --vlan-range "100-150,200-250" --output vlans.csv
+
+  Generate with VPN configurations:
+    opnsense-config-faker generate --count 10 --vpn-count 3 --format csv --output configs.csv
+
+  Generate with NAT mappings:
+    opnsense-config-faker generate --count 15 --nat-mappings 5 --format csv --output network.csv
+
+  Generate with balanced WAN assignments:
+    opnsense-config-faker generate --count 12 --wan-assignments balanced --format csv --output balanced.csv
+
+  Generate comprehensive configuration:
+    opnsense-config-faker generate --vlan-range "100-120" --vpn-count 2 --nat-mappings 3 --wan-assignments multi --format csv --output complete.csv
+
   Force overwrite existing files:
     opnsense-config-faker generate --count 10 --format csv --output test.csv --force
 
