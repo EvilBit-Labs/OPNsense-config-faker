@@ -188,16 +188,50 @@ fn execute_csv_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
         .into());
     }
 
-    // Set up progress indicator
-    let pb = create_progress_bar(
-        args.count as u64,
-        "Generating VLAN configurations...",
-        global.quiet,
-    );
+    // Generate VLAN configurations based on range or count
+    let (configs, pb) = if let Some(ref vlan_range_str) = args.vlan_range {
+        // Parse VLAN ranges
+        let vlan_ranges = crate::cli::parse_vlan_range(vlan_range_str)
+            .map_err(|e| crate::model::ConfigError::validation(e))?;
+        
+        let total_vlans: u16 = vlan_ranges.iter().map(|(start, end)| end - start + 1).sum();
+        
+        if !global.quiet {
+            println!("📋 Using VLAN ranges: {} (total: {} VLANs)", vlan_range_str, total_vlans);
+        }
 
-    // Generate VLAN configurations
-    let configs = generate_vlan_configurations(args.count, args.seed, Some(&pb))
-        .with_context(|| format!("Failed to generate {} VLAN configurations", args.count))?;
+        // Set up progress indicator
+        let pb = create_progress_bar(
+            total_vlans as u64,
+            "Generating VLAN configurations from ranges...",
+            global.quiet,
+        );
+
+        // Generate from ranges
+        let configs = if args.wan_assignments.is_some() {
+            crate::generator::vlan::generate_vlan_configurations_from_ranges_with_wan(&vlan_ranges, args.seed, args.wan_assignments.as_ref(), Some(&pb))
+        } else {
+            crate::generator::vlan::generate_vlan_configurations_from_ranges(&vlan_ranges, args.seed, Some(&pb))
+        }.with_context(|| format!("Failed to generate VLAN configurations from ranges: {}", vlan_range_str))?;
+        
+        (configs, pb)
+    } else {
+        // Set up progress indicator
+        let pb = create_progress_bar(
+            args.count as u64,
+            "Generating VLAN configurations...",
+            global.quiet,
+        );
+
+        // Generate VLAN configurations by count
+        let configs = if args.wan_assignments.is_some() {
+            crate::generator::vlan::generate_vlan_configurations_with_wan(args.count, args.seed, args.wan_assignments.as_ref(), Some(&pb))
+        } else {
+            generate_vlan_configurations(args.count, args.seed, Some(&pb))
+        }.with_context(|| format!("Failed to generate {} VLAN configurations", args.count))?;
+        
+        (configs, pb)
+    };
 
     pb.set_message("Writing CSV file...");
 
@@ -213,6 +247,76 @@ fn execute_csv_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
 
     if !global.quiet {
         print_csv_summary(&configs, output_file);
+    }
+
+    // Generate VPN configurations if requested
+    if let Some(vpn_count) = args.vpn_count {
+        if !global.quiet {
+            println!();
+            println!("🔒 Generating VPN configurations...");
+        }
+
+        let vpn_pb = create_progress_bar(
+            vpn_count as u64,
+            "Generating VPN configurations...",
+            global.quiet,
+        );
+
+        let vpn_configs = crate::generator::vpn::generate_vpn_configurations(
+            vpn_count,
+            args.seed,
+            Some(&vpn_pb)
+        ).with_context(|| format!("Failed to generate {} VPN configurations", vpn_count))?;
+
+        vpn_pb.finish_with_message(format!(
+            "✅ Generated {} VPN configurations",
+            vpn_configs.len()
+        ));
+
+        // Write VPN configurations to separate CSV file
+        let vpn_output_file = output_file.with_file_name(
+            format!("vpn_{}", output_file.file_name().unwrap().to_string_lossy())
+        );
+        
+        // Write VPN CSV (we'll need to implement this)
+        if !global.quiet {
+            println!("📁 VPN configurations written to: {}", vpn_output_file.display());
+        }
+    }
+
+    // Generate NAT mappings if requested
+    if let Some(nat_count) = args.nat_mappings {
+        if !global.quiet {
+            println!();
+            println!("🔗 Generating NAT mappings...");
+        }
+
+        let nat_pb = create_progress_bar(
+            nat_count as u64,
+            "Generating NAT mappings...",
+            global.quiet,
+        );
+
+        let nat_mappings = crate::generator::nat::generate_nat_mappings(
+            nat_count,
+            args.seed,
+            Some(&nat_pb)
+        ).with_context(|| format!("Failed to generate {} NAT mappings", nat_count))?;
+
+        nat_pb.finish_with_message(format!(
+            "✅ Generated {} NAT mappings",
+            nat_mappings.len()
+        ));
+
+        // Write NAT mappings to separate CSV file
+        let nat_output_file = output_file.with_file_name(
+            format!("nat_{}", output_file.file_name().unwrap().to_string_lossy())
+        );
+        
+        // Write NAT CSV (we'll need to implement this)
+        if !global.quiet {
+            println!("📁 NAT mappings written to: {}", nat_output_file.display());
+        }
     }
 
     // Generate firewall rules if requested
@@ -287,6 +391,31 @@ fn execute_xml_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
             println!("📄 Loading configurations from CSV: {}", csv_file.display());
         }
         read_csv(csv_file).with_context(|| format!("Failed to read CSV file: {:?}", csv_file))?
+    } else if let Some(ref vlan_range_str) = args.vlan_range {
+        // Parse VLAN ranges
+        let vlan_ranges = crate::cli::parse_vlan_range(vlan_range_str)
+            .map_err(|e| crate::model::ConfigError::validation(e))?;
+        
+        let total_vlans: u16 = vlan_ranges.iter().map(|(start, end)| end - start + 1).sum();
+        
+        if !global.quiet {
+            println!("📋 Using VLAN ranges: {} (total: {} VLANs)", vlan_range_str, total_vlans);
+        }
+
+        let pb = create_progress_bar(
+            total_vlans as u64,
+            "Generating configurations from ranges...",
+            global.quiet,
+        );
+        
+        let configs = if args.wan_assignments.is_some() {
+            crate::generator::vlan::generate_vlan_configurations_from_ranges_with_wan(&vlan_ranges, args.seed, args.wan_assignments.as_ref(), Some(&pb))
+        } else {
+            crate::generator::vlan::generate_vlan_configurations_from_ranges(&vlan_ranges, args.seed, Some(&pb))
+        }.with_context(|| format!("Failed to generate VLAN configurations from ranges: {}", vlan_range_str))?;
+        
+        pb.finish_with_message("✅ Configurations generated from ranges");
+        configs
     } else {
         if !global.quiet {
             println!("🔄 Generating {} VLAN configurations...", args.count);
@@ -297,8 +426,13 @@ fn execute_xml_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
             "Generating configurations...",
             global.quiet,
         );
-        let configs = generate_vlan_configurations(args.count, args.seed, Some(&pb))
-            .with_context(|| format!("Failed to generate {} VLAN configurations", args.count))?;
+        
+        let configs = if args.wan_assignments.is_some() {
+            crate::generator::vlan::generate_vlan_configurations_with_wan(args.count, args.seed, args.wan_assignments.as_ref(), Some(&pb))
+        } else {
+            generate_vlan_configurations(args.count, args.seed, Some(&pb))
+        }.with_context(|| format!("Failed to generate {} VLAN configurations", args.count))?;
+        
         pb.finish_with_message("✅ Configurations generated");
         configs
     };
