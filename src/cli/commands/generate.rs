@@ -391,6 +391,31 @@ fn execute_xml_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
             println!("📄 Loading configurations from CSV: {}", csv_file.display());
         }
         read_csv(csv_file).with_context(|| format!("Failed to read CSV file: {:?}", csv_file))?
+    } else if let Some(ref vlan_range_str) = args.vlan_range {
+        // Parse VLAN ranges
+        let vlan_ranges = crate::cli::parse_vlan_range(vlan_range_str)
+            .map_err(|e| crate::model::ConfigError::validation(e))?;
+        
+        let total_vlans: u16 = vlan_ranges.iter().map(|(start, end)| end - start + 1).sum();
+        
+        if !global.quiet {
+            println!("📋 Using VLAN ranges: {} (total: {} VLANs)", vlan_range_str, total_vlans);
+        }
+
+        let pb = create_progress_bar(
+            total_vlans as u64,
+            "Generating configurations from ranges...",
+            global.quiet,
+        );
+        
+        let configs = if args.wan_assignments.is_some() {
+            crate::generator::vlan::generate_vlan_configurations_from_ranges_with_wan(&vlan_ranges, args.seed, args.wan_assignments.as_ref(), Some(&pb))
+        } else {
+            crate::generator::vlan::generate_vlan_configurations_from_ranges(&vlan_ranges, args.seed, Some(&pb))
+        }.with_context(|| format!("Failed to generate VLAN configurations from ranges: {}", vlan_range_str))?;
+        
+        pb.finish_with_message("✅ Configurations generated from ranges");
+        configs
     } else {
         if !global.quiet {
             println!("🔄 Generating {} VLAN configurations...", args.count);
@@ -401,8 +426,13 @@ fn execute_xml_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
             "Generating configurations...",
             global.quiet,
         );
-        let configs = generate_vlan_configurations(args.count, args.seed, Some(&pb))
-            .with_context(|| format!("Failed to generate {} VLAN configurations", args.count))?;
+        
+        let configs = if args.wan_assignments.is_some() {
+            crate::generator::vlan::generate_vlan_configurations_with_wan(args.count, args.seed, args.wan_assignments.as_ref(), Some(&pb))
+        } else {
+            generate_vlan_configurations(args.count, args.seed, Some(&pb))
+        }.with_context(|| format!("Failed to generate {} VLAN configurations", args.count))?;
+        
         pb.finish_with_message("✅ Configurations generated");
         configs
     };
