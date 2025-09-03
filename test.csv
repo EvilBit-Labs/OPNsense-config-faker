@@ -1,6 +1,0 @@
-VLAN,IP Range,Beschreibung,WAN
-3633,10.204.18.x,Security VLAN 3633,3
-1334,10.72.160.x,Management VLAN 1334,1
-2092,10.67.76.x,Finance VLAN 2092,1
-1210,10.223.29.x,Training VLAN 1210,2
-2118,10.194.79.x,Management VLAN 2118,2
