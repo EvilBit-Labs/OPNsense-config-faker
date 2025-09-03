@@ -547,8 +547,8 @@ impl VlanGenerator {
         Err(VlanError::VlanIdExhausted)
     }
 
-    /// Generate unique RFC 1918 private IP network
-    fn generate_unique_ip_network(&mut self, max_attempts: usize) -> Result<String> {
+    /// Generate unique IP network
+    pub fn generate_unique_ip_network(&mut self, max_attempts: usize) -> Result<String> {
         for _ in 0..max_attempts {
             // Generate Class A private network (10.0.0.0/8)
             let second_octet = self.rng.random_range(1..=254);
@@ -585,7 +585,7 @@ impl VlanGenerator {
     }
 
     /// Generate department-based description using legacy constants
-    fn generate_description(&mut self, vlan_id: u16) -> String {
+    pub fn generate_description(&mut self, vlan_id: u16) -> String {
         const DEPARTMENTS: &[&str] = &[
             "Sales",
             "IT",
@@ -655,6 +655,43 @@ pub fn generate_vlan_configurations_enhanced(
         }
     }
 
+    Ok(configs)
+}
+
+/// Generate VLAN configurations from specified ranges
+pub fn generate_vlan_configurations_from_ranges(
+    vlan_ranges: &[(u16, u16)],
+    seed: Option<u64>,
+    progress_bar: Option<&ProgressBar>,
+) -> Result<Vec<VlanConfig>> {
+    let mut generator = VlanGenerator::new_with_std_rng(seed);
+    let mut configs = Vec::new();
+    
+    // Calculate total number of VLANs for progress tracking
+    let total_vlans: u16 = vlan_ranges.iter().map(|(start, end)| end - start + 1).sum();
+    let mut processed = 0u64;
+    
+    for (start, end) in vlan_ranges {
+        for vlan_id in *start..=*end {
+            // Generate unique IP network
+            let ip_network = generator.generate_unique_ip_network(1000)?;
+            
+            // Generate description
+            let description = generator.generate_description(vlan_id);
+            
+            // Generate WAN assignment
+            let wan_assignment = generator.rng.random_range(1..=3);
+            
+            let config = VlanConfig::new(vlan_id, ip_network, description, wan_assignment)?;
+            configs.push(config);
+            
+            processed += 1;
+            if let Some(pb) = progress_bar {
+                pb.set_position(processed);
+            }
+        }
+    }
+    
     Ok(configs)
 }
 

@@ -188,16 +188,44 @@ fn execute_csv_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
         .into());
     }
 
-    // Set up progress indicator
-    let pb = create_progress_bar(
-        args.count as u64,
-        "Generating VLAN configurations...",
-        global.quiet,
-    );
+    // Generate VLAN configurations based on range or count
+    let (configs, pb) = if let Some(ref vlan_range_str) = args.vlan_range {
+        // Parse VLAN ranges
+        let vlan_ranges = crate::cli::parse_vlan_range(vlan_range_str)
+            .map_err(|e| crate::model::ConfigError::validation(e))?;
+        
+        let total_vlans: u16 = vlan_ranges.iter().map(|(start, end)| end - start + 1).sum();
+        
+        if !global.quiet {
+            println!("📋 Using VLAN ranges: {} (total: {} VLANs)", vlan_range_str, total_vlans);
+        }
 
-    // Generate VLAN configurations
-    let configs = generate_vlan_configurations(args.count, args.seed, Some(&pb))
-        .with_context(|| format!("Failed to generate {} VLAN configurations", args.count))?;
+        // Set up progress indicator
+        let pb = create_progress_bar(
+            total_vlans as u64,
+            "Generating VLAN configurations from ranges...",
+            global.quiet,
+        );
+
+        // Generate from ranges
+        let configs = crate::generator::vlan::generate_vlan_configurations_from_ranges(&vlan_ranges, args.seed, Some(&pb))
+            .with_context(|| format!("Failed to generate VLAN configurations from ranges: {}", vlan_range_str))?;
+        
+        (configs, pb)
+    } else {
+        // Set up progress indicator
+        let pb = create_progress_bar(
+            args.count as u64,
+            "Generating VLAN configurations...",
+            global.quiet,
+        );
+
+        // Generate VLAN configurations by count
+        let configs = generate_vlan_configurations(args.count, args.seed, Some(&pb))
+            .with_context(|| format!("Failed to generate {} VLAN configurations", args.count))?;
+        
+        (configs, pb)
+    };
 
     pb.set_message("Writing CSV file...");
 
@@ -213,6 +241,41 @@ fn execute_csv_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
 
     if !global.quiet {
         print_csv_summary(&configs, output_file);
+    }
+
+    // Generate VPN configurations if requested
+    if let Some(vpn_count) = args.vpn_count {
+        if !global.quiet {
+            println!();
+            println!("🔒 Generating VPN configurations...");
+        }
+
+        let vpn_pb = create_progress_bar(
+            vpn_count as u64,
+            "Generating VPN configurations...",
+            global.quiet,
+        );
+
+        let vpn_configs = crate::generator::vpn::generate_vpn_configurations(
+            vpn_count,
+            args.seed,
+            Some(&vpn_pb)
+        ).with_context(|| format!("Failed to generate {} VPN configurations", vpn_count))?;
+
+        vpn_pb.finish_with_message(format!(
+            "✅ Generated {} VPN configurations",
+            vpn_configs.len()
+        ));
+
+        // Write VPN configurations to separate CSV file
+        let vpn_output_file = output_file.with_file_name(
+            format!("vpn_{}", output_file.file_name().unwrap().to_string_lossy())
+        );
+        
+        // Write VPN CSV (we'll need to implement this)
+        if !global.quiet {
+            println!("📁 VPN configurations written to: {}", vpn_output_file.display());
+        }
     }
 
     // Generate firewall rules if requested

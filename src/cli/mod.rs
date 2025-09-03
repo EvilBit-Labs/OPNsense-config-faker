@@ -101,6 +101,17 @@ pub enum OutputFormat {
     Xml,
 }
 
+/// WAN assignment strategy for VLAN distribution
+#[derive(Clone, Debug, ValueEnum)]
+pub enum WanAssignmentStrategy {
+    /// Assign all VLANs to a single WAN connection
+    Single,
+    /// Distribute VLANs across multiple WAN connections
+    Multi,
+    /// Balance VLANs evenly across available WAN connections
+    Balanced,
+}
+
 /// Shell types for completion generation
 #[derive(Clone, Debug, ValueEnum)]
 pub enum Shell {
@@ -180,6 +191,26 @@ pub struct GenerateArgs {
     /// Firewall rule complexity level (basic, intermediate, advanced)
     #[arg(long, default_value = "intermediate")]
     pub firewall_rule_complexity: String,
+
+    /// VLAN range specification (e.g., "100-150" or "10,20,30-40")
+    #[arg(long)]
+    pub vlan_range: Option<String>,
+
+    /// Number of VPN configurations to generate
+    #[arg(long)]
+    pub vpn_count: Option<u16>,
+
+    /// Number of NAT mappings to generate
+    #[arg(long)]
+    pub nat_mappings: Option<u16>,
+
+    /// WAN assignment strategy for VLANs
+    #[arg(long, value_enum)]
+    pub wan_assignments: Option<WanAssignmentStrategy>,
+
+    /// Custom XML template file
+    #[arg(long)]
+    pub template: Option<PathBuf>,
 }
 
 impl GenerateArgs {
@@ -192,6 +223,34 @@ impl GenerateArgs {
                 self.count, MAX_UNIQUE_VLAN_IDS
             ));
         }
+
+        // Validate VLAN range if provided
+        if let Some(ref vlan_range) = self.vlan_range {
+            self.validate_vlan_range(vlan_range)?;
+        }
+
+        // Validate conflicts between count and vlan_range
+        if self.vlan_range.is_some() && self.count != 10 {
+            return Err("Cannot specify both --count and --vlan-range. Use --vlan-range to specify exact VLANs or --count for auto-generated ranges.".to_string());
+        }
+
+        Ok(())
+    }
+
+    /// Validate VLAN range format and values
+    fn validate_vlan_range(&self, vlan_range: &str) -> Result<(), String> {
+        let ranges = parse_vlan_range(vlan_range)
+            .map_err(|e| format!("Invalid VLAN range format '{}': {}", vlan_range, e))?;
+        
+        let total_vlans = ranges.iter().map(|r| r.1 - r.0 + 1).sum::<u16>();
+        
+        if matches!(self.format, OutputFormat::Xml) && total_vlans > MAX_UNIQUE_VLAN_IDS {
+            return Err(format!(
+                "VLAN range produces {} VLANs, but maximum is {} for XML format",
+                total_vlans, MAX_UNIQUE_VLAN_IDS
+            ));
+        }
+        
         Ok(())
     }
 }
@@ -324,4 +383,54 @@ pub enum ValidationFormat {
     Csv,
     /// Validate OPNsense XML configuration
     Xml,
+}
+
+/// Parse VLAN range specification into individual ranges
+/// Supports formats like "100-150", "10,20,30-40", "100"
+pub fn parse_vlan_range(range_str: &str) -> Result<Vec<(u16, u16)>, String> {
+    let mut ranges = Vec::new();
+    
+    for part in range_str.split(',') {
+        let part = part.trim();
+        if part.is_empty() {
+            continue;
+        }
+        
+        if part.contains('-') {
+            let parts: Vec<&str> = part.split('-').collect();
+            if parts.len() != 2 {
+                return Err(format!("Invalid range format: '{}'", part));
+            }
+            
+            let start: u16 = parts[0].trim().parse()
+                .map_err(|_| format!("Invalid start VLAN ID: '{}'", parts[0]))?;
+            let end: u16 = parts[1].trim().parse()
+                .map_err(|_| format!("Invalid end VLAN ID: '{}'", parts[1]))?;
+            
+            if start > end {
+                return Err(format!("Start VLAN ID {} must be less than or equal to end VLAN ID {}", start, end));
+            }
+            
+            if start < 10 || start > 4094 || end < 10 || end > 4094 {
+                return Err(format!("VLAN IDs must be between 10 and 4094, got range {}-{}", start, end));
+            }
+            
+            ranges.push((start, end));
+        } else {
+            let vlan_id: u16 = part.parse()
+                .map_err(|_| format!("Invalid VLAN ID: '{}'", part))?;
+            
+            if vlan_id < 10 || vlan_id > 4094 {
+                return Err(format!("VLAN ID {} must be between 10 and 4094", vlan_id));
+            }
+            
+            ranges.push((vlan_id, vlan_id));
+        }
+    }
+    
+    if ranges.is_empty() {
+        return Err("No valid VLAN ranges found".to_string());
+    }
+    
+    Ok(ranges)
 }
