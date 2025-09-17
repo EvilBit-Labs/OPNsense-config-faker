@@ -71,11 +71,25 @@ proptest! {
         let vlans = vlan::generate_vlan_configurations(count, Some(seed), None).unwrap();
 
         for vlan in &vlans {
-            prop_assert!(
-                vlan.ip_network.starts_with("10.") ||
-                vlan.ip_network.starts_with("172.") ||
+            let is_rfc1918 = if vlan.ip_network.starts_with("10.") {
+                true
+            } else if vlan.ip_network.starts_with("172.") {
+                // Parse second octet for 172.x.x.x addresses
+                let parts: Vec<&str> = vlan.ip_network.split('.').collect();
+                if parts.len() >= 2 {
+                    if let Ok(second_octet) = parts[1].parse::<u8>() {
+                        (16..=31).contains(&second_octet)
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            } else {
                 vlan.ip_network.starts_with("192.168.")
-            );
+            };
+
+            prop_assert!(is_rfc1918);
         }
     }
 

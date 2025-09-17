@@ -9,7 +9,7 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys         = "0.4"
 opnsense-config-faker = { path = ".." }
-tempfile              = "3.8"
+tempfile              = "3.22.0"
 
 # Fuzzing configuration
 [profile.release]

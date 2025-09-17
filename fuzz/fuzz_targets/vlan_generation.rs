@@ -17,11 +17,10 @@ fuzz_target!(|data: &[u8]| {
     let count = count % 1000; // Max 1000 VLANs
     let base_id = base_id % 4000; // Max base ID 4000
 
-    // Test VLAN generation with fuzzed parameters
-    let _ = vlan::generate_vlan_configurations(count, Some(base_id), None);
+    // Cast to correct types for function signature
+    let count_u16 = count as u16;
+    let base_id_u64 = base_id as u64;
 
-    // Test with different network bases
-    if let Ok(network) = "192.168.0.0/24".parse() {
-        let _ = vlan::generate_vlan_configurations(count, Some(base_id), Some(network));
-    }
+    // Test VLAN generation with fuzzed parameters
+    let _ = vlan::generate_vlan_configurations(count_u16, Some(base_id_u64), None);
 });

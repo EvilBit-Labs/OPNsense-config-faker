@@ -1,0 +1,2 @@
+VLAN,IP Range,Beschreibung,WAN
+100,10.1.2.1,No CIDR or .x,1
