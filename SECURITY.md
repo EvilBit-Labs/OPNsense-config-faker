@@ -91,7 +91,7 @@ If you discover a security issue while contributing:
 #### For Developers
 
 1. **Dependency Management**: Regularly update dependencies for security patches
-2. **Input Validation**: All user inputs are validated and sanitized
+2. **Input Validation**: Most external inputs are validated (e.g., VLAN configurations, network formats), though some components use minimal validation (see [Known Limitations](#known-security-limitations)). Additional validation and sanitization are planned for file I/O operations and XML processing.
 3. **Error Handling**: Comprehensive error handling prevents information disclosure
 4. **Memory Safety**: Rust's memory safety prevents common vulnerabilities
 5. **No Unsafe Code**: The codebase forbids `unsafe` in CI (e.g., `#![forbid(unsafe_code)]` and lint checks)
@@ -102,9 +102,12 @@ If you discover a security issue while contributing:
 #### Current Limitations
 
 - **XML Processing**: Uses `quick-xml` which may have XML-related vulnerabilities
-- **File I/O**: Standard file operations with minimal validation
+- **File I/O**: Standard file operations with minimal validation (paths, file sizes)
 - **Memory Allocation**: Large configurations may cause memory exhaustion
 - **Error Messages**: May reveal file paths in error messages
+- **Input Sanitization**: Limited sanitization of user-provided file paths and XML content
+
+**Mitigation Steps**: Input validation improvements are tracked in the [roadmap](#planned-security-improvements). Current validation focuses on core data model integrity (VLAN IDs, IP networks, RFC compliance) rather than comprehensive input sanitization.
 
 #### Planned Security Improvements
 
@@ -210,48 +213,30 @@ This project leverages Rust's security features:
 
 ### Alternative Contact
 
-- **Email**: `unclespider@pm.me` (if GitHub is unavailable)
+- **Email**: `support@evilbitlabs.io` (if GitHub is unavailable)
 - **Response Time**: 72-96 hours (weekdays)
 
 ### PGP Key Information
 
 ```text
 -----BEGIN PGP PUBLIC KEY BLOCK-----
-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
-wD2hQEk3TLYp4Q==
-=o/Ga
+
+xjMEaLJmxhYJKwYBBAHaRw8BAQdAaS3KAoo+AgZGR6G6+m0wT2yulC5d6zV9
+lf2mTugBT+PNL3N1cHBvcnRAZXZpbGJpdGxhYnMuaW8gPHN1cHBvcnRAZXZp
+bGJpdGxhYnMuaW8+wsARBBMWCgCDBYJosmbGAwsJBwkQj3HWK/Q4K8BFFAAA
+AAAAHAAgc2FsdEBub3RhdGlvbnMub3BlbnBncGpzLm9yZ7F3bUWkIN8is7tt
+/5PqEf/x2tsYtaK4S55a9JPLDhP9AxUKCAQWAAIBAhkBApsDAh4BFiEE+DlL
+LPD+xFEbEechj3HWK/Q4K8AAAAnNAP9xvHDrreH+gWNWXfhB22SG4kMjuMIv
+ydvccqXKC3OvxgEA+ILidnWekE4vv6+lG7a28EeBGvE0rlGj1+xHvl/HeQnO
+OARosmbGEgorBgEEAZdVAQUBAQdAK41N91I/8dSnO5XY1SDPVFAljE8A1oMP
+JQf5jREm/hoDAQgHwr4EGBYKAHAFgmiyZsYJEI9x1iv0OCvARRQAAAAAABwA
+IHNhbHRAbm90YXRpb25zLm9wZW5wZ3Bqcy5vcmeJrCAeproEi/i5HU/d/q0n
+jXj7QWOAI/juk0RVPWiokAKbDBYhBPg5Syzw/sRRGxHnIY9x1iv0OCvAAACx
+FwEA6pbAcDD9l181w0pzTS4PModf80HMU9c2dWdupcjOy+kA/i8muWhXu+Fh
+N8E8rOcpBrlpB2BIG2vgMmTZrj4cDBgH
+=6Y2t
 -----END PGP PUBLIC KEY BLOCK-----
+
 ```
 
 ## Security Acknowledgments
@@ -290,6 +275,6 @@ Security researchers who have responsibly disclosed vulnerabilities:
 
 ---
 
-**Last Updated**: August 2025\
+**Last Updated**: September 2025\
 **Version**: 1.0\
 **Maintainer**: UncleSp1d3r (EvilBit Labs)
