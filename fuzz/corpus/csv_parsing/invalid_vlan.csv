@@ -1,0 +1,2 @@
+VLAN,IP Range,Beschreibung,WAN
+5,10.1.2.x,Bad VLAN,1
