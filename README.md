@@ -4,159 +4,137 @@
 [![codecov](https://codecov.io/gh/EvilBit-Labs/OPNsense-config-faker/branch/main/graph/badge.svg)](https://codecov.io/gh/EvilBit-Labs/OPNsense-config-faker)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Generate realistic OPNsense firewall configurations for testing, training, and development. Create complete `config.xml` files with VLANs, interfaces, DHCP, NAT rules, firewall policies, and more using authentic network data.
+**Generate realistic OPNsense firewall configurations instantly.** Perfect for testing, training, and development without compromising real network data.
 
-## What This Tool Does
+## Why Use This Tool?
 
-**Primary Use**: Generate complete OPNsense firewall configurations with realistic network data for:
+• **Testing Made Simple**: Validate your automation scripts, configuration management, and deployment tools with realistic data\
+• **Training Ready**: Create diverse network scenarios for team training and certification prep\
+• **Fast & Reliable**: Generate hundreds of configurations in seconds with consistent, conflict-free data\
+• **Security Focused**: Test firewall rules, policies, and network segmentation safely\
+• **Production-Like**: Uses industry-standard network practices and RFC-compliant addressing
 
-- Testing OPNsense automation tools and scripts
-- Validating configuration management systems
-- Training network administrators on OPNsense
-- Load testing OPNsense deployments
-- Developing OPNsense management applications
+## What You Get
 
-**What You Get**: Fully functional OPNsense `config.xml` files containing:
+Each generated configuration includes:
 
-- VLAN configurations with realistic IP ranges
-- Network interface assignments
-- DHCP server configurations
-- NAT rules and port mappings
-- Firewall policies and rules
-- CARP virtual IP configurations
-- RADIUS user accounts
+- **Network Infrastructure**: VLANs, interfaces, and IP assignments
+- **DHCP Services**: Complete DHCP server configurations with realistic IP pools
+- **Security Policies**: Firewall rules, NAT configurations, and access controls
+- **High Availability**: CARP virtual IP setups for redundancy
+- **Authentication**: RADIUS user accounts and policies
+- **Multiple Formats**: CSV data or complete OPNsense XML configurations
 
 ## Quick Start
 
+**Get started in 3 steps:**
+
 ```bash
-# Download and setup
+# 1. Download and build
 git clone https://github.com/EvilBit-Labs/OPNsense-config-faker.git
 cd OPNsense-config-faker
-
-# Build the project
 cargo build --release
 
-# Generate 25 OPNsense configurations
-cargo run --release -- xml --base-config legacy/opnsense/config-example.xml --count 25
+# 2. Generate sample data (CSV format)
+opnsense-config-faker generate --format csv --count 25 --output sample-networks.csv
+
+# 3. Create complete OPNsense configurations (requires base config)
+opnsense-config-faker generate --format xml --base-config your-config.xml --count 10
 ```
 
-## Real-World Use Cases
+> [!NOTE]
+> Start with CSV format to see the generated network data, then move to XML format for complete configurations.
 
-### Network Administrators
+## Popular Use Cases
 
-- **Testing Automation**: Validate your Ansible/Puppet/Chef OPNsense playbooks with realistic data
-- **Training Scenarios**: Create diverse network topologies for team training
-- **Migration Testing**: Test configuration migrations with complex network setups
-- **Load Testing**: Generate large configurations to test OPNsense performance
+### Network & Security Teams
 
-### Security Administrators
+- Test firewall automation (Ansible, Puppet, Chef, Terraform)
+- Train staff on diverse network topologies
+- Validate security policies across multiple segments
+- Practice incident response with realistic scenarios
+- Load test OPNsense performance with large configurations
 
-- **Policy Testing**: Test firewall rule deployments across multiple network segments
-- **Compliance Validation**: Generate configurations that match your security policies
-- **Incident Response Training**: Create realistic network scenarios for security drills
-- **Vulnerability Assessment**: Test security tools against varied network configurations
+### DevOps & Development
 
-### DevOps Engineers
+- Validate deployments in CI/CD pipelines
+- Test configuration management tools
+- Set up monitoring and alerting systems
+- Verify backup and restore procedures
+- Develop OPNsense management applications
 
-- **Infrastructure Testing**: Validate OPNsense deployments in CI/CD pipelines
-- **Configuration Management**: Test Terraform/Pulumi OPNsense modules
-- **Monitoring Setup**: Generate configurations to test monitoring and alerting
-- **Backup Testing**: Validate backup and restore procedures
+### Training & Certification
+
+- Create diverse scenarios for network certification prep
+- Generate realistic lab environments for students
+- Practice configuration management in safe environments
+- Build demonstration networks for presentations
 
 ## Installation
 
-### Requirements
+### Prerequisites
 
-- Rust 1.70+ (latest stable recommended)
-- Cargo package manager
+- **Rust 1.70+** - Install from [rustup.rs](https://rustup.rs/)
+- **Git** - For cloning the repository
 
-### Quick Setup
+### Setup
 
 ```bash
-# Clone and build
+# Download and build
 git clone https://github.com/EvilBit-Labs/OPNsense-config-faker.git
 cd OPNsense-config-faker
 cargo build --release
 
-# Install globally (optional)
+# Optional: Install globally
 cargo install --path .
 ```
 
-## Development Setup
+**After installation**, the tool is available as `opnsense-config-faker` command.
 
-### Prerequisites
+## Common Usage Examples
 
-The development workflow uses the `just` task runner for common development tasks:
-
-```bash
-# Install just (choose one method)
-
-# macOS (using Homebrew)
-brew install just
-
-# Linux (using Cargo)
-cargo install just
-
-# Windows (using Chocolatey)
-choco install just
-
-
-# Or download directly
-
-curl --proto '=https' --tlsv1.2 -sSf <https://just.systems/install.sh> | bash
-
-```
-
-### Development Workflow
+### Generate Test Data
 
 ```bash
-# Complete development setup
-just dev-setup
+# Create CSV with 25 network configurations
+opnsense-config-faker generate --format csv --count 25 --output test-networks.csv
 
-# Run all checks and tests
-just check-all
+# Generate with firewall rules included
+opnsense-config-faker generate --format csv --count 10 --output networks-with-fw.csv --include-firewall-rules
 
-# Format code
-just format
-
-# Run CI validation
-just ci-check
+# Large dataset for performance testing
+opnsense-config-faker generate --format csv --count 500 --output load-test-data.csv
 ```
 
-## Usage Examples
-
-### Generate Basic Configurations
+### Create Complete OPNsense Configurations
 
 ```bash
-# Create 10 OPNsense configurations
-cargo run --release -- generate vlan --count 10 --output vlans.xml
+# Generate XML configurations (requires base config file)
+opnsense-config-faker generate --format xml --base-config my-base-config.xml --count 10
 
-# Generate CSV data only
-cargo run --release -- generate vlan --count 50 --format csv --output network-data.csv
+# Advanced firewall rules for security testing
+opnsense-config-faker generate --format xml --base-config base.xml --count 5 \
+  --include-firewall-rules --firewall-rule-complexity advanced
+
+# Limit firewall rules per VLAN for focused testing
+opnsense-config-faker generate --format xml --base-config base.xml --count 10 \
+  --include-firewall-rules --firewall-rules-per-vlan 3
 ```
 
-### Advanced Scenarios
-
-```bash
-# Generate configurations for a large enterprise (100 firewalls)
-cargo run --release -- generate vlan --count 100 --output enterprise-configs.xml
-
-# Create configurations with specific settings
-cargo run --release -- generate vlan --count 50 --base-id 500 --output config.xml
-```
-
-## Generated Configuration Details
+## What's Generated
 
 ### Network Components
 
-- **VLANs**: 10-4094 range with unique IDs
-- **IP Ranges**: RFC 1918 compliant private networks
-  - 10.0.0.0/8 (Class A)
-  - 172.16.0.0/12 (Class B)
-  - 192.168.0.0/16 (Class C)
-- **Departments**: IT, Sales, HR, Finance, Marketing, Operations, Engineering, Support, Admin, Guest, Lab, Test, Security, DevOps, QA
+✓ **VLANs**: Unique IDs in the 10-4094 range\
+✓ **IP Addressing**: RFC 1918 compliant private networks (10.x.x.x, 172.16.x.x, 192.168.x.x)\
+✓ **Departments**: Realistic organizational units (IT, Sales, HR, Finance, etc.)\
+✓ **Interfaces**: Proper interface assignments and configurations\
+✓ **DHCP**: Complete server configurations with IP pools\
+✓ **Security**: Firewall rules, NAT policies, and access controls\
+✓ **High Availability**: CARP virtual IP configurations\
+✓ **Authentication**: RADIUS user accounts and policies
 
-### Sample Generated Data
+### Sample Output
 
 ```csv
 VLAN,IP Range,Description,WAN
@@ -165,137 +143,113 @@ VLAN,IP Range,Description,WAN
 3890,192.168.90.x,HR3890,3
 ```
 
-## Configuration Features
+### Quality Guarantees
 
-### What's Included in Each Generated Config
+• **No Conflicts**: Unique VLAN IDs and non-overlapping IP ranges\
+• **Industry Standard**: Follows established network practices and RFC standards\
+• **Realistic**: Authentic department names and network topologies\
+• **Ready to Use**: Generated configurations work immediately
 
-- **Network Interfaces**: Realistic interface assignments and configurations
-- **VLAN Segments**: Proper VLAN tagging and network segmentation
-- **DHCP Servers**: Complete DHCP configurations with realistic IP pools
-- **NAT Rules**: Port forwarding and address translation rules
-- **Firewall Policies**: Security rules with appropriate source/destination
-- **CARP Configurations**: High availability virtual IP setups
-- **RADIUS Users**: Authentication user accounts and policies
+## Practical Workflows
 
-### Data Quality
-
-- **Realistic**: Uses industry-standard network practices
-- **Unique**: No duplicate VLAN IDs or conflicting IP ranges
-- **Compliant**: Follows RFC standards for private addressing
-- **Varied**: Multiple department types and network topologies
-
-## Common Workflows
-
-### Testing OPNsense Automation
+### Testing Automation Tools
 
 ```bash
-# Generate test configurations
-cargo run --release -- xml --base-config config.xml --count 50 --output-dir test-configs
+# Generate test data for your automation scripts
+opnsense-config-faker generate --format csv --count 50 --output test-data.csv
 
-# Use with your automation tools
-ansible-playbook -i test-configs deploy-opnsense.yml
+# Test with Ansible, Terraform, or other tools
+ansible-playbook -e "@test-data.csv" deploy-opnsense.yml
 ```
 
-### Training Environment Setup
+### Setting Up Training Labs
 
 ```bash
-# Create diverse training scenarios
-cargo run --release -- xml --base-config config.xml --count 20 --output-dir training-configs
+# Create diverse scenarios for training
+opnsense-config-faker generate --format xml --base-config base.xml --count 20 --output-dir training-labs/
 
-# Deploy to training lab
-for config in training-configs/*.xml; do
-  # Deploy to OPNsense instance
-done
+# Each generated config represents a different network topology
 ```
 
-### Load Testing
+### Performance and Load Testing
 
 ```bash
-# Generate large configuration set
-cargo run --release -- xml --base-config config.xml --count 500 --output-dir load-test-configs
+# Generate large datasets for performance testing
+opnsense-config-faker generate --format csv --count 1000 --output load-test.csv
 
-# Test OPNsense performance with large configs
+# Test with complex firewall rules
+opnsense-config-faker generate --format xml --base-config base.xml --count 100 \
+  --include-firewall-rules --firewall-rule-complexity advanced
 ```
 
-### Firewall Rules Generation
+### Security Testing
 
 ```bash
-# Generate configurations with firewall rules (default complexity)
-cargo run --release -- generate --count 25 --format csv --output config.csv --include-firewall-rules
+# Generate focused firewall rule sets
+opnsense-config-faker generate --format csv --count 10 --output security-test.csv \
+  --include-firewall-rules --firewall-rules-per-vlan 5
 
-# Generate with specific firewall rule complexity
-cargo run --release -- generate --count 10 --format xml --base-config config.xml --include-firewall-rules --firewall-rule-complexity advanced
-
-# Limit firewall rules per VLAN (useful for testing with smaller rule sets)
-cargo run --release -- generate --count 5 --format csv --output config.csv --include-firewall-rules --firewall-rules-per-vlan 2
-
-# Generate XML with limited firewall rules per VLAN
-cargo run --release -- generate --count 10 --format xml --base-config config.xml --include-firewall-rules --firewall-rules-per-vlan 3 --firewall-rule-complexity intermediate
+# Test different complexity levels
+opnsense-config-faker generate --format xml --base-config base.xml --count 5 \
+  --include-firewall-rules --firewall-rule-complexity basic
 ```
 
-**Firewall Rules Per VLAN**: The `--firewall-rules-per-vlan` flag allows you to control the number of firewall rules generated per VLAN. This is useful for:
+## Getting Help
 
-- Testing with smaller, more manageable rule sets
-- Creating focused security scenarios
-- Reducing configuration complexity for specific use cases
-- Performance testing with controlled rule counts
+### Command Help
 
-When specified, this flag overrides the default rule count based on complexity level and ensures priorities are reassigned sequentially (1, 2, 3, ...) for each VLAN.
+```bash
+# General help
+opnsense-config-faker --help
 
-## Troubleshooting
+# Generate command help
+opnsense-config-faker generate --help
+
+# Validation help
+opnsense-config-faker validate --help
+```
 
 ### Common Issues
 
-- **Permission Errors**: Ensure write access to output directory
-- **Invalid Base Config**: Use the provided example config or a valid OPNsense config
+**Permission Errors**: Ensure write access to output directory\
+**Invalid Base Config**: Use a valid OPNsense configuration file for XML generation\
+**Large Datasets**: For 1000+ configurations, consider using `--quiet` flag to suppress progress output
 
-### Getting Help
+### Need Support?
 
-```bash
-# Command help
-cargo run --release -- --help
-cargo run --release -- generate --help
-cargo run --release -- generate vlan --help
-```
+- **Found a bug?** [Open an issue](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues)
+- **Have questions?** Check existing [discussions](https://github.com/EvilBit-Labs/OPNsense-config-faker/discussions)
+- **Feature request?** We welcome contributions and suggestions
 
-## Project Background
+## About This Project
 
-This tool is a complete Rust rewrite designed to generate realistic OPNsense firewall configurations for testing and development purposes. It provides comprehensive network configuration generation capabilities with modern Rust practices and performance.
+OPNsense Config Faker is a modern Rust-based tool designed specifically for generating realistic OPNsense firewall configurations for testing and development. Built with performance and reliability in mind, it provides comprehensive network configuration generation capabilities.
 
-## Acknowledgments
+### Key Features
 
-This project was inspired by the original concept of generating OPNsense configurations. We extend our gratitude to **Stefan Reichhard** and the **nett-media team** for their original work ([nett-media/opnsense-config-generator](https://github.com/nett-media/opnsense-config-generator)) that used CSV data to bootstrap OPNsense configurations for production use. This project evolved that concept to focus purely on generating realistic test data for testing and development purposes.
+- **High Performance**: Fast generation of large configuration sets
+- **Quality Assured**: 80%+ test coverage with comprehensive validation
+- **Production Ready**: Used by network teams for automation testing
+- **Actively Maintained**: Regular updates and feature additions
 
-## Roadmap
+### Roadmap
 
-For detailed development plans and upcoming features, see [ROADMAP.md](ROADMAP.md).
+Upcoming features include enhanced configuration validation, template systems for different OPNsense versions, and advanced network topology generation. See [ROADMAP.md](ROADMAP.md) for details.
 
-### Current Focus
+---
 
-- **Enhanced Configuration Elements**: More realistic firewall rules, DHCP scopes, and interface configurations
-- **Configuration Validation**: Ensure generated configurations are internally consistent and conflict-free
-- **Template System**: Support for different OPNsense versions and deployment scenarios
-- **Advanced Data Relationships**: Cross-reference VLANs with interfaces and generate consistent network topologies
-- **Comprehensive Testing**: Full test suite for validation and regression testing
+## Contributing & Support
 
-**Note**: This tool is specifically designed for OPNsense configurations. Supporting other platforms is not planned.
-
-## Quality Assurance
-
-This project maintains high quality standards through comprehensive testing and strict linting policies:
-
-- **Testing**: Comprehensive test suite with unit, integration, property-based, and snapshot tests
-- **Coverage**: Enforces 80% test coverage threshold
-- **Linting**: Uses `cargo clippy -- -D warnings` policy (all warnings treated as errors)
-- **Documentation**: Complete testing guide available in [TESTING.md](TESTING.md)
-
-## Support and Contributing
-
-- **Issues**: Report problems or request features via GitHub issues
-- **Contributions**: Submit pull requests for improvements
-- **Documentation**: Help improve this README for other administrators
-- **Testing**: Follow the guidelines in [TESTING.md](TESTING.md) when contributing
+**Contributing**: Submit pull requests, report issues, or suggest improvements\
+**Documentation**: Help improve this README and user guides\
+**Testing**: Follow guidelines in [TESTING.md](TESTING.md)
 
 ## License
 
 MIT License - Free for commercial and non-commercial use.
+
+---
+
+### Acknowledgments
+
+Inspired by the original [nett-media/opnsense-config-generator](https://github.com/nett-media/opnsense-config-generator) by Stefan Reichhard and the nett-media team. This project evolved that concept to focus on realistic test data generation for development and testing purposes.
