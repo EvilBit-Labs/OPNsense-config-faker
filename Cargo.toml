@@ -81,7 +81,7 @@ rayon = ["dep:rayon"]
 rstest = "0.26"
 
 # Temporary files for testing
-tempfile = "3.8"
+tempfile = "3.23"
 
 # CLI testing
 assert_cmd = "2.0"
