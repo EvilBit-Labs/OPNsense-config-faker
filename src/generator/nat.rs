@@ -63,6 +63,7 @@ pub struct NatMapping {
 
 impl NatMapping {
     /// Create a new NAT mapping with validation
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         rule_type: NatRuleType,
         name: String,
@@ -94,7 +95,7 @@ impl NatMapping {
             log,
             vlan_id,
         };
-        
+
         mapping.validate()?;
         Ok(mapping)
     }
@@ -167,16 +168,16 @@ impl NatMapping {
             let parts: Vec<&str> = port_range.split('-').collect();
             if parts.len() == 2 {
                 if let (Ok(start), Ok(end)) = (parts[0].parse::<u16>(), parts[1].parse::<u16>()) {
-                    return start > 0 && end > 0 && start <= end && end <= 65535;
+                    return start > 0 && end > 0 && start <= end;
                 }
             }
         }
 
         // Handle comma-separated ports (e.g., "80,443,8080")
         if port_range.contains(',') {
-            return port_range.split(',').all(|p| {
-                p.trim().parse::<u16>().map_or(false, |port| port > 0)
-            });
+            return port_range
+                .split(',')
+                .all(|p| p.trim().parse::<u16>().is_ok_and(|port| port > 0));
         }
 
         false
@@ -219,7 +220,8 @@ impl NatGenerator {
         let (source, source_port) = self.generate_source(&rule_type);
         let (destination, destination_port) = self.generate_destination(&rule_type, &protocol);
         let interface = self.random_interface(&rule_type);
-        let (target_ip, target_port) = self.generate_target(&rule_type, &destination_port, &protocol);
+        let (target_ip, target_port) =
+            self.generate_target(&rule_type, &destination_port, &protocol);
         let enabled = self.rng.random_bool(0.9); // 90% chance of being enabled
         let log = self.rng.random_bool(0.3); // 30% chance of logging
         let vlan_id = if self.rng.random_bool(0.6) {
@@ -248,12 +250,12 @@ impl NatGenerator {
     /// Generate multiple NAT mappings
     pub fn generate_batch(&mut self, count: u16) -> NatResult<Vec<NatMapping>> {
         let mut mappings = Vec::with_capacity(count as usize);
-        
+
         for _ in 0..count {
             let mapping = self.generate_single(None)?;
             mappings.push(mapping);
         }
-        
+
         Ok(mappings)
     }
 
@@ -271,11 +273,19 @@ impl NatGenerator {
     /// Generate a unique NAT rule name
     fn generate_unique_name(&mut self, rule_type: &NatRuleType) -> String {
         const MAX_ATTEMPTS: usize = 100;
-        
+
         for _ in 0..MAX_ATTEMPTS {
             let base_name = match rule_type {
                 NatRuleType::PortForward => {
-                    let services = ["Web-Server", "SSH", "FTP", "Mail-Server", "Database", "API", "RDP"];
+                    let services = [
+                        "Web-Server",
+                        "SSH",
+                        "FTP",
+                        "Mail-Server",
+                        "Database",
+                        "API",
+                        "RDP",
+                    ];
                     let service = services[self.rng.random_range(0..services.len())];
                     format!("Port-Forward-{}", service)
                 }
@@ -298,7 +308,7 @@ impl NatGenerator {
                     format!("Outbound-{}", vlan)
                 }
             };
-            
+
             let name = if self.rng.random_bool(0.3) {
                 format!("{}-{:02}", base_name, self.rng.random_range(1..=99))
             } else {
@@ -309,25 +319,30 @@ impl NatGenerator {
                 return name;
             }
         }
-        
+
         // Fallback with UUID suffix if we can't generate unique name
-        format!("{}-{}", match rule_type {
-            NatRuleType::PortForward => "Port-Forward",
-            NatRuleType::SourceNat => "SNAT",
-            NatRuleType::DestinationNat => "DNAT",
-            NatRuleType::OneToOneNat => "1to1-NAT",
-            NatRuleType::OutboundNat => "Outbound",
-        }, Uuid::new_v4().to_string().split('-').next().unwrap())
+        format!(
+            "{}-{}",
+            match rule_type {
+                NatRuleType::PortForward => "Port-Forward",
+                NatRuleType::SourceNat => "SNAT",
+                NatRuleType::DestinationNat => "DNAT",
+                NatRuleType::OneToOneNat => "1to1-NAT",
+                NatRuleType::OutboundNat => "Outbound",
+            },
+            Uuid::new_v4().to_string().split('-').next().unwrap()
+        )
     }
 
     /// Generate random protocol
     fn random_protocol(&mut self) -> String {
         match self.rng.random_range(0..4) {
             0 => "TCP",
-            1 => "UDP", 
+            1 => "UDP",
             2 => "Both",
             _ => "ICMP",
-        }.to_string()
+        }
+        .to_string()
     }
 
     /// Generate source address and port based on rule type
@@ -341,9 +356,11 @@ impl NatGenerator {
             }
             NatRuleType::DestinationNat => ("any".to_string(), "any".to_string()),
             NatRuleType::OneToOneNat => {
-                let ip = format!("192.168.{}.{}", 
-                    self.rng.random_range(1..=254), 
-                    self.rng.random_range(1..=254));
+                let ip = format!(
+                    "192.168.{}.{}",
+                    self.rng.random_range(1..=254),
+                    self.rng.random_range(1..=254)
+                );
                 (ip, "any".to_string())
             }
             NatRuleType::OutboundNat => {
@@ -355,7 +372,11 @@ impl NatGenerator {
     }
 
     /// Generate destination address and port based on rule type
-    fn generate_destination(&mut self, rule_type: &NatRuleType, protocol: &str) -> (String, String) {
+    fn generate_destination(
+        &mut self,
+        rule_type: &NatRuleType,
+        protocol: &str,
+    ) -> (String, String) {
         match rule_type {
             NatRuleType::PortForward => {
                 let port = self.generate_unique_external_port();
@@ -393,7 +414,12 @@ impl NatGenerator {
     }
 
     /// Generate target IP and port based on rule type
-    fn generate_target(&mut self, rule_type: &NatRuleType, dest_port: &str, protocol: &str) -> (String, String) {
+    fn generate_target(
+        &mut self,
+        rule_type: &NatRuleType,
+        dest_port: &str,
+        protocol: &str,
+    ) -> (String, String) {
         match rule_type {
             NatRuleType::PortForward => {
                 let internal_ip = format!("192.168.1.{}", self.rng.random_range(10..=254));
@@ -415,16 +441,16 @@ impl NatGenerator {
                 (internal_ip, dest_port.to_string())
             }
             NatRuleType::OneToOneNat => {
-                let public_ip = format!("{}.{}.{}.{}", 
+                let public_ip = format!(
+                    "{}.{}.{}.{}",
                     self.rng.random_range(1..=223),
                     self.rng.random_range(0..=255),
                     self.rng.random_range(0..=255),
-                    self.rng.random_range(1..=254));
+                    self.rng.random_range(1..=254)
+                );
                 (public_ip, "any".to_string())
             }
-            NatRuleType::OutboundNat => {
-                ("WAN address".to_string(), "any".to_string())
-            }
+            NatRuleType::OutboundNat => ("WAN address".to_string(), "any".to_string()),
         }
     }
 
@@ -528,7 +554,7 @@ mod tests {
             false,
             Some(100),
         );
-        
+
         assert!(mapping.is_ok());
         let mapping = mapping.unwrap();
         assert_eq!(mapping.rule_type, NatRuleType::PortForward);
@@ -553,9 +579,12 @@ mod tests {
             false,
             None,
         );
-        
+
         assert!(mapping.is_err());
-        assert!(mapping.unwrap_err().to_string().contains("protocol 'INVALID' is invalid"));
+        assert!(mapping
+            .unwrap_err()
+            .to_string()
+            .contains("protocol 'INVALID' is invalid"));
     }
 
     #[test]
@@ -575,16 +604,19 @@ mod tests {
             false,
             Some(5000), // Invalid VLAN ID
         );
-        
+
         assert!(mapping.is_err());
-        assert!(mapping.unwrap_err().to_string().contains("VLAN ID 5000 is invalid"));
+        assert!(mapping
+            .unwrap_err()
+            .to_string()
+            .contains("VLAN ID 5000 is invalid"));
     }
 
     #[test]
     fn test_nat_generator_single() {
         let mut generator = NatGenerator::new_with_seed(Some(42));
         let mapping = generator.generate_single(Some(NatRuleType::PortForward));
-        
+
         assert!(mapping.is_ok());
         let mapping = mapping.unwrap();
         assert_eq!(mapping.rule_type, NatRuleType::PortForward);
@@ -596,15 +628,19 @@ mod tests {
     fn test_nat_generator_batch() {
         let mut generator = NatGenerator::new_with_seed(Some(42));
         let mappings = generator.generate_batch(5);
-        
+
         assert!(mappings.is_ok());
         let mappings = mappings.unwrap();
         assert_eq!(mappings.len(), 5);
-        
+
         // Check uniqueness of names
         let mut names = std::collections::HashSet::new();
         for mapping in &mappings {
-            assert!(names.insert(&mapping.name), "Duplicate name: {}", mapping.name);
+            assert!(
+                names.insert(&mapping.name),
+                "Duplicate name: {}",
+                mapping.name
+            );
         }
     }
 
@@ -628,7 +664,7 @@ mod tests {
         };
 
         assert!(mapping.validate().is_ok());
-        
+
         // Test invalid port
         let mut invalid_mapping = mapping.clone();
         invalid_mapping.source_port = "99999".to_string(); // Invalid port > 65535
