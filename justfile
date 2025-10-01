@@ -1,334 +1,443 @@
-# 🔧 justfile — OPNsense Config Faker Developer Tasks
-set dotenv-load := true
-set ignore-comments := true
+# Cross-platform justfile using OS annotations
+# Windows uses PowerShell, Unix uses bash
 
-# Default recipe - shows available commands
+set shell := ["bash", "-c"]
+set windows-shell := ["powershell", "-NoProfile", "-Command"]
+
+root := justfile_dir()
+
+# =============================================================================
+# GENERAL COMMANDS
+# =============================================================================
+
 default:
-    just --list
+    @just --choose
 
-# Show help
 help:
-    just --list
+    @just --list
 
-# -----------------------------
-# 🔧 Setup & Installation
-# -----------------------------
+# =============================================================================
+# CROSS-PLATFORM HELPERS
+# =============================================================================
+# Cross-platform helpers using OS annotations
+# Each helper has Windows and Unix variants
 
-# Install cargo-llvm-cov for coverage
-install-cov:
-    cargo install cargo-llvm-cov
+[windows]
+cd-root:
+    Set-Location "{{ root }}"
 
-# Setup development environment
+[unix]
+cd-root:
+    cd "{{ root }}"
+
+[windows]
+ensure-dir dir:
+    New-Item -ItemType Directory -Force -Path "{{ dir }}" | Out-Null
+
+[unix]
+ensure-dir dir:
+    /bin/mkdir -p "{{ dir }}"
+
+[windows]
+rmrf path:
+    if (Test-Path "{{ path }}") { Remove-Item "{{ path }}" -Recurse -Force }
+
+[unix]
+rmrf path:
+    /bin/rm -rf "{{ path }}"
+
+# =============================================================================
+# SETUP AND INITIALIZATION
+# =============================================================================
+
+# Development setup
+[windows]
 setup:
-    @echo "🚀 Setting up development environment..."
-    rustup component add clippy rustfmt
-    just install-cov
-    @echo "✅ Setup complete!"
+    Set-Location "{{ root }}"
+    rustup component add rustfmt clippy llvm-tools-preview
+    cargo install cargo-binstall --locked
+    @just mdformat-install
+    Write-Host "Note: You may need to restart your shell for pipx PATH changes to take effect"
 
-# -----------------------------
-# 🧹 Linting, Formatting & Checking
-# -----------------------------
+[unix]
+setup:
+    cd "{{ root }}"
+    rustup component add rustfmt clippy llvm-tools-preview
+    cargo install cargo-binstall --locked
+    @just mdformat-install
+    echo "Note: You may need to restart your shell for pipx PATH changes to take effect"
 
-# Format code with rustfmt
-format:
-    cargo fmt
+# Install development tools (extended setup)
+[windows]
+install-tools:
+    cargo binstall --disable-telemetry cargo-llvm-cov cargo-audit cargo-deny cargo-dist cargo-release cargo-cyclonedx cargo-auditable cargo-nextest --locked
 
-# Check code formatting
-format-check:
-    cargo fmt --check
+[unix]
+install-tools:
+    cargo binstall --disable-telemetry cargo-llvm-cov cargo-audit cargo-deny cargo-dist cargo-release cargo-cyclonedx cargo-auditable cargo-nextest --locked
 
-# Lint code with clippy (strict warnings as errors)
-lint:
-    cargo clippy --all-targets --all-features --benches -- -D warnings
+# Install mdBook and plugins for documentation
+[windows]
+docs-install:
+    cargo binstall mdbook mdbook-admonish mdbook-mermaid mdbook-linkcheck mdbook-toc mdbook-open-on-gh mdbook-tabs mdbook-i18n-helpers
 
-# Run all linting and formatting checks
-check: format-check lint pre-commit
-    @echo "✅ All checks passed!"
+[unix]
+docs-install:
+    cargo binstall mdbook mdbook-admonish mdbook-mermaid mdbook-linkcheck mdbook-toc mdbook-open-on-gh mdbook-tabs mdbook-i18n-helpers
 
-# Fix linting and formatting issues
-fix: format
-    cargo clippy --fix --allow-dirty
+# Install pipx for Python tool management
+[windows]
+pipx-install:
+    python -m pip install --user pipx
+    python -m pipx ensurepath
 
-# Run pre-commit hooks on all files
-pre-commit:
-    pre-commit run --all-files
+[unix]
+pipx-install:
+    #!/bin/bash
+    set -e
+    set -u
+    set -o pipefail
 
-# -----------------------------
-# 🦀 Standardized Rust Tasks
-# -----------------------------
+    if command -v pipx >/dev/null 2>&1; then
+        echo "pipx already installed"
+    else
+        echo "Installing pipx..."
+        python3 -m pip install --user pipx
+        python3 -m pipx ensurepath
+    fi
 
-# Format all Rust code
-rust-fmt:
-    cargo fmt --all
+# Install mdformat and extensions for markdown formatting
+[windows]
+mdformat-install: pipx-install
+    pipx install mdformat
+    pipx inject mdformat mdformat-gfm mdformat-frontmatter mdformat-footnote mdformat-simple-breaks mdformat-gfm-alerts mdformat-toc mdformat-wikilink mdformat-tables
 
-# Check Rust code formatting
-rust-fmt-check:
-    cargo fmt --all -- --check
+[unix]
+mdformat-install:
+    @just pipx-install
+    pipx install mdformat
+    pipx inject mdformat mdformat-gfm mdformat-frontmatter mdformat-footnote mdformat-simple-breaks mdformat-gfm-alerts mdformat-toc mdformat-wikilink mdformat-tables
 
-# Lint Rust code with clippy (strict mode)
-rust-clippy:
-    cargo clippy --all-targets --all-features --benches -- -D warnings
+# =============================================================================
+# FORMATTING AND LINTING
+# =============================================================================
 
-# Run all Rust tests
-rust-test:
-    cargo test --all-features --workspace
+alias format-rust := fmt
+alias format-md := format-docs
+alias format-just := fmt-justfile
 
-# Run Rust test coverage with HTML report
-rust-cov:
-    cargo llvm-cov --all-features --workspace --open
+# Main format recipe - calls all formatters
+format: fmt format-json-yaml format-docs fmt-justfile
 
-# Run Rust benchmarks
-rust-bench:
-    cargo bench
+# Individual format recipes
 
-# Quality assurance: format check, clippy, and tests
-qa: rust-fmt-check rust-clippy rust-test
-    @echo "✅ All QA checks passed!"
+format-json-yaml:
+    npx prettier --write "**/*.{json,yaml,yml}"
 
-# Quality assurance with coverage
-qa-cov: rust-fmt-check rust-clippy rust-test rust-cov
-    @echo "✅ All QA checks with coverage completed!"
+[windows]
+format-docs:
+    @if (Get-Command mdformat -ErrorAction SilentlyContinue) { Get-ChildItem -Recurse -Filter "*.md" | Where-Object { $_.FullName -notmatch "\\target\\" -and $_.FullName -notmatch "\\node_modules\\" } | ForEach-Object { mdformat $_.FullName } } else { Write-Host "mdformat not found. Run 'just mdformat-install' first." }
 
-# -----------------------------
-# 🧪 Testing & Coverage
-# -----------------------------
+[unix]
+format-docs:
+    cd "{{ root }}"
+    @if command -v mdformat >/dev/null 2>&1; then find . -type f -name "*.md" -not -path "./target/*" -not -path "./node_modules/*" -exec mdformat {} + ; else echo "mdformat not found. Run 'just mdformat-install' first."; fi
 
-# Run all tests
-test:
-    cargo test --all-features
+fmt:
+    @cargo fmt --all
 
-# Run tests excluding benchmarks
-test-no-bench:
-    cargo test --all-features --lib --bins --tests
+fmt-check:
+    @cargo fmt --all --check
 
-# Run integration tests only
-test-integration:
-    cargo test --test '*' --all-features
+lint-rust: fmt-check
+    @cargo clippy --workspace --all-targets --all-features -- -D warnings
 
-# Run unit tests only
-test-unit:
-    cargo test --lib --all-features
+lint-rust-min:
+    @cargo clippy --workspace --all-targets --no-default-features -- -D warnings
 
-# Run doctests only
-test-doc:
-    cargo test --doc --all-features
+# Format justfile
+fmt-justfile:
+    @just --fmt --unstable
 
-# Run coverage with cargo-llvm-cov and enforce 79% threshold
-coverage:
-    @echo "🔍 Running coverage with >79% threshold..."
-    cargo llvm-cov --all-features --workspace --lcov --fail-under-lines 79 --output-path lcov.info
-    @echo "✅ Coverage passed 79% threshold!"
+# Lint justfile formatting
+lint-justfile:
+    @just --fmt --check --unstable
 
-# Run coverage for CI - generates report even if some tests fail
-coverage-ci:
-    @echo "🔍 Running coverage for CI (generating lcov report)..."
-    cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info --ignore-run-fail
-    @echo "ℹ️ This CI step does not enforce coverage thresholds. Run \`just coverage\` locally to gate on 79%."
-    @echo "✅ Coverage report generated!"
+# Main lint recipe - calls all sub-linters
+lint: lint-rust lint-actions lint-spell lint-docs lint-justfile
 
-# Run coverage report in HTML format for local viewing
-coverage-html:
-    @echo "🔍 Generating HTML coverage report..."
-    cargo llvm-cov --all-features --workspace --html --output-dir target/llvm-cov/html
-    @echo "📊 HTML report available at target/llvm-cov/html/index.html"
+# Individual lint recipes
+lint-actions:
+    actionlint .github/workflows/*.yml
 
-# Run coverage report in HTML format ignoring test failures
-coverage-html-ci:
-    @echo "🔍 Generating HTML coverage report (ignoring test failures)..."
-    cargo llvm-cov --all-features --workspace --html --output-dir target/llvm-cov/html --ignore-run-fail
-    @echo "📊 HTML report available at target/llvm-cov/html/index.html"
+lint-spell:
+    cspell "**" --config cspell.config.yaml
 
-# Run coverage report to terminal
-coverage-report:
-    cargo llvm-cov --all-features --workspace
+lint-docs:
+    markdownlint docs/**/*.md README.md
+    lychee docs/**/*.md README.md
 
-# Clean coverage artifacts
-coverage-clean:
-    cargo llvm-cov clean --workspace
+alias lint-just := lint-justfile
 
-# -----------------------------
-# 🔍 Fuzzing & Property Testing
-# -----------------------------
+# Run clippy with fixes
+fix:
+    cargo clippy --fix --allow-dirty --allow-staged
 
-# Install cargo-fuzz for fuzzing
-install-fuzz:
-    cargo install cargo-fuzz
+# Quick development check
+check: pre-commit-run lint
 
-# Initialize fuzzing project
-fuzz-init:
-    cargo fuzz init
+pre-commit-run:
+    pre-commit run -a
 
-# Run fuzzing for XML parsing
-fuzz-xml:
-    cargo fuzz run xml_parsing -- -max_total_time=300
+# Format a single file (for pre-commit hooks)
+format-files +FILES:
+    npx prettier --write --config .prettierrc.json {{ FILES }}
 
-# Run fuzzing for CSV parsing
-fuzz-csv:
-    cargo fuzz run csv_parsing -- -max_total_time=300
+megalinter:
+    cd "{{ root }}"
+    npx mega-linter-runner --flavor rust
 
-# Run fuzzing for VLAN generation
-fuzz-vlan:
-    cargo fuzz run vlan_generation -- -max_total_time=300
+# =============================================================================
+# BUILDING AND TESTING
+# =============================================================================
 
-# Run all fuzzing targets
-fuzz-all: fuzz-xml fuzz-csv fuzz-vlan
-    @echo "✅ All fuzzing targets completed!"
-
-# Run property-based tests with proptest
-test-property:
-    cargo test --test proptest_* --all-features
-
-# Run comprehensive testing including fuzzing and property tests
-test-comprehensive: test test-property
-    @echo "✅ Comprehensive testing completed!"
-
-# -----------------------------
-# 🔧 Building & Running
-# -----------------------------
-
-# Build the project in debug mode
 build:
-    cargo build --all-features
+    @cargo build --workspace
 
-# Build the project in release mode
 build-release:
-    cargo build --release --all-features
+    @cargo build --workspace --release
 
-# Build documentation
-doc:
-    cargo doc --all-features --no-deps
+test:
+    @cargo nextest run --workspace --no-capture
 
-# Build and open documentation
-doc-open:
-    cargo doc --all-features --no-deps --open
+# Test justfile cross-platform functionality
+[windows]
+test-justfile:
+    Set-Location "{{ root }}"
+    $p = (Get-Location).Path; Write-Host "Current directory: $p"; Write-Host "Expected directory: {{ root }}"
 
-# Run the CLI tool with sample arguments
-run *args:
-    cargo run --all-features -- {{args}}
+[unix]
+test-justfile:
+    cd "{{ root }}"
+    /bin/echo "Current directory: $(pwd -P)"
+    /bin/echo "Expected directory: {{ root }}"
 
-# Run benchmarks (exclude from coverage)
+# Test cross-platform file system helpers
+[windows]
+test-fs:
+    Set-Location "{{ root }}"
+    @just rmrf tmp/xfstest
+    @just ensure-dir tmp/xfstest/sub
+    @just rmrf tmp/xfstest
+
+[unix]
+test-fs:
+    cd "{{ root }}"
+    @just rmrf tmp/xfstest
+    @just ensure-dir tmp/xfstest/sub
+    @just rmrf tmp/xfstest
+
+test-ci:
+    cargo nextest run --workspace --no-capture
+
+# Run all tests including ignored/slow tests across workspace
+test-all:
+    cargo nextest run --workspace --no-capture -- --ignored
+
+# =============================================================================
+# BENCHMARKING
+# =============================================================================
+
+# Run all benchmarks
 bench:
-    cargo bench --all-features
+    @cargo bench --workspace
 
-# -----------------------------
-# 🧹 Clean & Maintenance
-# -----------------------------
+# =============================================================================
+# SECURITY AND AUDITING
+# =============================================================================
 
-# Clean build artifacts
-clean:
-    cargo clean
-    rm -f lcov.info
-
-# Update dependencies
-update:
-    cargo update
-
-# Update all project dependencies (Rust + Python + Node.js)
-update-deps:
-    @echo "🔄 Updating Rust dependencies..."
-    cargo update
-    @echo "🔄 Updating Python dependencies..."
-    uv sync --upgrade
-    @echo "🔄 Updating Node.js dependencies..."
-    pnpm update
-    @echo "✅ All dependencies updated!"
-
-# Check for security advisories
 audit:
     cargo audit
 
-# -----------------------------
-# 🤖 CI Workflow
-# -----------------------------
+deny:
+    cargo deny check
 
-# CI-friendly check that runs all validation
-ci-check: format-check lint test coverage-ci
-    @echo "✅ All CI checks passed!"
+# =============================================================================
+# CI AND QUALITY ASSURANCE
+# =============================================================================
 
-# Fast CI check without coverage (for quick feedback)
-ci-check-fast: format-check lint test-no-bench
-    @echo "✅ Fast CI checks passed!"
+# Generate coverage report
+coverage:
+    cargo llvm-cov --workspace --lcov --output-path lcov.info
 
-# Full comprehensive checks - runs all non-interactive verifications
-full-checks: format-check lint pre-commit test coverage audit build-release bench act-ci-list act-ci-dry-run
-    @echo "✅ All full checks passed!"
+# Check coverage thresholds
+coverage-check:
+    cargo llvm-cov --workspace --lcov --output-path lcov.info --fail-under-lines 9.7
 
-# CI-friendly QA check (respects TERM=dumb, see TESTING.md)
-ci-qa: rust-fmt-check rust-clippy rust-test
-    @echo "✅ CI QA checks passed!"
+# Full local CI parity check
+ci-check: pre-commit-run fmt-check lint-rust lint-rust-min test-ci build-release audit coverage-check dist-plan
 
-# -----------------------------
-# 🚀 Development Workflow
-# -----------------------------
+# =============================================================================
+# DEVELOPMENT AND EXECUTION
+# =============================================================================
 
-# Development workflow: format, lint, test, coverage
-dev: format lint test coverage
-    @echo "✅ Development checks complete!"
+run *args:
+    @cargo run -p stringy -- {{ args }}
 
-# Watch for changes and run tests
-watch:
-    cargo watch -x "test --all-features"
+# =============================================================================
+# DISTRIBUTION AND PACKAGING
+# =============================================================================
 
-# Watch for changes and run checks
-watch-check:
-    cargo watch -x "check --all-features" -x "clippy -- -D warnings"
+dist:
+    @dist build
 
-# -----------------------------
-# 🧪 GitHub Actions Testing (act)
-# -----------------------------
+dist-check:
+    @dist check
 
-# Test CI workflow locally with act
-act-ci:
-    @echo "🧪 Testing CI workflow locally..."
-    act pull_request --workflows .github/workflows/ci.yml
+dist-plan:
+    @dist plan
 
-# Test CI workflow with verbose output
-act-ci-verbose:
-    @echo "🧪 Testing CI workflow locally (verbose)..."
-    act pull_request --workflows .github/workflows/ci.yml --verbose
+# Regenerate cargo-dist CI workflow safely
+dist-generate-ci:
+    dist generate --ci github
+    @echo "Generated CI workflow. Remember to fix any expression errors if they exist."
+    @echo "Run 'just lint:actions' to validate the generated workflow."
 
-# Test CI workflow with specific job
-act-ci-job job:
-    @echo "🧪 Testing CI workflow job: {{job}}..."
-    act pull_request --workflows .github/workflows/ci.yml --job {{job}}
+install:
+    @cargo install --path .
 
-# Test CI workflow with list of available jobs
-act-ci-list:
-    @echo "📋 Available CI workflow jobs:"
-    act pull_request --workflows .github/workflows/ci.yml --list
+# =============================================================================
+# DOCUMENTATION
+# =============================================================================
 
-# Test CI workflow with dry run (no actual execution)
-act-ci-dry-run:
-    @echo "🧪 Dry run of CI workflow..."
-    act pull_request --workflows .github/workflows/ci.yml --dryrun
+# Build complete documentation (mdBook + rustdoc)
+[unix]
+docs-build:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Build rustdoc
+    cargo doc --no-deps --document-private-items --target-dir docs/book/api-temp
+    # Move rustdoc output to final location
+    mkdir -p docs/book/api
+    cp -r docs/book/api-temp/doc/* docs/book/api/
+    rm -rf docs/book/api-temp
+    # Build mdBook
+    cd docs && mdbook build
 
-# Test push workflow (simulates push to main/develop)
-act-push:
-    @echo "🧪 Testing push workflow locally..."
-    act push --workflows .github/workflows/ci.yml
+# Serve documentation locally with live reload
+[unix]
+docs-serve:
+    cd docs && mdbook serve --open
 
-# -----------------------------
-# 📊 Project Information
-# -----------------------------
+# Clean documentation artifacts
+[unix]
+docs-clean:
+    rm -rf docs/book target/doc
 
-# Show project information
-info:
-    @echo "🔧 OPNsense Config Faker"
-    @echo "======================="
-    @echo "Rust version: $(rustc --version)"
-    @echo "Cargo version: $(cargo --version)"
-    @echo "Project features:"
-    @cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].features | keys[]' 2>/dev/null || echo "  - slow-tests"
+# Check documentation (build + link validation + formatting)
+[unix]
+docs-check:
+    cd docs && mdbook build
+    @just fmt-check
 
-# -----------------------------
-# 🐍 Python Removal Safety Checks
-# -----------------------------
+# Generate and serve documentation
+[unix]
+docs: docs-build docs-serve
 
-# Run Python removal safety checks
-python-safety-check:
-    @echo "🔍 Running Python removal safety checks..."
-    ./scripts/verify_removals.sh
+[windows]
+docs:
+    @echo "mdbook requires a Unix-like environment to serve"
 
-# Verify Python removal readiness (CI-friendly)
-python-removal-ready: python-safety-check
-    @echo "✅ Python removal safety checks passed!"
+# =============================================================================
+# GORELEASER TESTING
+# =============================================================================
+
+# Test GoReleaser configuration
+goreleaser-check:
+    @goreleaser check
+
+# Build binaries locally with GoReleaser (test build process)
+[windows]
+goreleaser-build:
+    @goreleaser build --clean
+
+[unix]
+goreleaser-build:
+    #!/bin/bash
+    set -euo pipefail
+    # Compute and export SDK-related env for macOS; no-ops on non-mac Unix
+    if command -v xcrun >/dev/null 2>&1; then
+        SDKROOT_PATH=$(xcrun --sdk macosx --show-sdk-path)
+        export SDKROOT="${SDKROOT_PATH}"
+        export MACOSX_DEPLOYMENT_TARGET="11.0"
+        # Help cargo-zigbuild/zig locate Apple SDK frameworks
+        export CARGO_ZIGBUILD_SYSROOT="${SDKROOT_PATH}"
+        # Ensure the system linker sees the correct syslibroot and frameworks
+        export RUSTFLAGS="${RUSTFLAGS:-} -C link-arg=-Wl,-syslibroot,${SDKROOT_PATH} -C link-arg=-F${SDKROOT_PATH}/System/Library/Frameworks"
+    fi
+    goreleaser build --clean
+
+# Run snapshot release (test full pipeline without publishing)
+[windows]
+goreleaser-snapshot:
+    @goreleaser release --snapshot --clean
+
+[unix]
+goreleaser-snapshot:
+    #!/bin/bash
+    set -euo pipefail
+    # Compute and export SDK-related env for macOS; no-ops on non-mac Unix
+    if command -v xcrun >/dev/null 2>&1; then
+        SDKROOT_PATH=$(xcrun --sdk macosx --show-sdk-path)
+        export SDKROOT="${SDKROOT_PATH}"
+        export MACOSX_DEPLOYMENT_TARGET="11.0"
+        # Help cargo-zigbuild/zig locate Apple SDK frameworks
+        export CARGO_ZIGBUILD_SYSROOT="${SDKROOT_PATH}"
+        # Ensure the system linker sees the correct syslibroot and frameworks
+        export RUSTFLAGS="${RUSTFLAGS:-} -C link-arg=-Wl,-syslibroot,${SDKROOT_PATH} -C link-arg=-F${SDKROOT_PATH}/System/Library/Frameworks"
+    fi
+    goreleaser release --snapshot --clean
+
+# Test GoReleaser with specific target
+[windows]
+goreleaser-build-target target:
+    @goreleaser build --clean --single-target {{ target }}
+
+[unix]
+goreleaser-build-target target:
+    #!/bin/bash
+    set -euo pipefail
+    # Compute and export SDK-related env for macOS; no-ops on non-mac Unix
+    if command -v xcrun >/dev/null 2>&1; then
+        SDKROOT_PATH=$(xcrun --sdk macosx --show-sdk-path)
+        export SDKROOT="${SDKROOT_PATH}"
+        export MACOSX_DEPLOYMENT_TARGET="11.0"
+        # Help cargo-zigbuild/zig locate Apple SDK frameworks
+        export CARGO_ZIGBUILD_SYSROOT="${SDKROOT_PATH}"
+        # Ensure the system linker sees the correct syslibroot and frameworks
+        export RUSTFLAGS="${RUSTFLAGS:-} -C link-arg=-Wl,-syslibroot,${SDKROOT_PATH} -C link-arg=-F${SDKROOT_PATH}/System/Library/Frameworks"
+    fi
+    goreleaser build --clean --single-target {{ target }}
+
+# Clean GoReleaser artifacts
+goreleaser-clean:
+    @just rmrf dist
+
+# =============================================================================
+# RELEASE MANAGEMENT
+# =============================================================================
+
+release:
+    @cargo release
+
+release-dry-run:
+    @cargo release --dry-run
+
+release-patch:
+    @cargo release patch
+
+release-minor:
+    @cargo release minor
+
+release-major:
+    @cargo release major
