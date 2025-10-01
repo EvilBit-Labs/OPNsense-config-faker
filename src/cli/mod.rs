@@ -256,16 +256,16 @@ impl GenerateArgs {
     fn validate_vlan_range(&self, vlan_range: &str) -> Result<(), String> {
         let ranges = parse_vlan_range(vlan_range)
             .map_err(|e| format!("Invalid VLAN range format '{}': {}", vlan_range, e))?;
-        
+
         let total_vlans = ranges.iter().map(|r| r.1 - r.0 + 1).sum::<u16>();
-        
+
         if matches!(self.format, OutputFormat::Xml) && total_vlans > MAX_UNIQUE_VLAN_IDS {
             return Err(format!(
                 "VLAN range produces {} VLANs, but maximum is {} for XML format",
                 total_vlans, MAX_UNIQUE_VLAN_IDS
             ));
         }
-        
+
         Ok(())
     }
 }
@@ -404,48 +404,59 @@ pub enum ValidationFormat {
 /// Supports formats like "100-150", "10,20,30-40", "100"
 pub fn parse_vlan_range(range_str: &str) -> Result<Vec<(u16, u16)>, String> {
     let mut ranges = Vec::new();
-    
+
     for part in range_str.split(',') {
         let part = part.trim();
         if part.is_empty() {
             continue;
         }
-        
+
         if part.contains('-') {
             let parts: Vec<&str> = part.split('-').collect();
             if parts.len() != 2 {
                 return Err(format!("Invalid range format: '{}'", part));
             }
-            
-            let start: u16 = parts[0].trim().parse()
+
+            let start: u16 = parts[0]
+                .trim()
+                .parse()
                 .map_err(|_| format!("Invalid start VLAN ID: '{}'", parts[0]))?;
-            let end: u16 = parts[1].trim().parse()
+            let end: u16 = parts[1]
+                .trim()
+                .parse()
                 .map_err(|_| format!("Invalid end VLAN ID: '{}'", parts[1]))?;
-            
+
             if start > end {
-                return Err(format!("Start VLAN ID {} must be less than or equal to end VLAN ID {}", start, end));
+                return Err(format!(
+                    "Start VLAN ID {} must be less than or equal to end VLAN ID {}",
+                    start, end
+                ));
             }
-            
-            if start < 10 || start > 4094 || end < 10 || end > 4094 {
-                return Err(format!("VLAN IDs must be between 10 and 4094, got range {}-{}", start, end));
+
+            if !(10..=4094).contains(&start) || !(10..=4094).contains(&end) {
+                return Err(format!(
+                    "VLAN IDs must be between 10 and 4094, got range {}-{}",
+                    start, end
+                ));
             }
-            
+
             ranges.push((start, end));
         } else {
-            let vlan_id: u16 = part.parse()
+            let vlan_id: u16 = part
+                .parse()
                 .map_err(|_| format!("Invalid VLAN ID: '{}'", part))?;
-            
-            if vlan_id < 10 || vlan_id > 4094 {
+
+            if !(10..=4094).contains(&vlan_id) {
                 return Err(format!("VLAN ID {} must be between 10 and 4094", vlan_id));
             }
-            
+
             ranges.push((vlan_id, vlan_id));
         }
     }
-    
+
     if ranges.is_empty() {
         return Err("No valid VLAN ranges found".to_string());
     }
-    
+
     Ok(ranges)
 }

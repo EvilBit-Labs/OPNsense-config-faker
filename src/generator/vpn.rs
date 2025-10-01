@@ -52,6 +52,7 @@ pub struct VpnConfig {
 
 impl VpnConfig {
     /// Create a new VPN configuration with validation
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         vpn_type: VpnType,
         name: String,
@@ -79,7 +80,7 @@ impl VpnConfig {
             dns_servers,
             enabled,
         };
-        
+
         config.validate()?;
         Ok(config)
     }
@@ -87,7 +88,7 @@ impl VpnConfig {
     /// Validate the VPN configuration
     pub fn validate(&self) -> VpnResult<()> {
         // Validate port range
-        if self.port == 0 || self.port > 65535 {
+        if self.port == 0 {
             return Err(ConfigError::validation(format!(
                 "VPN port {} is invalid. Must be between 1 and 65535",
                 self.port
@@ -200,12 +201,12 @@ impl VpnGenerator {
     /// Generate multiple VPN configurations
     pub fn generate_batch(&mut self, count: u16) -> VpnResult<Vec<VpnConfig>> {
         let mut configs = Vec::with_capacity(count as usize);
-        
+
         for _ in 0..count {
             let config = self.generate_single(None)?;
             configs.push(config);
         }
-        
+
         Ok(configs)
     }
 
@@ -221,11 +222,16 @@ impl VpnGenerator {
     /// Generate a unique VPN name
     fn generate_unique_name(&mut self, vpn_type: &VpnType) -> String {
         const MAX_ATTEMPTS: usize = 100;
-        
+
         for _ in 0..MAX_ATTEMPTS {
             let base_name = match vpn_type {
                 VpnType::OpenVPN => {
-                    let purposes = ["Remote-Access", "Site-to-Site", "Mobile-VPN", "Branch-Office"];
+                    let purposes = [
+                        "Remote-Access",
+                        "Site-to-Site",
+                        "Mobile-VPN",
+                        "Branch-Office",
+                    ];
                     let purpose = purposes[self.rng.random_range(0..purposes.len())];
                     format!("OpenVPN-{}", purpose)
                 }
@@ -235,12 +241,18 @@ impl VpnGenerator {
                     format!("WireGuard-{}", location)
                 }
                 VpnType::IPSec => {
-                    let sites = ["Main-Office", "Branch-A", "Branch-B", "Partner-Site", "Backup-Site"];
+                    let sites = [
+                        "Main-Office",
+                        "Branch-A",
+                        "Branch-B",
+                        "Partner-Site",
+                        "Backup-Site",
+                    ];
                     let site = sites[self.rng.random_range(0..sites.len())];
                     format!("IPSec-{}", site)
                 }
             };
-            
+
             let name = if self.rng.random_bool(0.3) {
                 format!("{}-{:02}", base_name, self.rng.random_range(1..=99))
             } else {
@@ -251,20 +263,29 @@ impl VpnGenerator {
                 return name;
             }
         }
-        
+
         // Fallback with UUID suffix if we can't generate unique name
-        format!("{}-{}", match vpn_type {
-            VpnType::OpenVPN => "OpenVPN",
-            VpnType::WireGuard => "WireGuard", 
-            VpnType::IPSec => "IPSec",
-        }, Uuid::new_v4().to_string().split('-').next().unwrap())
+        format!(
+            "{}-{}",
+            match vpn_type {
+                VpnType::OpenVPN => "OpenVPN",
+                VpnType::WireGuard => "WireGuard",
+                VpnType::IPSec => "IPSec",
+            },
+            Uuid::new_v4().to_string().split('-').next().unwrap()
+        )
     }
 
     /// Generate a server address (IP or hostname)
     fn generate_server_address(&mut self) -> String {
         if self.rng.random_bool(0.4) {
             // Generate hostname
-            let domains = ["vpn.company.com", "secure.example.org", "tunnel.corp.net", "gateway.office.local"];
+            let domains = [
+                "vpn.company.com",
+                "secure.example.org",
+                "tunnel.corp.net",
+                "gateway.office.local",
+            ];
             domains[self.rng.random_range(0..domains.len())].to_string()
         } else {
             // Generate public IP address
@@ -281,20 +302,20 @@ impl VpnGenerator {
     /// Generate a unique port for the VPN type
     fn generate_unique_port(&mut self, vpn_type: &VpnType) -> u16 {
         const MAX_ATTEMPTS: usize = 100;
-        
+
         let default_ports = match vpn_type {
             VpnType::OpenVPN => vec![1194, 443, 1723],
             VpnType::WireGuard => vec![51820, 51821, 51822],
             VpnType::IPSec => vec![500, 4500, 1701],
         };
-        
+
         // Try default ports first
         for &port in &default_ports {
             if self.used_ports.insert(port) {
                 return port;
             }
         }
-        
+
         // Try random ports in appropriate ranges
         for _ in 0..MAX_ATTEMPTS {
             let port = match vpn_type {
@@ -302,19 +323,19 @@ impl VpnGenerator {
                 VpnType::WireGuard => self.rng.random_range(51820..=51899),
                 VpnType::IPSec => self.rng.random_range(500..=4500),
             };
-            
+
             if self.used_ports.insert(port) {
                 return port;
             }
         }
-        
+
         // Fallback - find any available port
         for port in 1024..=65535 {
             if self.used_ports.insert(port) {
                 return port;
             }
         }
-        
+
         // Ultimate fallback
         1194
     }
@@ -323,20 +344,34 @@ impl VpnGenerator {
     fn get_protocol_for_type(&mut self, vpn_type: &VpnType) -> String {
         match vpn_type {
             VpnType::OpenVPN => {
-                if self.rng.random_bool(0.7) { "UDP" } else { "TCP" }
+                if self.rng.random_bool(0.7) {
+                    "UDP"
+                } else {
+                    "TCP"
+                }
             }
             VpnType::WireGuard => "UDP",
             VpnType::IPSec => {
-                if self.rng.random_bool(0.8) { "ESP" } else { "AH" }
+                if self.rng.random_bool(0.8) {
+                    "ESP"
+                } else {
+                    "AH"
+                }
             }
-        }.to_string()
+        }
+        .to_string()
     }
 
     /// Get appropriate cipher for VPN type
     fn get_cipher_for_type(&mut self, vpn_type: &VpnType) -> String {
         match vpn_type {
             VpnType::OpenVPN => {
-                let ciphers = ["AES-256-GCM", "AES-256-CBC", "AES-128-GCM", "ChaCha20-Poly1305"];
+                let ciphers = [
+                    "AES-256-GCM",
+                    "AES-256-CBC",
+                    "AES-128-GCM",
+                    "ChaCha20-Poly1305",
+                ];
                 ciphers[self.rng.random_range(0..ciphers.len())]
             }
             VpnType::WireGuard => "ChaCha20-Poly1305", // WireGuard uses this exclusively
@@ -344,7 +379,8 @@ impl VpnGenerator {
                 let ciphers = ["AES-256", "AES-128", "3DES", "ChaCha20"];
                 ciphers[self.rng.random_range(0..ciphers.len())]
             }
-        }.to_string()
+        }
+        .to_string()
     }
 
     /// Get appropriate authentication method for VPN type
@@ -359,25 +395,37 @@ impl VpnGenerator {
                 let methods = ["Pre-shared Key", "Certificate", "RSA Signature"];
                 methods[self.rng.random_range(0..methods.len())]
             }
-        }.to_string()
+        }
+        .to_string()
     }
 
     /// Generate key identifier
     fn generate_key_identifier(&mut self, vpn_type: &VpnType) -> String {
         match vpn_type {
-            VpnType::OpenVPN => format!("openvpn-cert-{}", Uuid::new_v4().to_string().split('-').next().unwrap()),
+            VpnType::OpenVPN => format!(
+                "openvpn-cert-{}",
+                Uuid::new_v4().to_string().split('-').next().unwrap()
+            ),
             VpnType::WireGuard => {
                 // Generate realistic WireGuard public key format (base64, 44 chars)
-                let chars: Vec<char> = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".chars().collect();
-                let key: String = (0..43).map(|_| chars[self.rng.random_range(0..chars.len())]).collect();
+                let chars: Vec<char> =
+                    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+                        .chars()
+                        .collect();
+                let key: String = (0..43)
+                    .map(|_| chars[self.rng.random_range(0..chars.len())])
+                    .collect();
                 format!("{}=", key)
             }
             VpnType::IPSec => {
                 // Generate PSK or certificate identifier
                 if self.rng.random_bool(0.6) {
-                    format!("psk-{}", Uuid::new_v4().to_string())
+                    format!("psk-{}", Uuid::new_v4())
                 } else {
-                    format!("ipsec-cert-{}", Uuid::new_v4().to_string().split('-').next().unwrap())
+                    format!(
+                        "ipsec-cert-{}",
+                        Uuid::new_v4().to_string().split('-').next().unwrap()
+                    )
                 }
             }
         }
@@ -396,18 +444,20 @@ impl VpnGenerator {
     /// Generate DNS servers for VPN clients
     fn generate_dns_servers(&mut self) -> Vec<String> {
         let public_dns = vec![
-            "8.8.8.8", "8.8.4.4", // Google
-            "1.1.1.1", "1.0.0.1", // Cloudflare
-            "208.67.222.222", "208.67.220.220", // OpenDNS
-            "9.9.9.9", "149.112.112.112", // Quad9
+            "8.8.8.8",
+            "8.8.4.4", // Google
+            "1.1.1.1",
+            "1.0.0.1", // Cloudflare
+            "208.67.222.222",
+            "208.67.220.220", // OpenDNS
+            "9.9.9.9",
+            "149.112.112.112", // Quad9
         ];
-        
-        let corporate_dns = vec![
-            "192.168.1.1", "10.0.0.1", "172.16.0.1",
-        ];
-        
+
+        let corporate_dns = ["192.168.1.1", "10.0.0.1", "172.16.0.1"];
+
         let mut servers = Vec::new();
-        
+
         // Primary DNS
         if self.rng.random_bool(0.7) {
             // Use corporate DNS
@@ -416,10 +466,13 @@ impl VpnGenerator {
             // Use public DNS
             servers.push(public_dns[self.rng.random_range(0..public_dns.len())].to_string());
         }
-        
+
         // Secondary DNS (optional)
         if self.rng.random_bool(0.8) {
-            let secondary = if servers[0].starts_with("192.168") || servers[0].starts_with("10.") || servers[0].starts_with("172.") {
+            let secondary = if servers[0].starts_with("192.168")
+                || servers[0].starts_with("10.")
+                || servers[0].starts_with("172.")
+            {
                 // If primary is corporate, use public as secondary
                 public_dns[self.rng.random_range(0..public_dns.len())].to_string()
             } else {
@@ -434,7 +487,7 @@ impl VpnGenerator {
             };
             servers.push(secondary);
         }
-        
+
         servers
     }
 }
@@ -469,6 +522,7 @@ pub fn generate_vpn_configurations(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cli::parse_vlan_range;
 
     #[test]
     fn test_vpn_config_creation() {
@@ -485,7 +539,7 @@ mod tests {
             vec!["8.8.8.8".to_string(), "8.8.4.4".to_string()],
             true,
         );
-        
+
         assert!(config.is_ok());
         let config = config.unwrap();
         assert_eq!(config.vpn_type, VpnType::OpenVPN);
@@ -508,9 +562,12 @@ mod tests {
             vec!["8.8.8.8".to_string()],
             true,
         );
-        
+
         assert!(config.is_err());
-        assert!(config.unwrap_err().to_string().contains("port 0 is invalid"));
+        assert!(config
+            .unwrap_err()
+            .to_string()
+            .contains("port 0 is invalid"));
     }
 
     #[test]
@@ -528,16 +585,19 @@ mod tests {
             vec!["8.8.8.8".to_string()],
             true,
         );
-        
+
         assert!(config.is_err());
-        assert!(config.unwrap_err().to_string().contains("WireGuard protocol 'TCP' is invalid"));
+        assert!(config
+            .unwrap_err()
+            .to_string()
+            .contains("WireGuard protocol 'TCP' is invalid"));
     }
 
     #[test]
     fn test_vpn_generator_single() {
         let mut generator = VpnGenerator::new_with_seed(Some(42));
         let config = generator.generate_single(Some(VpnType::OpenVPN));
-        
+
         assert!(config.is_ok());
         let config = config.unwrap();
         assert_eq!(config.vpn_type, VpnType::OpenVPN);
@@ -550,17 +610,20 @@ mod tests {
     fn test_vpn_generator_batch() {
         let mut generator = VpnGenerator::new_with_seed(Some(42));
         let configs = generator.generate_batch(5);
-        
+
         assert!(configs.is_ok());
         let configs = configs.unwrap();
         assert_eq!(configs.len(), 5);
-        
-        // Check uniqueness of names and ports
+
+        // Check uniqueness of names
         let mut names = std::collections::HashSet::new();
-        let mut ports = std::collections::HashSet::new();
-        
+
         for config in &configs {
-            assert!(names.insert(&config.name), "Duplicate name: {}", config.name);
+            assert!(
+                names.insert(&config.name),
+                "Duplicate name: {}",
+                config.name
+            );
             // Ports might not be unique across different VPN types, so we only check within type
         }
     }
@@ -570,15 +633,15 @@ mod tests {
         // Test single VLAN
         let ranges = parse_vlan_range("100").unwrap();
         assert_eq!(ranges, vec![(100, 100)]);
-        
+
         // Test simple range
         let ranges = parse_vlan_range("100-150").unwrap();
         assert_eq!(ranges, vec![(100, 150)]);
-        
+
         // Test multiple ranges
         let ranges = parse_vlan_range("10,20-30,40").unwrap();
         assert_eq!(ranges, vec![(10, 10), (20, 30), (40, 40)]);
-        
+
         // Test invalid range
         assert!(parse_vlan_range("150-100").is_err());
         assert!(parse_vlan_range("5-10").is_err()); // Below minimum

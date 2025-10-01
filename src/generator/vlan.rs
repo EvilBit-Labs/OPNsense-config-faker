@@ -481,7 +481,12 @@ impl VlanGenerator {
     }
 
     /// Generate WAN assignment based on strategy
-    pub fn generate_wan_assignment(&mut self, strategy: Option<&crate::cli::WanAssignmentStrategy>, vlan_index: Option<usize>, total_vlans: Option<usize>) -> u8 {
+    pub fn generate_wan_assignment(
+        &mut self,
+        strategy: Option<&crate::cli::WanAssignmentStrategy>,
+        vlan_index: Option<usize>,
+        total_vlans: Option<usize>,
+    ) -> u8 {
         match strategy {
             Some(crate::cli::WanAssignmentStrategy::Single) => 1, // Always assign to WAN 1
             Some(crate::cli::WanAssignmentStrategy::Multi) => {
@@ -689,32 +694,32 @@ pub fn generate_vlan_configurations_from_ranges(
 ) -> Result<Vec<VlanConfig>> {
     let mut generator = VlanGenerator::new_with_std_rng(seed);
     let mut configs = Vec::new();
-    
+
     // Calculate total number of VLANs for progress tracking
-    let total_vlans: u16 = vlan_ranges.iter().map(|(start, end)| end - start + 1).sum();
+    let _total_vlans: u16 = vlan_ranges.iter().map(|(start, end)| end - start + 1).sum();
     let mut processed = 0u64;
-    
+
     for (start, end) in vlan_ranges {
         for vlan_id in *start..=*end {
             // Generate unique IP network
             let ip_network = generator.generate_unique_ip_network(1000)?;
-            
+
             // Generate description
             let description = generator.generate_description(vlan_id);
-            
+
             // Generate WAN assignment
             let wan_assignment = generator.rng.random_range(1..=3);
-            
+
             let config = VlanConfig::new(vlan_id, ip_network, description, wan_assignment)?;
             configs.push(config);
-            
+
             processed += 1;
             if let Some(pb) = progress_bar {
                 pb.set_position(processed);
             }
         }
     }
-    
+
     Ok(configs)
 }
 
@@ -727,30 +732,30 @@ pub fn generate_vlan_configurations_from_ranges_with_wan(
 ) -> Result<Vec<VlanConfig>> {
     let mut generator = VlanGenerator::new_with_std_rng(seed);
     let mut configs = Vec::new();
-    
+
     // Calculate total number of VLANs for progress tracking
     let total_vlans: u16 = vlan_ranges.iter().map(|(start, end)| end - start + 1).sum();
     let mut processed = 0u64;
     let mut vlan_index = 0usize;
-    
+
     for (start, end) in vlan_ranges {
         for vlan_id in *start..=*end {
             // Generate unique IP network
             let ip_network = generator.generate_unique_ip_network(1000)?;
-            
+
             // Generate description
             let description = generator.generate_description(vlan_id);
-            
+
             // Generate WAN assignment based on strategy
             let wan_assignment = generator.generate_wan_assignment(
-                wan_strategy, 
-                Some(vlan_index), 
-                Some(total_vlans as usize)
+                wan_strategy,
+                Some(vlan_index),
+                Some(total_vlans as usize),
             );
-            
+
             let config = VlanConfig::new(vlan_id, ip_network, description, wan_assignment)?;
             configs.push(config);
-            
+
             processed += 1;
             vlan_index += 1;
             if let Some(pb) = progress_bar {
@@ -758,7 +763,7 @@ pub fn generate_vlan_configurations_from_ranges_with_wan(
             }
         }
     }
-    
+
     Ok(configs)
 }
 
@@ -776,14 +781,11 @@ pub fn generate_vlan_configurations_with_wan(
         let vlan_id = generator.generate_unique_vlan_id(1000)?;
         let ip_network = generator.generate_unique_ip_network(1000)?;
         let description = generator.generate_description(vlan_id);
-        
+
         // Generate WAN assignment based on strategy
-        let wan_assignment = generator.generate_wan_assignment(
-            wan_strategy, 
-            Some(i as usize), 
-            Some(count as usize)
-        );
-        
+        let wan_assignment =
+            generator.generate_wan_assignment(wan_strategy, Some(i as usize), Some(count as usize));
+
         let config = VlanConfig::new(vlan_id, ip_network, description, wan_assignment)?;
         configs.push(config);
 
