@@ -1,16 +1,19 @@
 # OPNsense Config Faker - AI Coding Assistant Rules
 
-This document outlines the core concepts, framework, and coding standards for the OPNsense Config Faker project. It serves as a comprehensive guide for AI coding assistants to ensure consistency, maintainability, and adherence to established best practices.
+This document serves as the comprehensive guide for AI coding assistants working on the OPNsense Config Faker project. It consolidates all essential information for maintaining consistency, quality, and adherence to established best practices.
 
-## 1. Core Philosophy
+## 1. Core Philosophy and Purpose
 
 - **OPNsense Configuration Focus**: This project's primary purpose is generating valid OPNsense `config.xml` files with realistic faked data
 - **Single Platform Target**: Specifically designed for OPNsense firewall configurations - not a general network configuration tool
 - **CSV as Intermediate Format**: CSV generation is an internal implementation detail, not a primary feature
 - **Operator-Centric Design**: Built for network operators and automation engineers who need realistic OPNsense test configurations
 - **Ethical Development**: This is a complete rewrite with no remaining code from any previous implementation
+- **Offline-First**: No external dependencies or telemetry in production artifacts
 
-## 2. Project Structure
+## 2. Project Structure and Architecture
+
+### Source Structure
 
 ```text
 /
@@ -29,6 +32,22 @@ This document outlines the core concepts, framework, and coding standards for th
 └── opnsense-config.xsd   # OPNsense XML schema definition
 ```
 
+### Data Flow
+
+`CLI args → generator → model → validate → xml writer → config.xml on disk`
+
+CSV may be used internally for processing, but is not a public contract.
+
+### Module Responsibilities
+
+- **cli**: Clap v4 derived CLI, subcommands (xml, generate), argument parsing, completions, progress/info output respecting `TERM=dumb`/`NO_COLOR`
+- **generator**: Produces realistic VLANs, interfaces, DHCP, NAT, firewall policies, CARP VIPs, RADIUS users with uniqueness and RFC-compliant ranges
+- **model**: Strongly-typed serde models for config elements; central invariants and serde derive
+- **validate**: Cross-object consistency checks (unique VLAN IDs, no IP conflicts, RFC ranges)
+- **io**: CSV utilities (internal), XML I/O helpers; streaming-friendly operations for large sets
+- **xml**: Constructs OPNsense config.xml via quick-xml/xmlwriter; integrates base-config and adheres to `opnsense-config.xsd`
+- **Cross-cutting**: Robust errors (thiserror/anyhow), performance helpers (bumpalo, lru, rustc-hash, smallvec), optional parallelism via feature `rayon`
+
 ## 3. Technology Stack
 
 | Layer             | Technology                                | Notes                                            |
@@ -41,9 +60,112 @@ This document outlines the core concepts, framework, and coding standards for th
 | **CI/CD**         | GitHub Actions                            | For automated testing, linting, and releases     |
 | **Tooling**       | `cargo` for deps, `just` for task running | `cargo clippy` and `cargo fmt` for quality       |
 
-## 4. Coding Standards and Conventions
+### Key Dependencies
 
-### Rust
+- **CLI**: clap, clap_complete
+- **Serialization**: serde, serde_json, csv, quick-xml, xmlwriter
+- **Networking**: ipnet, ipnetwork
+- **Data Generation**: rand, rand_chacha, fake, uuid
+- **Errors**: anyhow, thiserror
+- **Performance**: bumpalo, lru, rustc-hash, smallvec
+- **Testing**: proptest, insta, criterion, pprof
+- **UI**: indicatif, console
+
+## 4. Essential Commands and Workflows
+
+### Build Commands
+
+```bash
+cargo build --all-features
+cargo build --release --all-features
+```
+
+### Quality Gates (Zero-Tolerance Policy)
+
+```bash
+# Formatting check
+cargo fmt --check
+just format-check
+
+# Linting (MANDATORY - no warnings allowed)
+cargo clippy --all-targets --all-features --benches -- -D warnings
+just lint
+
+# Comprehensive CI validation
+just ci-check                # Full CI validation
+just ci-check-fast          # Quick CI check (no coverage)
+```
+
+### Testing Strategy
+
+```bash
+# Unit tests
+cargo test --lib --all-features
+
+# Integration tests (CLI)
+cargo test --tests --all-features
+TERM=dumb cargo test --tests --all-features
+
+# Property-based tests (proptest)
+cargo test proptest --all-features
+cargo test proptest --all-features --features slow-tests
+PROPTEST_CASES=1000 cargo test proptest
+
+# Snapshot tests (insta)
+cargo test --test snapshot_tests
+TERM=dumb cargo test --test snapshot_tests
+
+# All tests
+just test
+just test-unit                               # Unit tests only
+just test-integration                        # Integration tests only
+just test-no-bench                           # Exclude benchmarks
+```
+
+### Coverage Requirements
+
+```bash
+just install-cov                             # One-time setup
+just coverage                                # Local with threshold enforcement (≥79%)
+just coverage-html                           # HTML report → target/llvm-cov/html/index.html
+just coverage-report                         # Terminal output
+just coverage-clean                          # Clean artifacts
+```
+
+### Performance and Benchmarks
+
+```bash
+cargo bench --all-features
+just bench
+```
+
+### Local CI Testing
+
+```bash
+just act-ci                                  # Dry-run CI locally
+just act-ci-dry-run                          # Show what would run
+just act-ci-list                             # List available jobs
+```
+
+## 5. Usage Examples
+
+### Basic XML Generation
+
+```bash
+# Generate OPNsense XML configs (primary use case)
+cargo run --release -- xml --base-config config.xml --count 25
+
+# Generate VLAN data
+cargo run --release -- generate vlan --count 10 --output vlans.xml
+cargo run --release -- generate vlan --count 50 --format csv --output network-data.csv
+
+# Generate with firewall rules
+cargo run --release -- generate --count 10 --format xml --base-config config.xml --include-firewall-rules --firewall-rules-per-vlan 3 --firewall-rule-complexity intermediate
+```
+
+## 6. Coding Standards and Conventions
+
+### Rust Standards
 
 - **Formatting**: `cargo fmt` using standard Rust formatting
 - **Linting**: `cargo clippy -- -D warnings` to enforce strict zero-warning policy
@@ -59,61 +181,47 @@ This document outlines the core concepts, framework, and coding standards for th
 - **Configurable**: Allow users to specify count, output format, and other parameters
 - **Consistent**: Maintain consistent data patterns across generated records
 
-### Commit Messages
+### Architecture Patterns
 
-- **Conventional Commits**: All commit messages must adhere to the [Conventional Commits](https://www.conventionalcommits.org) specification
-  - **Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`
-  - **Scopes**: `(cli)`, `(generator)`, `(xml)`, `(validation)`, `(io)`, etc.
-  - **Breaking Changes**: Indicated with `!` in the header or `BREAKING CHANGE:` in the footer
+- **Command Pattern**: CLI commands encapsulated as discrete operations
+- **Builder Pattern**: Used for complex configuration objects
+- **Strategy Pattern**: Pluggable algorithms for different output formats
+- **Error Chaining**: Comprehensive error context through the call stack
+- **Resource Management**: RAII principles for file handles and system resources
 
-## 5. Development Guidelines
+### Performance Considerations
 
-### Core Functionality
+- **Memory Safety**: Leverage Rust's ownership system for safe memory management
+- **Zero-Cost Abstractions**: Use Rust's zero-cost abstractions for performance
+- **Benchmarking**: Use criterion.rs for performance regression detection
+- **Streaming I/O**: Efficient processing of large configuration sets
+- **Parallelism**: Feature-gated with `--features rayon` for processing large sets
+- **Optimization**: Streaming XML (xmlwriter) and allocation strategies (bumpalo) for large configurations
 
-- **Primary Purpose**: Generate valid OPNsense `config.xml` files with realistic faked data
-- **Main Binary**: `opnsense-config-faker` - Tool for OPNsense configuration generation
-- **XML Generation**: Primary feature - creates complete OPNsense configurations with realistic test data
-- **CSV as Intermediate**: CSV generation is an internal implementation detail for data processing
-- **Single Platform**: OPNsense only - not designed for other platforms or output formats
-- **CLI Interface**: Simple interface focused on OPNsense configuration generation
-- **Internal Data Format**: CSV with columns: VLAN, IP Range, Beschreibung, WAN (used internally)
+## 7. Quality Assurance and Standards
 
-### Quality Assurance
+### Quality Standards
 
-1. **Code Quality**: All code must pass `cargo clippy -- -D warnings` with zero warnings
-2. **Type Safety**: Comprehensive type safety through Rust's type system
-3. **Testing**: Generate valid configurations that can be used in real testing scenarios
-4. **Documentation**: Clear documentation for all user-facing functionality
-5. **Performance**: Benchmark-driven development with regression detection
+- **Lint policy**: `cargo clippy -- -D warnings` (no warnings allowed)
+- **Formatting**: `cargo fmt --check` must pass
+- **Tests**: Run with `TERM=dumb` for deterministic output when relevant
+- **Coverage**: Target ≥79% locally (currently enforced); CI does not gate on coverage drops
+- **Security**: `just audit` when changing dependencies
+- **Offline-first**: No network calls in core build/test paths
 
-## 6. EvilBit Labs Standards Integration
-
-### Brand Principles
+### EvilBit Labs Standards
 
 - **Trust the Operator**: Full control, no black boxes
 - **Polish Over Scale**: Quality over feature-bloat
 - **Offline First**: Built for where the internet isn't
 - **Sane Defaults**: Clean outputs, CLI help that's actually helpful
 - **Ethical Constraints**: No dark patterns, spyware, or telemetry
-
-### Security and Quality Requirements
-
 - **No hardcoded secrets**: Use environment variables or secure vaults
 - **Input validation**: Validate all inputs before processing
-- **Offline-first**: No external dependencies or telemetry in production artifacts
 - **Cross-platform**: Support macOS, Windows, and Linux
 - **Airgap-ready**: All functionality must work offline
 
-### CI/CD Integration
-
-- **Conventional Commits**: All commit messages must follow specification
-  - Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`
-  - Scopes: `(cli)`, `(generator)`, `(xml)`, `(validation)`, `(io)`, etc.
-  - Breaking Changes: Indicated with `!` in the header or `BREAKING CHANGE:` in the footer
-- **Branch Protection**: Strict linting, testing, and security gates
-- **Release Automation**: Release Please manages versioning and changelog
-
-## 7. AI Assistant Behavior and Rules of Engagement
+## 8. AI Assistant Behavior and Rules of Engagement
 
 ### Core Development Rules
 
@@ -133,43 +241,59 @@ This document outlines the core concepts, framework, and coding standards for th
 - **Focus on Value**: Enhance the project's unique value proposition as a network configuration data generator
 - **Ethical Boundaries**: This is a complete rewrite with no remaining code from the original project
 
-## 8. Rust Implementation Features
+### Review Process
 
-### Architecture Patterns
+- Use coderabbit.ai for code review
+- Single maintainer workflow (@UncleSp1d3r)
+- Never auto-commit code
 
-- **Command Pattern**: CLI commands encapsulated as discrete operations
-- **Builder Pattern**: Used for complex configuration objects
-- **Strategy Pattern**: Pluggable algorithms for different output formats
-- **Error Chaining**: Comprehensive error context through the call stack
-- **Resource Management**: RAII principles for file handles and system resources
+## 9. Commit Messages and Version Control
 
-### Performance Considerations
+### Conventional Commits
 
-- **Memory Safety**: Leverage Rust's ownership system for safe memory management
-- **Zero-Cost Abstractions**: Use Rust's zero-cost abstractions for performance
-- **Benchmarking**: Use criterion.rs for performance regression detection
-- **Streaming I/O**: Efficient processing of large configuration sets
+All commit messages must adhere to the [Conventional Commits](https://www.conventionalcommits.org) specification:
 
-### Usage Examples
+- **Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`
+- **Scopes**: `(cli)`, `(generator)`, `(xml)`, `(validation)`, `(io)`, etc.
+- **Breaking Changes**: Indicated with `!` in the header or `BREAKING CHANGE:` in the footer
+
+### Branch Protection
+
+- Strict linting, testing, and security gates
+- Release automation via Release Please manages versioning and changelog
+
+## 10. Testing Strategy
+
+### Test Types
+
+- **Unit Tests**: Test individual functions and data structures
+- **Integration Tests**: Test CLI commands and file generation end-to-end
+- **Property Tests**: Validate network configuration properties with proptest
+- **Performance Tests**: Benchmark data generation speed and memory usage
+- **Snapshot Tests**: Ensure output consistency with insta
+
+### Deterministic Output Tips
+
+- Use `TERM=dumb`, `NO_COLOR=1`, `CARGO_TERM_COLOR=never`
+- Keep slow-tests behind feature flags
+- Seeded randomness for reproducibility in tests where applicable
+
+### Snapshot Management
 
 ```bash
-# Primary use case - Generate OPNsense XML configuration
-cargo run -- xml --base-config config.xml --count 25
-
-# Generate CSV for intermediate processing (rarely needed directly)
-cargo run -- csv --count 25
-
-# Use existing CSV file for XML generation (advanced usage)
-cargo run -- xml --base-config config.xml --csv-file my-data.csv
-
-# Run benchmarks
-cargo bench
-
-# Run quality checks
-just qa
+cargo insta review                           # Review changes
+INSTA_UPDATE=auto cargo test --test snapshot_tests    # Force accept (use sparingly)
 ```
 
-## 9. Future Roadmap Considerations
+## 11. Platform Scope and Constraints
+
+### Platform Scope
+
+- **OPNsense-only**: CSV is internal, not a user-facing deliverable
+- **Single-purpose**: Do not extend to other firewall platforms
+- **Cross-platform**: Support macOS, Windows, and Linux
+
+### Future Roadmap Considerations
 
 - Comprehensive test suite with property-based testing using proptest
 - Enhanced OPNsense configuration elements (additional modules, more realistic data)
@@ -179,3 +303,49 @@ just qa
 - Performance optimization through benchmarking and profiling
 
 **Note**: Supporting other platforms or output formats beyond OPNsense XML is explicitly NOT a feature goal
+
+## 12. Performance and Benchmarks
+
+### Benchmarking Framework
+
+- **Benchmarks**: criterion framework; HTML reports under `target/criterion/reports/index.html`
+- **Profiling**: Optional pprof + flamegraph support
+- **Parallelism**: Feature-gated with `--features rayon` for processing large sets
+- **Optimization**: Streaming XML (xmlwriter) and allocation strategies (bumpalo) for large configurations
+
+### Performance Characteristics
+
+Generation performance scales linearly with count:
+
+- Small datasets (\<100 VLANs): 10-50ms
+- Medium datasets (100-1000 VLANs): 50-500ms
+- Large datasets (>1000 VLANs): 500ms-2s
+
+Memory usage is approximately 500 bytes per VLAN configuration.
+
+## 13. Final Reminders
+
+### Critical Requirements
+
+1. **Network Validity First**: Every change must maintain realistic, valid network configurations
+2. **Zero Warnings**: `cargo clippy -- -D warnings` must pass
+3. **CLI Usability**: Commands must be intuitive with clear help and error messages
+4. **Testing Coverage**: Comprehensive unit, integration, and property-based tests
+5. **Quality Focus**: Build for network professionals who need reliable test data
+6. **Documentation**: Clear docs for all public APIs and CLI usage
+
+### Common Commands Summary
+
+```bash
+# Development workflow
+just ci-check                                # MANDATORY before any commit
+just format && just lint && just test        # Basic quality checks
+just coverage                               # Coverage validation
+just bench                                  # Performance testing
+
+# Primary use cases
+cargo run --release -- xml --base-config config.xml --count 25
+cargo run --release -- generate vlan --count 10 --output vlans.xml
+```
+
+This document serves as the single source of truth for AI coding assistants working on the OPNsense Config Faker project.
