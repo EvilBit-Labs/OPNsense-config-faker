@@ -4,8 +4,8 @@
 //! mappings including port forwarding, source NAT, and destination NAT rules.
 
 use crate::model::ConfigError;
-use rand::prelude::*;
 use rand::Rng;
+use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use uuid::Uuid;
@@ -20,7 +20,7 @@ pub enum NatRuleType {
     PortForward,
     /// Source NAT (SNAT) for outbound traffic
     SourceNat,
-    /// Destination NAT (DNAT) for inbound traffic  
+    /// Destination NAT (DNAT) for inbound traffic
     DestinationNat,
     /// 1:1 NAT mapping
     OneToOneNat,
@@ -140,13 +140,13 @@ impl NatMapping {
         }
 
         // Validate VLAN ID if provided
-        if let Some(vlan_id) = self.vlan_id {
-            if !(10..=4094).contains(&vlan_id) {
-                return Err(ConfigError::validation(format!(
-                    "VLAN ID {} is invalid. Must be between 10 and 4094",
-                    vlan_id
-                )));
-            }
+        if let Some(vlan_id) = self.vlan_id
+            && !(10..=4094).contains(&vlan_id)
+        {
+            return Err(ConfigError::validation(format!(
+                "VLAN ID {} is invalid. Must be between 10 and 4094",
+                vlan_id
+            )));
         }
 
         Ok(())
@@ -166,10 +166,10 @@ impl NatMapping {
         // Handle port range (e.g., "80-90")
         if port_range.contains('-') {
             let parts: Vec<&str> = port_range.split('-').collect();
-            if parts.len() == 2 {
-                if let (Ok(start), Ok(end)) = (parts[0].parse::<u16>(), parts[1].parse::<u16>()) {
-                    return start > 0 && end > 0 && start <= end;
-                }
+            if parts.len() == 2
+                && let (Ok(start), Ok(end)) = (parts[0].parse::<u16>(), parts[1].parse::<u16>())
+            {
+                return start > 0 && end > 0 && start <= end;
             }
         }
 
@@ -581,10 +581,12 @@ mod tests {
         );
 
         assert!(mapping.is_err());
-        assert!(mapping
-            .unwrap_err()
-            .to_string()
-            .contains("protocol 'INVALID' is invalid"));
+        assert!(
+            mapping
+                .unwrap_err()
+                .to_string()
+                .contains("protocol 'INVALID' is invalid")
+        );
     }
 
     #[test]
@@ -606,10 +608,12 @@ mod tests {
         );
 
         assert!(mapping.is_err());
-        assert!(mapping
-            .unwrap_err()
-            .to_string()
-            .contains("VLAN ID 5000 is invalid"));
+        assert!(
+            mapping
+                .unwrap_err()
+                .to_string()
+                .contains("VLAN ID 5000 is invalid")
+        );
     }
 
     #[test]

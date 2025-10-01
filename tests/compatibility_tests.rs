@@ -5,7 +5,7 @@
 
 mod common;
 
-use common::{cli_command, create_temp_dir, TestOutputExt};
+use common::{TestOutputExt, cli_command, create_temp_dir};
 
 /// Test CLI behavior with TERM=dumb environment (no colors/formatting)
 #[test]
@@ -304,8 +304,8 @@ fn test_large_operation_completion() {
 /// Test concurrent execution compatibility
 #[test]
 fn test_concurrent_execution_compatibility() {
-    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::thread;
 
     let success_count = Arc::new(AtomicUsize::new(0));

@@ -3,7 +3,7 @@
 use crate::cli::{Cli, Shell};
 use anyhow::Result;
 use clap::CommandFactory;
-use clap_complete::{generate, Generator};
+use clap_complete::{Generator, generate};
 use std::io;
 
 /// Generate shell completions for the specified shell
@@ -22,6 +22,6 @@ pub fn execute(shell: Shell) -> Result<()> {
 }
 
 /// Generate completions for a specific shell
-fn generate_completions<G: Generator>(gen: G, app: &mut clap::Command) {
-    generate(gen, app, app.get_name().to_string(), &mut io::stdout());
+fn generate_completions<G: Generator>(r#gen: G, app: &mut clap::Command) {
+    generate(r#gen, app, app.get_name().to_string(), &mut io::stdout());
 }

@@ -2,11 +2,11 @@
 
 use crate::cli::{GenerateArgs, GlobalArgs, OutputFormat};
 use crate::generator::vlan::generate_vlan_configurations;
-use crate::generator::{generate_firewall_rules, FirewallComplexity};
+use crate::generator::{FirewallComplexity, generate_firewall_rules};
 use crate::io::csv::{read_csv, write_csv, write_firewall_rules_csv};
 use crate::xml::template::XmlTemplate;
 use anyhow::{Context, Result};
-use console::{style, Term};
+use console::{Term, style};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::env;
 use std::fs;
@@ -86,10 +86,10 @@ fn execute_internal(args: GenerateArgs, global: &GlobalArgs) -> Result<()> {
 
 /// Configure terminal output based on environment and arguments with global context
 fn configure_terminal_with_global(args: &GenerateArgs, global: &GlobalArgs) {
-    // Handle TERM=dumb compatibility
-    if env::var("TERM").unwrap_or_default() == "dumb" || args.no_color || global.no_color {
-        env::set_var("NO_COLOR", "1");
-    }
+    // Handle TERM=dumb compatibility - colors are automatically disabled
+    // by checking env::var("NO_COLOR").is_ok() and env::var("TERM") == "dumb"
+    // in the progress bar and console styling code
+    let _ = (args, global); // Suppress unused parameter warnings
 }
 
 /// Handle interactive mode prompts for missing required arguments

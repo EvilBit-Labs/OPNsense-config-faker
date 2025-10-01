@@ -2,7 +2,7 @@
 mod bench_common;
 
 use bench_common::{ci_or_local, criterion_for_env};
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use opnsense_config_faker::generator::vlan::generate_vlan_configurations;
 use opnsense_config_faker::io::csv::{
     read_csv, read_csv_streaming, write_csv, write_csv_streaming,

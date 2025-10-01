@@ -1,9 +1,9 @@
 //! VLAN configuration generation
 
+use crate::Result;
 use crate::generator::departments;
 use crate::model::{ConfigError, VlanError, VlanResult};
 use crate::utils::rfc1918;
-use crate::Result;
 use indicatif::ProgressBar;
 use ipnetwork::Ipv4Network;
 use rand::prelude::*;
@@ -1043,19 +1043,25 @@ mod tests {
 
         // Test specific error messages
         let gateway_error = config.gateway_ip().unwrap_err();
-        assert!(gateway_error
-            .to_string()
-            .contains("Cannot derive gateway from IP network: invalid.network"));
+        assert!(
+            gateway_error
+                .to_string()
+                .contains("Cannot derive gateway from IP network: invalid.network")
+        );
 
         let dhcp_start_error = config.dhcp_range_start().unwrap_err();
-        assert!(dhcp_start_error
-            .to_string()
-            .contains("Cannot derive DHCP range from IP network: invalid.network"));
+        assert!(
+            dhcp_start_error
+                .to_string()
+                .contains("Cannot derive DHCP range from IP network: invalid.network")
+        );
 
         let dhcp_end_error = config.dhcp_range_end().unwrap_err();
-        assert!(dhcp_end_error
-            .to_string()
-            .contains("Cannot derive DHCP range from IP network: invalid.network"));
+        assert!(
+            dhcp_end_error
+                .to_string()
+                .contains("Cannot derive DHCP range from IP network: invalid.network")
+        );
     }
 
     // ===== VlanGenerator Tests =====
@@ -1636,9 +1642,11 @@ mod tests {
         let finance_reservations = finance_config.static_reservations().unwrap();
 
         assert!(!finance_reservations.is_empty());
-        assert!(finance_reservations
-            .iter()
-            .any(|r| r.hostname.contains("workstation")));
+        assert!(
+            finance_reservations
+                .iter()
+                .any(|r| r.hostname.contains("workstation"))
+        );
     }
 
     #[test]

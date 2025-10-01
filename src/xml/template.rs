@@ -1,8 +1,8 @@
 //! XML template processing for OPNsense configurations
 
+use crate::Result;
 use crate::generator::VlanConfig;
 use crate::model::ConfigError;
-use crate::Result;
 
 /// XML template processor for OPNsense configurations
 pub struct XmlTemplate {

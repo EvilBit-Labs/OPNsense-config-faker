@@ -4,8 +4,8 @@
 //! including OpenVPN, WireGuard, and IPSec tunnels for testing purposes.
 
 use crate::model::ConfigError;
-use rand::prelude::*;
 use rand::Rng;
+use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use uuid::Uuid;
@@ -564,10 +564,12 @@ mod tests {
         );
 
         assert!(config.is_err());
-        assert!(config
-            .unwrap_err()
-            .to_string()
-            .contains("port 0 is invalid"));
+        assert!(
+            config
+                .unwrap_err()
+                .to_string()
+                .contains("port 0 is invalid")
+        );
     }
 
     #[test]
@@ -587,10 +589,12 @@ mod tests {
         );
 
         assert!(config.is_err());
-        assert!(config
-            .unwrap_err()
-            .to_string()
-            .contains("WireGuard protocol 'TCP' is invalid"));
+        assert!(
+            config
+                .unwrap_err()
+                .to_string()
+                .contains("WireGuard protocol 'TCP' is invalid")
+        );
     }
 
     #[test]

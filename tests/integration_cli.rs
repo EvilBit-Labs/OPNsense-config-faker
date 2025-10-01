@@ -8,7 +8,7 @@
 mod common;
 
 use assert_cmd::Command;
-use common::{cli_command, create_temp_dir, create_temp_xml, TestOutputExt};
+use common::{TestOutputExt, cli_command, create_temp_dir, create_temp_xml};
 use predicates::prelude::*;
 use regex::Regex;
 use std::fs;

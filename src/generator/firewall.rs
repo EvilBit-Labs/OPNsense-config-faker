@@ -1,7 +1,7 @@
 //! Firewall rules generation with realistic security patterns
 
-use crate::model::ConfigError;
 use crate::Result;
+use crate::model::ConfigError;
 use fake::Fake;
 use indicatif::ProgressBar;
 use rand::prelude::*;
@@ -99,13 +99,13 @@ impl FirewallRule {
         }
 
         // Validate VLAN ID if provided
-        if let Some(vid) = vlan_id {
-            if !(10..=4094).contains(&vid) {
-                return Err(ConfigError::validation(format!(
-                    "VLAN ID {} is outside valid range 10-4094",
-                    vid
-                )));
-            }
+        if let Some(vid) = vlan_id
+            && !(10..=4094).contains(&vid)
+        {
+            return Err(ConfigError::validation(format!(
+                "VLAN ID {} is outside valid range 10-4094",
+                vid
+            )));
         }
 
         Ok(Self {
@@ -1077,7 +1077,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(rules1.len(), rules2.len()); // Same number of rules
-                                                // But different content due to different seeds and departments
+        // But different content due to different seeds and departments
         assert_ne!(rules1[0].description, rules2[0].description);
     }
 
@@ -1355,13 +1355,15 @@ mod tests {
     fn test_firewall_rules_per_vlan_with_different_complexities() {
         use crate::generator::VlanConfig;
 
-        let vlan_configs = vec![VlanConfig::new(
-            100,
-            "192.168.100.x".to_string(),
-            "IT_VLAN_0100".to_string(),
-            1,
-        )
-        .unwrap()];
+        let vlan_configs = vec![
+            VlanConfig::new(
+                100,
+                "192.168.100.x".to_string(),
+                "IT_VLAN_0100".to_string(),
+                1,
+            )
+            .unwrap(),
+        ];
 
         // Test that the limit is respected regardless of complexity
         let basic_rules = generate_firewall_rules(
@@ -1406,13 +1408,15 @@ mod tests {
     fn test_firewall_rules_per_vlan_zero_limit() {
         use crate::generator::VlanConfig;
 
-        let vlan_configs = vec![VlanConfig::new(
-            100,
-            "192.168.100.x".to_string(),
-            "IT_VLAN_0100".to_string(),
-            1,
-        )
-        .unwrap()];
+        let vlan_configs = vec![
+            VlanConfig::new(
+                100,
+                "192.168.100.x".to_string(),
+                "IT_VLAN_0100".to_string(),
+                1,
+            )
+            .unwrap(),
+        ];
 
         // Test with limit of 0 (should result in no rules)
         let rules = generate_firewall_rules(
