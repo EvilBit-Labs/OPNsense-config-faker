@@ -6,6 +6,7 @@ authors = ["EvilBit Labs <contact@evilbitlabs.com>"]
 license = "Apache-2.0"
 description = "A flexible tool for generating realistic network configuration test data for OPNsense"
 repository = "https://github.com/EvilBit-Labs/OPNsense-config-faker"
+homepage = "https://evilbitlabs.io/OPNsense-config-faker"
 keywords = [
     "networking",
     "testing",
@@ -19,7 +20,19 @@ categories = [
     "network-programming",
 ]
 readme = "README.md"
-rust-version = "1.90"
+rust-version = "1.85"
+exclude = [
+    "/spec",
+    "/docs",
+    ".",
+    "/.kiro",
+    "/.cursor",
+    "/.vscode",
+    "/.github",
+    "/.git",
+    "/.env.*",
+    "*.orig",
+]
 
 [[bin]]
 name = "opnsense-config-faker"
@@ -31,7 +44,7 @@ rayon = ["dep:rayon"]
 
 [dependencies]
 anyhow = "1.0.100"
-bumpalo = "3.14"                                # Arena allocation
+bumpalo = "3.14"   # Arena allocation
 
 # Date/time utilities
 chrono = { version = "0.4.42", features = ["serde"] }
@@ -52,8 +65,8 @@ indicatif = "0.18.0"
 # Networking utilities
 ipnet = "2.11.0"
 ipnetwork = "0.21.1"
-lazy_static = "1.5.0"                           # Lazy static initialization
-lru = "0.16.1"                                  # Template caching
+lazy_static = "1.5.0" # Lazy static initialization
+lru = "0.16.1"        # Template caching
 
 # XML processing
 quick-xml = { version = "0.38.3", features = ["serialize"] }
@@ -69,12 +82,12 @@ rustc-hash = "2.1.1"                            # Faster hashing
 # Serialization framework
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
-smallvec = "1.15.1"                             # Stack-allocated vectors
+smallvec = "1.15.1"                                    # Stack-allocated vectors
 
 # Error handling
 thiserror = "2.0.17"
 uuid = { version = "1.18.1", features = ["v4", "serde"] }
-xmlwriter = "0.1.0"                             # Streaming XML writing
+xmlwriter = "0.1.0"                                       # Streaming XML writing
 
 [dev-dependencies]
 arbitrary = { version = "1.4.2", features = ["derive"] }
@@ -118,3 +131,8 @@ debug = true
 
 [profile.test]
 debug = true
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
