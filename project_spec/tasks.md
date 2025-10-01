@@ -1,8 +1,8 @@
 # OPNsense Config Faker - Implementation Tasks
 
-**Document Version**: 1.7
-**Last Modified**: 2025-08-04
-**Project**: OPNsense Config Faker
+**Document Version**: 1.7\
+**Last Modified**: 2025-08-04\
+**Project**: OPNsense Config Faker\
 **Status**: Active
 
 ## Document Metadata
@@ -31,26 +31,7 @@ Several tasks in this document correspond to GitHub issues that have been create
 
 ### GitHub Issues Overview
 
-|| Issue # | Feature | Priority | Related Tasks |
-|\---------|---------|----------|---------------|
-|| [#1](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/1) | Firewall Rules with Realistic Patterns | High | TASK-016 |
-|| [#2](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/2) | DHCP Server Configurations with Realistic Scopes | High | TASK-014 |
-|| [#3](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/3) | Interface Configurations with Realistic Naming | Medium | TASK-013 |
-|| [#4](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/4) | NAT Rules with Port Mappings | Medium | TASK-015 |
-|| [#5](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/5) | CARP Virtual IP Configurations | Medium | TASK-017 |
-|| [#6](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/6) | RADIUS User Accounts with Authentication Details | Low | TASK-018 |
-|| [#7](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/7) | Cross-Reference VLANs with Appropriate Interfaces | High | TASK-038 |
-|| [#8](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/8) | Link DHCP Scopes to Corresponding VLAN Networks | High | TASK-038 |
-|| [#9](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/9) | Generate Consistent Firewall Rules Based on Network Topology | High | TASK-038 |
-|| [#10](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/10) | Ensure Generated Configurations are Internally Consistent | High | TASK-011, TASK-025, TASK-037 |
-|| [#11](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/11) | Validate IP Address Assignments Don't Conflict | High | TASK-039 |
-|| [#12](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/12) | Check VLAN ID Uniqueness Across All Components | Medium | TASK-002, TASK-039 |
-|| [#13](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/13) | VPN Configuration Generation (WireGuard, OpenVPN, IPSec) | High | TASK-019, TASK-020, TASK-021 |
-|| [#14](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/14) | XML Configuration Engine and Template Support | High | TASK-003, TASK-004, TASK-023 |
-|| [#15](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/15) | Batch Processing and Output Management | Medium | TASK-026, TASK-029, TASK-033 |
-|| [#16](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/16) | Realistic Data Generation and RFC Compliance | Medium | TASK-027, TASK-040 |
-|| [#17](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/17) | Advanced NAT Configuration with Port Validation | Medium | TASK-015, TASK-022 |
-|| [#18](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/18) | Configuration Options and Customization Framework | High | TASK-007, TASK-032, TASK-034, TASK-035 |
+|| Issue # | Feature | Priority | Related Tasks | |---------|---------|----------|---------------| || [#1](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/1) | Firewall Rules with Realistic Patterns | High | TASK-016 | || [#2](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/2) | DHCP Server Configurations with Realistic Scopes | High | TASK-014 | || [#3](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/3) | Interface Configurations with Realistic Naming | Medium | TASK-013 | || [#4](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/4) | NAT Rules with Port Mappings | Medium | TASK-015 | || [#5](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/5) | CARP Virtual IP Configurations | Medium | TASK-017 | || [#6](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/6) | RADIUS User Accounts with Authentication Details | Low | TASK-018 | || [#7](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/7) | Cross-Reference VLANs with Appropriate Interfaces | High | TASK-038 | || [#8](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/8) | Link DHCP Scopes to Corresponding VLAN Networks | High | TASK-038 | || [#9](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/9) | Generate Consistent Firewall Rules Based on Network Topology | High | TASK-038 | || [#10](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/10) | Ensure Generated Configurations are Internally Consistent | High | TASK-011, TASK-025, TASK-037 | || [#11](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/11) | Validate IP Address Assignments Don't Conflict | High | TASK-039 | || [#12](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/12) | Check VLAN ID Uniqueness Across All Components | Medium | TASK-002, TASK-039 | || [#13](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/13) | VPN Configuration Generation (WireGuard, OpenVPN, IPSec) | High | TASK-019, TASK-020, TASK-021 | || [#14](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/14) | XML Configuration Engine and Template Support | High | TASK-003, TASK-004, TASK-023 | || [#15](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/15) | Batch Processing and Output Management | Medium | TASK-026, TASK-029, TASK-033 | || [#16](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/16) | Realistic Data Generation and RFC Compliance | Medium | TASK-027, TASK-040 | || [#17](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/17) | Advanced NAT Configuration with Port Validation | Medium | TASK-015, TASK-022 | || [#18](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues/18) | Configuration Options and Customization Framework | High | TASK-007, TASK-032, TASK-034, TASK-035 |
 
 ### Usage Guidelines
 

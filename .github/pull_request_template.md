@@ -13,8 +13,8 @@ A clear and concise description of what this pull request does.
 
 ## Related Issues
 
-Fixes #(issue number)
-Closes #(issue number)
+Fixes #(issue number)\
+Closes #(issue number)\
 Related to #(issue number)
 
 ## Testing
