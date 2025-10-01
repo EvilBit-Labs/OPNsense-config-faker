@@ -1,0 +1,69 @@
+[book]
+authors = ["UncleSp1d3r <unclesp1d3r@evilbitlabs.io>"]
+language = "en"
+multilingual = false
+src = "src"
+title = "OPNsense Config Faker User Guide"
+description = "OPNsense Config Faker User Guide - A flexible tool for generating realistic network configuration test data for OPNsense"
+
+[rust]
+edition = "2021"
+
+[build]
+build-dir = "book"
+create-missing = true
+
+[preprocessor.links]
+
+[output.html]
+default-theme = "navy"
+preferred-dark-theme = "navy"
+git-repository-url = "https://github.com/EvilBit-Labs/OPNsense-config-faker"
+edit-url-template = "https://github.com/EvilBit-Labs/OPNsense-config-faker/edit/main/docs/{path}"
+smart-punctuation = true
+mathjax-support = false
+additional-css = ["whichlang.css"]
+additional-js = ["mermaid-init.js", "whichlang.js", "mermaid.min.js"]
+hash-files = true
+
+[output.html.playground]
+editable = false
+copyable = true
+copy-js = true
+
+[output.html.search]
+enable = true
+limit-results = 30
+teaser-word-count = 30
+use-boolean-and = true
+boost-title = 2
+boost-hierarchy = 1
+boost-paragraph = 1
+expand = true
+heading-split-level = 3
+
+
+[output.html.fold]
+enable = true
+level = 1
+
+
+[preprocessor.alerts]
+
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
+
+[preprocessor.toc]
+command = "mdbook-toc"
+marker = "[TOC]"
+renderer = ["html"]
+
+
+[preprocessor.tabs]
+command = "mdbook-tabs"
+
+[preprocessor.yml-header]
+
+[output.html.print]
+enable = true     # include support for printable output
+page-break = true # insert page-break after each chapter
