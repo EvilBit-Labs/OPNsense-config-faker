@@ -287,14 +287,14 @@ This project maintains high quality standards through comprehensive testing and 
 - **Testing**: Comprehensive test suite with unit, integration, property-based, and snapshot tests
 - **Coverage**: Enforces 80% test coverage threshold
 - **Linting**: Uses `cargo clippy -- -D warnings` policy (all warnings treated as errors)
-- **Documentation**: Complete testing guide available in [TESTING.md](TESTING.md)
+- **Documentation**: Complete testing guide available in [TESTING.md](docs/src/development/testing.md)
 
 ## Support and Contributing
 
 - **Issues**: Report problems or request features via GitHub issues
 - **Contributions**: Submit pull requests for improvements
 - **Documentation**: Help improve this README for other administrators
-- **Testing**: Follow the guidelines in [TESTING.md](TESTING.md) when contributing
+- **Testing**: Follow the guidelines in [TESTING.md](docs/src/development/testing.md) when contributing
 
 ## License
 
