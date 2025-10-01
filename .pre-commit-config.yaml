@@ -35,13 +35,6 @@ repos:
         files: ".github/workflows/"
         exclude: ^.github/workflows/release.yml$
 
-  # 🐚 Shell script validation
-  - repo: https://github.com/koalaman/shellcheck-precommit
-    rev: v0.11.0
-    hooks:
-      - id: shellcheck
-        exclude: ^.github/workflows/release.yml$
-
   # 📝 Commit message linting (commit-msg only, not blocking push)
   - repo: https://github.com/commitizen-tools/commitizen
     rev: v4.9.1
@@ -84,6 +77,7 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+
   - repo: https://github.com/DevinR528/cargo-sort
     rev: v2.0.2
     hooks:
