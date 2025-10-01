@@ -2,15 +2,23 @@
     "config": {
         "default": true,
         "heading-increment": true,
+        "heading-style": {
+            "style": "atx"
+        },
+        "line-length": false,
         "ul-style": {
-            "style": "dash"
+            "style": "consistent"
         },
         "MD007": {
             "indent": 2
         },
-        "MD013": false,
+        "MD013": {
+            "line_length": 100,
+            "code_blocks": false,
+            "tables": false,
+            "heading_line_length": 80
+        },
         "MD024": {
-            "allow_different_nesting": true,
             "siblings_only": true
         },
         "MD029": false,
@@ -41,6 +49,8 @@
         ".venv/**",
         "**/node_modules/**",
         "**/__pycache__/**",
-        "**/*.tpl.md"
+        "**/*.tpl.md",
+        "**/*.mdc",
+        ".kiro/steering/*.md"
     ]
 }
