@@ -55,11 +55,7 @@ pub fn criterion_for_env() -> Criterion {
 /// let sizes = ci_or_local(&[10, 100], &[10, 100, 500, 1000, 5000]);
 /// ```
 pub fn ci_or_local<T: Clone>(ci: &[T], local: &[T]) -> Vec<T> {
-    if is_ci() {
-        ci.to_vec()
-    } else {
-        local.to_vec()
-    }
+    if is_ci() { ci.to_vec() } else { local.to_vec() }
 }
 
 /// Cap a generated dataset in CI; pass-through locally.
@@ -112,48 +108,43 @@ pub struct BenchCounts {
 
 #[cfg(test)]
 mod tests {
-    #[allow(unused_imports)]
-    use super::{cap_ci, ci_or_local, is_ci};
-
     #[test]
     fn test_ci_detection() {
         // Test with CI env var
-        std::env::set_var("CI", "true");
-        assert!(is_ci());
-        std::env::remove_var("CI");
+        temp_env::with_var("CI", Some("true"), || {
+            assert!(super::is_ci());
+        });
 
         // Test with GITHUB_ACTIONS
-        std::env::set_var("GITHUB_ACTIONS", "true");
-        assert!(is_ci());
-        std::env::remove_var("GITHUB_ACTIONS");
+        temp_env::with_var("GITHUB_ACTIONS", Some("true"), || {
+            assert!(super::is_ci());
+        });
 
         // Test with BENCH_CI
-        std::env::set_var("BENCH_CI", "1");
-        assert!(is_ci());
-        std::env::remove_var("BENCH_CI");
+        temp_env::with_var("BENCH_CI", Some("1"), || {
+            assert!(super::is_ci());
+        });
     }
 
-    #[allow(unused_variables)]
     #[test]
     fn test_ci_or_local() {
-        std::env::set_var("CI", "true");
-        let result = ci_or_local(&[1, 2], &[1, 2, 3, 4]);
-        assert_eq!(result, vec![1, 2]);
-        std::env::remove_var("CI");
+        temp_env::with_var("CI", Some("true"), || {
+            let result = super::ci_or_local(&[1, 2], &[1, 2, 3, 4]);
+            assert_eq!(result, vec![1, 2]);
+        });
 
-        let result = ci_or_local(&[1, 2], &[1, 2, 3, 4]);
+        let result = super::ci_or_local(&[1, 2], &[1, 2, 3, 4]);
         assert_eq!(result, vec![1, 2, 3, 4]);
     }
 
-    #[allow(unused_variables)]
     #[test]
     fn test_cap_ci() {
-        std::env::set_var("CI", "true");
-        let result = cap_ci(vec![1, 2, 3, 4, 5], 3);
-        assert_eq!(result, vec![1, 2, 3]);
-        std::env::remove_var("CI");
+        temp_env::with_var("CI", Some("true"), || {
+            let result = super::cap_ci(vec![1, 2, 3, 4, 5], 3);
+            assert_eq!(result, vec![1, 2, 3]);
+        });
 
-        let result = cap_ci(vec![1, 2, 3, 4, 5], 3);
+        let result = super::cap_ci(vec![1, 2, 3, 4, 5], 3);
         assert_eq!(result, vec![1, 2, 3, 4, 5]);
     }
 }

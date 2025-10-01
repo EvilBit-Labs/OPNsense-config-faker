@@ -3,16 +3,16 @@
 //! This module implements performance-optimized data structures and algorithms
 //! for generating large numbers of VLAN configurations efficiently.
 
-use crate::generator::departments;
+use crate::Result;
 use crate::generator::VlanConfig;
+use crate::generator::departments;
 use crate::model::ConfigError;
 use crate::utils::rfc1918;
-use crate::Result;
 
 use bumpalo::Bump;
 use lru::LruCache;
-use rand::prelude::*;
 use rand::SeedableRng;
+use rand::prelude::*;
 use rand_chacha::ChaCha8Rng;
 use rustc_hash::{FxHashMap, FxHashSet};
 use smallvec::SmallVec;
@@ -287,7 +287,7 @@ impl PerformantConfigGenerator {
     ) -> Result<Vec<VlanConfig>> {
         use rayon::prelude::*;
 
-        let chunks = (total_count + chunk_size - 1) / chunk_size;
+        let chunks = total_count.div_ceil(chunk_size);
         let mut results = Vec::with_capacity(total_count);
 
         // Generate base seed outside of closure

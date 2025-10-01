@@ -1,10 +1,10 @@
 //! XML generation command implementation
 
+use crate::Result;
 use crate::cli::XmlArgs;
 use crate::generator::vlan::generate_vlan_configurations;
 use crate::io::csv::read_csv;
 use crate::xml::template::XmlTemplate;
-use crate::Result;
 use console::style;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::fs;

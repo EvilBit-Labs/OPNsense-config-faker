@@ -352,13 +352,13 @@ impl XmlArgs {
     /// Validate arguments after parsing
     pub fn validate(&self) -> Result<(), String> {
         // For XML format with count specified, check against maximum unique VLANs
-        if let Some(count) = self.count {
-            if count > MAX_UNIQUE_VLAN_IDS {
-                return Err(format!(
-                    "Cannot generate {} unique VLAN configurations. Maximum is {} for XML format due to VLAN ID range constraints (10-4094). Consider using CSV format if duplicates are acceptable, or reduce the count.",
-                    count, MAX_UNIQUE_VLAN_IDS
-                ));
-            }
+        if let Some(count) = self.count
+            && count > MAX_UNIQUE_VLAN_IDS
+        {
+            return Err(format!(
+                "Cannot generate {} unique VLAN configurations. Maximum is {} for XML format due to VLAN ID range constraints (10-4094). Consider using CSV format if duplicates are acceptable, or reduce the count.",
+                count, MAX_UNIQUE_VLAN_IDS
+            ));
         }
         Ok(())
     }

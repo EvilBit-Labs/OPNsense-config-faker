@@ -6,7 +6,7 @@
 mod common;
 
 use assert_cmd::Command;
-use common::{cli_command, create_temp_dir, TestOutputExt};
+use common::{TestOutputExt, cli_command, create_temp_dir};
 use std::fs;
 use tempfile::TempDir;
 

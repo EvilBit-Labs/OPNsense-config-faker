@@ -158,10 +158,10 @@ fn test_csv_parsing_by_header_name() {
     for result in reader.records() {
         let record = result.unwrap();
 
-        if let Some(vlan_id_str) = record.get(vlan_id_index) {
-            if let Ok(vlan_id) = vlan_id_str.parse::<u16>() {
-                *vlan_rule_counts.entry(vlan_id).or_insert(0) += 1;
-            }
+        if let Some(vlan_id_str) = record.get(vlan_id_index)
+            && let Ok(vlan_id) = vlan_id_str.parse::<u16>()
+        {
+            *vlan_rule_counts.entry(vlan_id).or_insert(0) += 1;
         }
     }
 

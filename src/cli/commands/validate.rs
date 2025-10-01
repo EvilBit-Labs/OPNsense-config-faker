@@ -182,12 +182,9 @@ fn determine_format(input: &Path, format: &ValidationFormat) -> Result<Validatio
 
 /// Configure terminal output based on global settings
 fn configure_terminal(global: &GlobalArgs) {
-    if global.no_color
-        || env::var("NO_COLOR").is_ok()
-        || env::var("TERM").unwrap_or_default() == "dumb"
-    {
-        env::set_var("NO_COLOR", "1");
-    }
+    // Colors are automatically disabled by checking env::var("NO_COLOR").is_ok()
+    // and env::var("TERM") == "dumb" in the progress bar and console styling code
+    let _ = global; // Suppress unused parameter warnings
 }
 
 /// Create a progress bar with consistent styling

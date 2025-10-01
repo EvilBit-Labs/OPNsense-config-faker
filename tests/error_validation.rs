@@ -4,17 +4,17 @@
 //! of the OPNsense Config Faker application. Tests validate error conditions, ensure
 //! error messages are actionable and stable, and verify proper error propagation.
 
-use assert_fs::prelude::*;
 use assert_fs::TempDir;
-use opnsense_config_faker::generator::vlan::generate_vlan_configurations;
+use assert_fs::prelude::*;
 use opnsense_config_faker::generator::VlanConfig;
+use opnsense_config_faker::generator::vlan::generate_vlan_configurations;
 use opnsense_config_faker::model::ConfigError;
 use opnsense_config_faker::xml::template::XmlTemplate;
 use predicates::prelude::*;
 use std::fs;
 
 mod common;
-use common::{cli_command, TestOutputExt};
+use common::{TestOutputExt, cli_command};
 
 // ===== Resource Exhaustion Tests =====
 
@@ -217,7 +217,9 @@ fn test_invalid_output_directory_permissions() {
             // If it succeeded, it might be because the environment doesn't enforce read-only permissions
             // This can happen in Docker containers or certain CI environments
             // We'll log this but not fail the test
-            eprintln!("Warning: Command succeeded in read-only directory test - this may be due to environment permissions");
+            eprintln!(
+                "Warning: Command succeeded in read-only directory test - this may be due to environment permissions"
+            );
         }
     }
 

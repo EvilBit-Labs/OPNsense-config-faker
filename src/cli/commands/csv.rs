@@ -1,9 +1,9 @@
 //! CSV generation command implementation
 
+use crate::Result;
 use crate::cli::CsvArgs;
 use crate::generator::vlan::generate_vlan_configurations;
 use crate::io::csv::write_csv;
-use crate::Result;
 use console::style;
 use indicatif::{ProgressBar, ProgressStyle};
 
