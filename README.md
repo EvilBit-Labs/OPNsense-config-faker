@@ -1,8 +1,8 @@
 # OPNsense Config Faker
 
-[![CI](https://github.com/EvilBit-Labs/OPNsense-config-faker/actions/workflows/ci.yml/badge.svg)](https://github.com/EvilBit-Labs/OPNsense-config-faker/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/EvilBit-Labs/OPNsense-config-faker/branch/main/graph/badge.svg)](https://codecov.io/gh/EvilBit-Labs/OPNsense-config-faker)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/EvilBit-Labs/OPNsense-config-faker/ci.yml?style=for-the-badge) ![docs.rs](https://img.shields.io/docsrs/OPNsense-config-faker?style=for-the-badge) ![Deps.rs Repository Dependencies](https://img.shields.io/deps-rs/repo/github/EvilBit-Labs/OPNsense-config-faker?style=for-the-badge)
+
+![Codecov](https://img.shields.io/codecov/c/github/EvilBit-Labs/OPNsense-config-faker?style=for-the-badge) [![GitHub issues](https://img.shields.io/github/issues/EvilBit-Labs/OPNsense-config-faker?style=for-the-badge)](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues) ![GitHub last commit](https://img.shields.io/github/last-commit/EvilBit-Labs/OPNsense-config-faker?style=for-the-badge)
 
 Generate realistic OPNsense firewall configurations for testing, training, and development. Create complete `config.xml` files with VLANs, interfaces, DHCP, NAT rules, firewall policies, and more using authentic network data.
 
