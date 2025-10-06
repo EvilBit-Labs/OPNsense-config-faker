@@ -95,7 +95,6 @@ assert_cmd = "2.0.17"
 assert_fs = "1.1.3"
 criterion = { version = "0.7.0", features = ["html_reports"] }
 insta = { version = "1.43.2", features = ["yaml"] }
-pprof = { version = "0.15.0", features = ["criterion", "flamegraph"] }
 predicates = "3.1.3"
 pretty_assertions = "1.4.1"
 proptest = "1.8.0"
@@ -104,6 +103,9 @@ roxmltree = "0.20.0"
 rstest = "0.26.1"
 temp-env = "0.3.0"
 tempfile = "3.23.0"
+
+[target.'cfg(unix)'.dev-dependencies]
+pprof = { version = "0.15.0", features = ["criterion", "flamegraph"] }
 
 [[bench]]
 name = "vlan_generation"
