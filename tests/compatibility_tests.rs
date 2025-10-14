@@ -235,7 +235,8 @@ fn test_error_handling_compatibility() {
         normalized_stderr.contains("No such file")
             || normalized_stderr.contains("cannot create")
             || normalized_stderr.contains("Permission denied")
-            || normalized_stderr.contains("Invalid parameter"),
+            || normalized_stderr.contains("Invalid parameter")
+            || normalized_stderr.contains("cannot find the path"),
         "Expected file error message not found: {normalized_stderr}"
     );
 }
