@@ -238,9 +238,9 @@ pub fn normalize_output(text: &str) -> String {
         r"/var/folders/[^/]+/[^/]+/T/[^\s]*",
         // Linux temp directories
         r"/tmp/[^\s]*",
-        // Windows temp directories
-        r"[A-Z]:\\[^\\]*\\Temp\\[^\s]*",
-        r"[A-Z]:\\[^\\]*\\AppData\\Local\\Temp\\[^\s]*",
+        // Windows temp directories (with multiple path levels)
+        r"[A-Z]:[^:\s]*\\[Tt]emp[^:\s]*",
+        r"[A-Z]:[^:\s]*\\AppData\\Local\\Temp[^:\s]*",
         // Generic temp directories
         r"/(?:var/folders|tmp|temp)/[^\s]*",
     ];
