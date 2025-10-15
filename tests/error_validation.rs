@@ -272,7 +272,8 @@ fn test_nonexistent_output_directory_created() {
         assert!(
             combined_output.contains("No such file or directory")
                 || combined_output.contains("cannot create")
-                || combined_output.contains("Path does not exist"),
+                || combined_output.contains("Path does not exist")
+                || combined_output.contains("cannot find the path"),
             "Expected directory creation error, got: {combined_output}"
         );
     }
