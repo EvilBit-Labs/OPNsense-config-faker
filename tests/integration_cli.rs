@@ -344,7 +344,8 @@ fn test_generate_xml_nonexistent_base_config_fails() {
         combined_output.contains("not found")
             || combined_output.contains("No such file")
             || combined_output.contains("does not exist")
-            || combined_output.contains("ConfigNotFound"),
+            || combined_output.contains("ConfigNotFound")
+            || combined_output.contains("cannot find the file"),
         "Expected file not found error, got: {combined_output}"
     );
 
