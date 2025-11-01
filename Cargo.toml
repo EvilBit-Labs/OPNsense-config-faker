@@ -66,7 +66,7 @@ console = "0.16"
 # Performance optimization dependencies
 rayon = { version = "1.8", optional = true } # Data parallelism
 bumpalo = "3.14"                             # Arena allocation
-lru = "0.16.0"                               # Template caching
+lru = "0.16.2"                               # Template caching
 rustc-hash = "2.1.1"                         # Faster hashing
 smallvec = "1.11"                            # Stack-allocated vectors
 xmlwriter = "0.1"                            # Streaming XML writing
