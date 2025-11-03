@@ -84,7 +84,7 @@ rstest = "0.26"
 tempfile = "3.8"
 
 # CLI testing
-assert_cmd = "2.0"
+assert_cmd = "2.1"
 
 # Property-based testing
 proptest = "1.4"
