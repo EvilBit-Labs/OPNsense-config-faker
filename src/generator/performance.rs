@@ -40,12 +40,23 @@ pub struct PerformanceMetrics {
 
 impl PerformanceMetrics {
     /// Calculate throughput (configs per second)
+    ///
+    /// Returns 0.0 if generation time is zero.
     pub fn throughput(&self) -> f64 {
-        self.configs_generated as f64 / self.generation_time.as_secs_f64()
+        let secs = self.generation_time.as_secs_f64();
+        if secs == 0.0 {
+            return 0.0;
+        }
+        self.configs_generated as f64 / secs
     }
 
     /// Calculate memory efficiency (bytes per config)
+    ///
+    /// Returns 0.0 if no configs were generated.
     pub fn memory_efficiency(&self) -> f64 {
+        if self.configs_generated == 0 {
+            return 0.0;
+        }
         self.memory_used as f64 / self.configs_generated as f64
     }
 

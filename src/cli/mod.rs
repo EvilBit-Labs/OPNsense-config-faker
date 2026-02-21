@@ -208,7 +208,7 @@ pub struct GenerateArgs {
     pub firewall_rule_complexity: String,
 
     /// VLAN range specification (e.g., "100-150" or "10,20,30-40")
-    #[arg(long)]
+    #[arg(long, conflicts_with = "count")]
     pub vlan_range: Option<String>,
 
     /// Number of VPN configurations to generate
@@ -222,10 +222,6 @@ pub struct GenerateArgs {
     /// WAN assignment strategy for VLANs
     #[arg(long, value_enum)]
     pub wan_assignments: Option<WanAssignmentStrategy>,
-
-    /// Custom XML template file
-    #[arg(long)]
-    pub template: Option<PathBuf>,
 }
 
 impl GenerateArgs {
@@ -244,11 +240,6 @@ impl GenerateArgs {
             self.validate_vlan_range(vlan_range)?;
         }
 
-        // Validate conflicts between count and vlan_range
-        if self.vlan_range.is_some() && self.count != 10 {
-            return Err("Cannot specify both --count and --vlan-range. Use --vlan-range to specify exact VLANs or --count for auto-generated ranges.".to_string());
-        }
-
         Ok(())
     }
 
@@ -257,9 +248,9 @@ impl GenerateArgs {
         let ranges = parse_vlan_range(vlan_range)
             .map_err(|e| format!("Invalid VLAN range format '{}': {}", vlan_range, e))?;
 
-        let total_vlans = ranges.iter().map(|r| r.1 - r.0 + 1).sum::<u16>();
+        let total_vlans: u32 = ranges.iter().map(|r| (r.1 - r.0 + 1) as u32).sum();
 
-        if matches!(self.format, OutputFormat::Xml) && total_vlans > MAX_UNIQUE_VLAN_IDS {
+        if matches!(self.format, OutputFormat::Xml) && total_vlans > MAX_UNIQUE_VLAN_IDS as u32 {
             return Err(format!(
                 "VLAN range produces {} VLANs, but maximum is {} for XML format",
                 total_vlans, MAX_UNIQUE_VLAN_IDS
