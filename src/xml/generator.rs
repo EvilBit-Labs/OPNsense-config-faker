@@ -2,6 +2,7 @@
 
 use crate::generator::VlanConfig;
 use crate::xml::error::XMLResult;
+use crate::xml::template::escape_xml_string;
 use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -200,7 +201,7 @@ impl VlanGenerator {
 
         // Description
         events.push(Event::Start(BytesStart::new("descr")));
-        let description_text = escape_xml_text(&self.config.description);
+        let description_text = escape_xml_string(&self.config.description);
         events.push(Event::Text(BytesText::new(&description_text).into_owned()));
         events.push(Event::End(BytesEnd::new("descr")));
 
@@ -489,33 +490,6 @@ impl VlanGenerator {
     }
 }
 
-/// Escape XML text content
-///
-/// Single-pass implementation: iterates the input once, avoiding 12 intermediate
-/// String allocations from chained `.replace()` calls.
-fn escape_xml_text(text: &str) -> String {
-    let mut result = String::with_capacity(text.len() + 20);
-    for ch in text.chars() {
-        match ch {
-            '&' => result.push_str("&amp;"),
-            '<' => result.push_str("&lt;"),
-            '>' => result.push_str("&gt;"),
-            '"' => result.push_str("&quot;"),
-            '\'' => result.push_str("&apos;"),
-            // Handle German umlauts
-            'ä' => result.push_str("ae"),
-            'ö' => result.push_str("oe"),
-            'ü' => result.push_str("ue"),
-            'Ä' => result.push_str("Ae"),
-            'Ö' => result.push_str("Oe"),
-            'Ü' => result.push_str("Ue"),
-            'ß' => result.push_str("ss"),
-            _ => result.push(ch),
-        }
-    }
-    result
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -602,10 +576,13 @@ mod tests {
 
     #[test]
     fn test_escape_xml_text() {
-        assert_eq!(escape_xml_text("Hello & World"), "Hello &amp; World");
-        assert_eq!(escape_xml_text("<test>"), "&lt;test&gt;");
-        assert_eq!(escape_xml_text("Größe"), "Groesse");
-        assert_eq!(escape_xml_text("Test \"quote\""), "Test &quot;quote&quot;");
+        assert_eq!(escape_xml_string("Hello & World"), "Hello &amp; World");
+        assert_eq!(escape_xml_string("<test>"), "&lt;test&gt;");
+        assert_eq!(escape_xml_string("Größe"), "Groesse");
+        assert_eq!(
+            escape_xml_string("Test \"quote\""),
+            "Test &quot;quote&quot;"
+        );
     }
 
     #[test]

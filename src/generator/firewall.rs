@@ -556,8 +556,6 @@ impl FirewallGenerator {
     }
 
     /// Get department-specific application ports
-    ///
-    /// Accepts a pre-lowercased department string to avoid repeated allocations.
     fn get_department_ports(&self, dept_lower: &str) -> String {
         if dept_lower.contains("it") || dept_lower.contains("engineering") {
             "22,23,3389,5900,8080,8443".to_string() // SSH, Telnet, RDP, VNC, Web management
@@ -571,8 +569,6 @@ impl FirewallGenerator {
     }
 
     /// Determine if VPN access should be allowed for this department
-    ///
-    /// Accepts a pre-lowercased department string to avoid repeated allocations.
     fn should_allow_vpn(&self, dept_lower: &str) -> bool {
         dept_lower.contains("it")
             || dept_lower.contains("engineering")
@@ -580,15 +576,11 @@ impl FirewallGenerator {
     }
 
     /// Determine if social media should be blocked for this department
-    ///
-    /// Accepts a pre-lowercased department string to avoid repeated allocations.
     fn should_block_social_media(&self, dept_lower: &str) -> bool {
         dept_lower.contains("finance") || dept_lower.contains("hr") || dept_lower.contains("legal")
     }
 
     /// Determine if gaming traffic should be blocked for this department
-    ///
-    /// Accepts a pre-lowercased department string to avoid repeated allocations.
     fn should_block_gaming(&self, dept_lower: &str) -> bool {
         dept_lower.contains("finance")
             || dept_lower.contains("hr")

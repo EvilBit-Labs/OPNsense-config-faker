@@ -284,17 +284,11 @@ fn execute_csv_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
             vpn_configs.len()
         ));
 
-        // Write VPN configurations to separate CSV file
-        let vpn_output_file = output_file.with_file_name(format!(
-            "vpn_{}",
-            output_file.file_name().unwrap().to_string_lossy()
-        ));
-
-        // Write VPN CSV (we'll need to implement this)
+        // TODO: Write VPN configurations to CSV (not yet implemented)
         if !global.quiet {
             println!(
-                "📁 VPN configurations written to: {}",
-                vpn_output_file.display()
+                "ℹ️  VPN CSV export not yet implemented ({} configs generated in memory)",
+                vpn_configs.len()
             );
         }
     }
@@ -315,15 +309,12 @@ fn execute_csv_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
 
         nat_pb.finish_with_message(format!("✅ Generated {} NAT mappings", nat_mappings.len()));
 
-        // Write NAT mappings to separate CSV file
-        let nat_output_file = output_file.with_file_name(format!(
-            "nat_{}",
-            output_file.file_name().unwrap().to_string_lossy()
-        ));
-
-        // Write NAT CSV (we'll need to implement this)
+        // TODO: Write NAT mappings to CSV (not yet implemented)
         if !global.quiet {
-            println!("📁 NAT mappings written to: {}", nat_output_file.display());
+            println!(
+                "ℹ️  NAT CSV export not yet implemented ({} mappings generated in memory)",
+                nat_mappings.len()
+            );
         }
     }
 
