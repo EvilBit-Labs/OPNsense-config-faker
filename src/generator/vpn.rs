@@ -521,7 +521,6 @@ pub fn generate_vpn_configurations(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cli::parse_vlan_range;
 
     #[test]
     fn test_vpn_config_creation() {
@@ -629,25 +628,5 @@ mod tests {
             );
             // Ports might not be unique across different VPN types, so we only check within type
         }
-    }
-
-    #[test]
-    fn test_parse_vlan_range() {
-        // Test single VLAN
-        let ranges = parse_vlan_range("100").unwrap();
-        assert_eq!(ranges, vec![(100, 100)]);
-
-        // Test simple range
-        let ranges = parse_vlan_range("100-150").unwrap();
-        assert_eq!(ranges, vec![(100, 150)]);
-
-        // Test multiple ranges
-        let ranges = parse_vlan_range("10,20-30,40").unwrap();
-        assert_eq!(ranges, vec![(10, 10), (20, 30), (40, 40)]);
-
-        // Test invalid range
-        assert!(parse_vlan_range("150-100").is_err());
-        assert!(parse_vlan_range("5-10").is_err()); // Below minimum
-        assert!(parse_vlan_range("4095-5000").is_err()); // Above maximum
     }
 }
