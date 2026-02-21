@@ -175,7 +175,7 @@ impl PerformantConfigGenerator {
         self.metrics.configs_generated = count;
         self.metrics.memory_used = self.estimate_memory_usage();
 
-        Ok(self.batch_buffer.clone())
+        Ok(std::mem::take(&mut self.batch_buffer))
     }
 
     /// Generate a single VLAN configuration with optimized allocations

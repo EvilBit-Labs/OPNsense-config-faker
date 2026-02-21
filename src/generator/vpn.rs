@@ -455,7 +455,7 @@ impl VpnGenerator {
 
         let corporate_dns = ["192.168.1.1", "10.0.0.1", "172.16.0.1"];
 
-        let mut servers = Vec::new();
+        let mut servers = Vec::with_capacity(2);
 
         // Primary DNS
         if self.rng.random_bool(0.7) {

@@ -304,7 +304,7 @@ impl VlanConfig {
 
     /// Get DNS servers list (gateway + reliable public DNS)
     pub fn dhcp_dns_servers(&self) -> Result<Vec<String>> {
-        let mut dns_servers = Vec::new();
+        let mut dns_servers = Vec::with_capacity(3);
 
         // Add gateway as primary DNS
         if let Ok(gateway) = self.gateway_ip() {
@@ -329,7 +329,7 @@ impl VlanConfig {
 
     /// Generate static DHCP reservations with realistic MAC-IP mappings
     pub fn static_reservations(&self) -> Result<Vec<StaticReservation>> {
-        let mut reservations = Vec::new();
+        let mut reservations = Vec::with_capacity(2);
 
         // Get base network for IP assignments
         let base = self.network_base()?;
@@ -671,10 +671,10 @@ pub fn generate_vlan_configurations_from_ranges(
     progress_bar: Option<&ProgressBar>,
 ) -> Result<Vec<VlanConfig>> {
     let mut generator = VlanGenerator::new_with_std_rng(seed);
-    let mut configs = Vec::new();
 
-    // Calculate total number of VLANs for progress tracking
-    let _total_vlans: u16 = vlan_ranges.iter().map(|(start, end)| end - start + 1).sum();
+    // Calculate total number of VLANs for progress tracking and pre-allocation
+    let total_vlans: u16 = vlan_ranges.iter().map(|(start, end)| end - start + 1).sum();
+    let mut configs = Vec::with_capacity(total_vlans as usize);
     let mut processed = 0u64;
 
     for (start, end) in vlan_ranges {
@@ -709,10 +709,10 @@ pub fn generate_vlan_configurations_from_ranges_with_wan(
     progress_bar: Option<&ProgressBar>,
 ) -> Result<Vec<VlanConfig>> {
     let mut generator = VlanGenerator::new_with_std_rng(seed);
-    let mut configs = Vec::new();
 
-    // Calculate total number of VLANs for progress tracking
+    // Calculate total number of VLANs for progress tracking and pre-allocation
     let total_vlans: u16 = vlan_ranges.iter().map(|(start, end)| end - start + 1).sum();
+    let mut configs = Vec::with_capacity(total_vlans as usize);
     let mut processed = 0u64;
     let mut vlan_index = 0usize;
 
