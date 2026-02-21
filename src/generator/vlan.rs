@@ -177,18 +177,17 @@ impl VlanConfig {
 
     /// Get the network as an Ipv4Network if possible
     pub fn as_ipv4_network(&self) -> VlanResult<Ipv4Network> {
-        if let Some(base) = self.ip_network.strip_suffix(".x") {
-            let network_str = format!("{base}.0/24");
-            rfc1918::validate_rfc1918_network_string(&network_str)
-        } else if let Some(base) = self.ip_network.strip_suffix(".0/24") {
-            let network_str = format!("{base}.0/24");
-            rfc1918::validate_rfc1918_network_string(&network_str)
-        } else {
-            Err(VlanError::network_parsing(format!(
-                "Cannot parse network format: {}",
-                self.ip_network
-            )))
-        }
+        let base = self
+            .ip_network
+            .strip_suffix(".x")
+            .or_else(|| self.ip_network.strip_suffix(".0/24"))
+            .ok_or_else(|| {
+                VlanError::network_parsing(format!(
+                    "Cannot parse network format: {}",
+                    self.ip_network
+                ))
+            })?;
+        rfc1918::validate_rfc1918_network_string(&format!("{base}.0/24"))
     }
 
     /// Validate that this configuration is RFC 1918 compliant
@@ -238,46 +237,34 @@ impl VlanConfig {
         "255.255.255.0"
     }
 
+    /// Extract the three-octet base prefix from the IP network string.
+    ///
+    /// Handles both "10.1.2.x" and "10.1.2.0/24" formats, returning "10.1.2".
+    fn network_base(&self) -> Result<&str> {
+        self.ip_network
+            .strip_suffix(".x")
+            .or_else(|| self.ip_network.strip_suffix(".0/24"))
+            .ok_or_else(|| {
+                ConfigError::validation(format!(
+                    "Cannot parse base from IP network: {}",
+                    self.ip_network
+                ))
+            })
+    }
+
     /// Get the gateway IP address (network + 1)
     pub fn gateway_ip(&self) -> Result<String> {
-        if let Some(base) = self.ip_network.strip_suffix(".x") {
-            Ok(format!("{base}.1"))
-        } else if let Some(base) = self.ip_network.strip_suffix(".0/24") {
-            Ok(format!("{base}.1"))
-        } else {
-            Err(ConfigError::validation(format!(
-                "Cannot derive gateway from IP network: {}",
-                self.ip_network
-            )))
-        }
+        Ok(format!("{}.1", self.network_base()?))
     }
 
     /// Get the DHCP range start IP
     pub fn dhcp_range_start(&self) -> Result<String> {
-        if let Some(base) = self.ip_network.strip_suffix(".x") {
-            Ok(format!("{base}.100"))
-        } else if let Some(base) = self.ip_network.strip_suffix(".0/24") {
-            Ok(format!("{base}.100"))
-        } else {
-            Err(ConfigError::validation(format!(
-                "Cannot derive DHCP range from IP network: {}",
-                self.ip_network
-            )))
-        }
+        Ok(format!("{}.100", self.network_base()?))
     }
 
     /// Get the DHCP range end IP
     pub fn dhcp_range_end(&self) -> Result<String> {
-        if let Some(base) = self.ip_network.strip_suffix(".x") {
-            Ok(format!("{base}.200"))
-        } else if let Some(base) = self.ip_network.strip_suffix(".0/24") {
-            Ok(format!("{base}.200"))
-        } else {
-            Err(ConfigError::validation(format!(
-                "Cannot derive DHCP range from IP network: {}",
-                self.ip_network
-            )))
-        }
+        Ok(format!("{}.200", self.network_base()?))
     }
 
     /// Get the DHCP lease time based on department type (in seconds)
@@ -345,16 +332,7 @@ impl VlanConfig {
         let mut reservations = Vec::new();
 
         // Get base network for IP assignments
-        let base = if let Some(base) = self.ip_network.strip_suffix(".x") {
-            base
-        } else if let Some(base) = self.ip_network.strip_suffix(".0/24") {
-            base
-        } else {
-            return Err(ConfigError::validation(format!(
-                "Cannot derive static reservations from IP network: {}",
-                self.ip_network
-            )));
-        };
+        let base = self.network_base()?;
 
         // Generate department-specific static reservations
         let department = self
@@ -1041,26 +1019,26 @@ mod tests {
         assert!(config.dhcp_range_start().is_err());
         assert!(config.dhcp_range_end().is_err());
 
-        // Test specific error messages
+        // All methods delegate to network_base(), which returns a unified error
         let gateway_error = config.gateway_ip().unwrap_err();
         assert!(
             gateway_error
                 .to_string()
-                .contains("Cannot derive gateway from IP network: invalid.network")
+                .contains("Cannot parse base from IP network: invalid.network")
         );
 
         let dhcp_start_error = config.dhcp_range_start().unwrap_err();
         assert!(
             dhcp_start_error
                 .to_string()
-                .contains("Cannot derive DHCP range from IP network: invalid.network")
+                .contains("Cannot parse base from IP network: invalid.network")
         );
 
         let dhcp_end_error = config.dhcp_range_end().unwrap_err();
         assert!(
             dhcp_end_error
                 .to_string()
-                .contains("Cannot derive DHCP range from IP network: invalid.network")
+                .contains("Cannot parse base from IP network: invalid.network")
         );
     }
 

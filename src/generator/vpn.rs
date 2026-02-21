@@ -4,7 +4,6 @@
 //! including OpenVPN, WireGuard, and IPSec tunnels for testing purposes.
 
 use crate::model::ConfigError;
-use rand::Rng;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;

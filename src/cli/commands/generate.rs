@@ -31,9 +31,6 @@ pub fn execute_with_global(mut args: GenerateArgs, global: &GlobalArgs) -> Resul
         }
     }
 
-    // Handle terminal compatibility
-    configure_terminal_with_global(&args, global);
-
     execute_internal(args, global)
 }
 
@@ -82,14 +79,6 @@ fn execute_internal(args: GenerateArgs, global: &GlobalArgs) -> Result<()> {
         OutputFormat::Csv => execute_csv_generation(&args, global),
         OutputFormat::Xml => execute_xml_generation(&args, global),
     }
-}
-
-/// Configure terminal output based on environment and arguments with global context
-fn configure_terminal_with_global(args: &GenerateArgs, global: &GlobalArgs) {
-    // Handle TERM=dumb compatibility - colors are automatically disabled
-    // by checking env::var("NO_COLOR").is_ok() and env::var("TERM") == "dumb"
-    // in the progress bar and console styling code
-    let _ = (args, global); // Suppress unused parameter warnings
 }
 
 /// Handle interactive mode prompts for missing required arguments
@@ -529,7 +518,7 @@ fn execute_xml_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
     // Load base XML template
     let base_xml = fs::read_to_string(base_config)
         .with_context(|| format!("Failed to read base config file: {:?}", base_config))?;
-    let mut template = XmlTemplate::new(base_xml)
+    let template = XmlTemplate::new(base_xml)
         .with_context(|| "Failed to create XML template from base configuration")?;
 
     // Set up progress for XML generation
