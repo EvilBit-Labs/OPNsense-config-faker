@@ -14,9 +14,6 @@ use std::path::Path;
 
 /// Execute validation with global arguments
 pub fn execute_with_global(args: ValidateArgs, global: &GlobalArgs) -> Result<()> {
-    // Apply global settings
-    configure_terminal(global);
-
     execute(args, global)
 }
 
@@ -178,13 +175,6 @@ fn determine_format(input: &Path, format: &ValidationFormat) -> Result<Validatio
         },
         other => Ok(other.clone()),
     }
-}
-
-/// Configure terminal output based on global settings
-fn configure_terminal(global: &GlobalArgs) {
-    // Colors are automatically disabled by checking env::var("NO_COLOR").is_ok()
-    // and env::var("TERM") == "dumb" in the progress bar and console styling code
-    let _ = global; // Suppress unused parameter warnings
 }
 
 /// Create a progress bar with consistent styling

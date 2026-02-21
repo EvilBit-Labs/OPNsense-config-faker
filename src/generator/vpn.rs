@@ -173,7 +173,7 @@ impl VpnGenerator {
         let vpn_type = vpn_type.unwrap_or_else(|| self.random_vpn_type());
         let name = self.generate_unique_name(&vpn_type);
         let server = self.generate_server_address();
-        let port = self.generate_unique_port(&vpn_type);
+        let port = self.generate_unique_port(&vpn_type)?;
         let protocol = self.get_protocol_for_type(&vpn_type);
         let cipher = self.get_cipher_for_type(&vpn_type);
         let auth_method = self.get_auth_method_for_type(&vpn_type);
@@ -299,7 +299,7 @@ impl VpnGenerator {
     }
 
     /// Generate a unique port for the VPN type
-    fn generate_unique_port(&mut self, vpn_type: &VpnType) -> u16 {
+    fn generate_unique_port(&mut self, vpn_type: &VpnType) -> VpnResult<u16> {
         const MAX_ATTEMPTS: usize = 100;
 
         let default_ports = match vpn_type {
@@ -311,7 +311,7 @@ impl VpnGenerator {
         // Try default ports first
         for &port in &default_ports {
             if self.used_ports.insert(port) {
-                return port;
+                return Ok(port);
             }
         }
 
@@ -324,19 +324,20 @@ impl VpnGenerator {
             };
 
             if self.used_ports.insert(port) {
-                return port;
+                return Ok(port);
             }
         }
 
-        // Fallback - find any available port
+        // Linear scan as final fallback
         for port in 1024..=65535 {
             if self.used_ports.insert(port) {
-                return port;
+                return Ok(port);
             }
         }
 
-        // Ultimate fallback
-        1194
+        Err(ConfigError::validation(
+            "Unable to generate unique VPN port: all ports exhausted".to_string(),
+        ))
     }
 
     /// Get appropriate protocol for VPN type

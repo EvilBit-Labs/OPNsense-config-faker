@@ -183,7 +183,10 @@ fn execute_csv_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
         let vlan_ranges = crate::cli::parse_vlan_range(vlan_range_str)
             .map_err(crate::model::ConfigError::validation)?;
 
-        let total_vlans: u16 = vlan_ranges.iter().map(|(start, end)| end - start + 1).sum();
+        let total_vlans: u32 = vlan_ranges
+            .iter()
+            .map(|(start, end)| (*end - *start + 1) as u32)
+            .sum();
 
         if !global.quiet {
             println!(
@@ -351,10 +354,16 @@ fn execute_csv_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
         ));
 
         // Write firewall rules to separate CSV file
-        let firewall_output = output_file.with_file_name(format!(
-            "{}_firewall_rules.csv",
-            output_file.file_stem().unwrap().to_str().unwrap()
-        ));
+        let stem = output_file
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .ok_or_else(|| {
+                crate::model::ConfigError::invalid_parameter(
+                    "output",
+                    "Output file path must have a valid filename",
+                )
+            })?;
+        let firewall_output = output_file.with_file_name(format!("{stem}_firewall_rules.csv"));
 
         write_firewall_rules_csv(&firewall_rules, &firewall_output)
             .with_context(|| format!("Failed to write firewall rules to {:?}", firewall_output))?;
@@ -395,7 +404,10 @@ fn execute_xml_generation(args: &GenerateArgs, global: &GlobalArgs) -> Result<()
         let vlan_ranges = crate::cli::parse_vlan_range(vlan_range_str)
             .map_err(crate::model::ConfigError::validation)?;
 
-        let total_vlans: u16 = vlan_ranges.iter().map(|(start, end)| end - start + 1).sum();
+        let total_vlans: u32 = vlan_ranges
+            .iter()
+            .map(|(start, end)| (*end - *start + 1) as u32)
+            .sum();
 
         if !global.quiet {
             println!(

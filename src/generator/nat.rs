@@ -217,7 +217,7 @@ impl NatGenerator {
         let name = self.generate_unique_name(&rule_type);
         let protocol = self.random_protocol();
         let (source, source_port) = self.generate_source(&rule_type);
-        let (destination, destination_port) = self.generate_destination(&rule_type, &protocol);
+        let (destination, destination_port) = self.generate_destination(&rule_type, &protocol)?;
         let interface = self.random_interface(&rule_type);
         let (target_ip, target_port) =
             self.generate_target(&rule_type, &destination_port, &protocol);
@@ -375,10 +375,10 @@ impl NatGenerator {
         &mut self,
         rule_type: &NatRuleType,
         protocol: &str,
-    ) -> (String, String) {
-        match rule_type {
+    ) -> NatResult<(String, String)> {
+        Ok(match rule_type {
             NatRuleType::PortForward => {
-                let port = self.generate_unique_external_port();
+                let port = self.generate_unique_external_port()?;
                 ("any".to_string(), port.to_string())
             }
             NatRuleType::SourceNat => ("any".to_string(), "any".to_string()),
@@ -392,7 +392,7 @@ impl NatGenerator {
             }
             NatRuleType::OneToOneNat => ("any".to_string(), "any".to_string()),
             NatRuleType::OutboundNat => ("any".to_string(), "any".to_string()),
-        }
+        })
     }
 
     /// Generate interface based on rule type
@@ -454,14 +454,14 @@ impl NatGenerator {
     }
 
     /// Generate a unique external port for port forwarding
-    fn generate_unique_external_port(&mut self) -> u16 {
+    fn generate_unique_external_port(&mut self) -> NatResult<u16> {
         const COMMON_PORTS: &[u16] = &[80, 443, 22, 21, 25, 53, 110, 143, 993, 995, 3389, 5900];
         const MAX_ATTEMPTS: usize = 100;
 
         // Try common ports first
         for &port in COMMON_PORTS {
             if self.used_external_ports.insert(port) {
-                return port;
+                return Ok(port);
             }
         }
 
@@ -469,12 +469,20 @@ impl NatGenerator {
         for _ in 0..MAX_ATTEMPTS {
             let port = self.rng.random_range(1024..=65535);
             if self.used_external_ports.insert(port) {
-                return port;
+                return Ok(port);
             }
         }
 
-        // Fallback
-        8080
+        // Linear scan as final fallback
+        for port in 1024..=65535 {
+            if self.used_external_ports.insert(port) {
+                return Ok(port);
+            }
+        }
+
+        Err(ConfigError::validation(
+            "Unable to generate unique external port: all ports exhausted".to_string(),
+        ))
     }
 
     /// Generate a service port
