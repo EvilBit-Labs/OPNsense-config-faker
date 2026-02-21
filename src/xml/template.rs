@@ -65,21 +65,30 @@ impl XmlTemplate {
 }
 
 /// Escape XML special characters in a string
+///
+/// Single-pass implementation: iterates the input once, avoiding 12 intermediate
+/// String allocations from chained `.replace()` calls.
 pub fn escape_xml_string(input: &str) -> String {
-    input
-        .replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .replace('\'', "&apos;")
-        // Handle German umlauts as in Python version
-        .replace('ä', "ae")
-        .replace('ö', "oe")
-        .replace('ü', "ue")
-        .replace('Ä', "Ae")
-        .replace('Ö', "Oe")
-        .replace('Ü', "Ue")
-        .replace('ß', "ss")
+    let mut result = String::with_capacity(input.len() + 20);
+    for ch in input.chars() {
+        match ch {
+            '&' => result.push_str("&amp;"),
+            '<' => result.push_str("&lt;"),
+            '>' => result.push_str("&gt;"),
+            '"' => result.push_str("&quot;"),
+            '\'' => result.push_str("&apos;"),
+            // Handle German umlauts as in Python version
+            'ä' => result.push_str("ae"),
+            'ö' => result.push_str("oe"),
+            'ü' => result.push_str("ue"),
+            'Ä' => result.push_str("Ae"),
+            'Ö' => result.push_str("Oe"),
+            'Ü' => result.push_str("Ue"),
+            'ß' => result.push_str("ss"),
+            _ => result.push(ch),
+        }
+    }
+    result
 }
 
 #[cfg(test)]

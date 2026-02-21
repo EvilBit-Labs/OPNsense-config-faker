@@ -252,7 +252,7 @@ impl FirewallGenerator {
         vlan_network: &str,
         department: &str,
     ) -> Result<Vec<FirewallRule>> {
-        let mut rules = Vec::new();
+        let mut rules = Vec::with_capacity(3);
 
         // Rule 1: Allow internal traffic within VLAN
         rules.push(FirewallRule::new(
@@ -312,7 +312,8 @@ impl FirewallGenerator {
         vlan_network: &str,
         department: &str,
     ) -> Result<Vec<FirewallRule>> {
-        let mut rules = Vec::new();
+        let dept_lower = department.to_lowercase();
+        let mut rules = Vec::with_capacity(4);
 
         // Rule 4: Allow NTP time synchronization
         rules.push(FirewallRule::new(
@@ -363,7 +364,7 @@ impl FirewallGenerator {
         )?);
 
         // Rule 7: Allow specific application ports based on department
-        let app_ports = self.get_department_ports(department);
+        let app_ports = self.get_department_ports(&dept_lower);
         rules.push(FirewallRule::new(
             self.generate_rule_id(),
             vlan_network.to_string(),
@@ -389,7 +390,8 @@ impl FirewallGenerator {
         vlan_network: &str,
         department: &str,
     ) -> Result<Vec<FirewallRule>> {
-        let mut rules = Vec::new();
+        let dept_lower = department.to_lowercase();
+        let mut rules = Vec::with_capacity(8);
 
         // Rule 8: Rate limiting for web traffic
         rules.push(FirewallRule::new(
@@ -424,7 +426,7 @@ impl FirewallGenerator {
         )?);
 
         // Rule 10: Allow VPN access for specific departments
-        if self.should_allow_vpn(department) {
+        if self.should_allow_vpn(&dept_lower) {
             rules.push(FirewallRule::new(
                 self.generate_rule_id(),
                 vlan_network.to_string(),
@@ -442,7 +444,7 @@ impl FirewallGenerator {
         }
 
         // Rule 11: Block social media for certain departments
-        if self.should_block_social_media(department) {
+        if self.should_block_social_media(&dept_lower) {
             rules.push(FirewallRule::new(
                 self.generate_rule_id(),
                 vlan_network.to_string(),
@@ -465,7 +467,7 @@ impl FirewallGenerator {
         }
 
         // Rule 12: Allow file sharing for IT department
-        if department.to_lowercase().contains("it") {
+        if dept_lower.contains("it") {
             rules.push(FirewallRule::new(
                 self.generate_rule_id(),
                 vlan_network.to_string(),
@@ -483,7 +485,7 @@ impl FirewallGenerator {
         }
 
         // Rule 13: Block gaming traffic for business departments
-        if self.should_block_gaming(department) {
+        if self.should_block_gaming(&dept_lower) {
             rules.push(FirewallRule::new(
                 self.generate_rule_id(),
                 vlan_network.to_string(),
@@ -554,9 +556,9 @@ impl FirewallGenerator {
     }
 
     /// Get department-specific application ports
-    fn get_department_ports(&self, department: &str) -> String {
-        let dept_lower = department.to_lowercase();
-
+    ///
+    /// Accepts a pre-lowercased department string to avoid repeated allocations.
+    fn get_department_ports(&self, dept_lower: &str) -> String {
         if dept_lower.contains("it") || dept_lower.contains("engineering") {
             "22,23,3389,5900,8080,8443".to_string() // SSH, Telnet, RDP, VNC, Web management
         } else if dept_lower.contains("sales") || dept_lower.contains("marketing") {
@@ -569,22 +571,25 @@ impl FirewallGenerator {
     }
 
     /// Determine if VPN access should be allowed for this department
-    fn should_allow_vpn(&self, department: &str) -> bool {
-        let dept_lower = department.to_lowercase();
+    ///
+    /// Accepts a pre-lowercased department string to avoid repeated allocations.
+    fn should_allow_vpn(&self, dept_lower: &str) -> bool {
         dept_lower.contains("it")
             || dept_lower.contains("engineering")
             || dept_lower.contains("sales")
     }
 
     /// Determine if social media should be blocked for this department
-    fn should_block_social_media(&self, department: &str) -> bool {
-        let dept_lower = department.to_lowercase();
+    ///
+    /// Accepts a pre-lowercased department string to avoid repeated allocations.
+    fn should_block_social_media(&self, dept_lower: &str) -> bool {
         dept_lower.contains("finance") || dept_lower.contains("hr") || dept_lower.contains("legal")
     }
 
     /// Determine if gaming traffic should be blocked for this department
-    fn should_block_gaming(&self, department: &str) -> bool {
-        let dept_lower = department.to_lowercase();
+    ///
+    /// Accepts a pre-lowercased department string to avoid repeated allocations.
+    fn should_block_gaming(&self, dept_lower: &str) -> bool {
         dept_lower.contains("finance")
             || dept_lower.contains("hr")
             || dept_lower.contains("legal")
@@ -601,7 +606,8 @@ pub fn generate_firewall_rules(
     firewall_rules_per_vlan: Option<u16>,
 ) -> Result<Vec<FirewallRule>> {
     let mut generator = FirewallGenerator::new(seed);
-    let mut all_rules = Vec::new();
+    let rules_estimate = vlan_configs.len() * complexity.rules_per_vlan() as usize;
+    let mut all_rules = Vec::with_capacity(rules_estimate);
 
     for vlan_config in vlan_configs.iter() {
         // Validate VLAN configuration before generating rules
@@ -641,32 +647,35 @@ pub fn generate_firewall_rules(
     Ok(all_rules)
 }
 
+/// Pre-lowercased department patterns for efficient matching.
+/// Each tuple is (display_name, lowercase_pattern).
+const DEPT_PATTERNS: &[(&str, &str)] = &[
+    ("IT", "it"),
+    ("Engineering", "engineering"),
+    ("Sales", "sales"),
+    ("Marketing", "marketing"),
+    ("Finance", "finance"),
+    ("HR", "hr"),
+    ("Legal", "legal"),
+    ("Executive", "executive"),
+    ("Support", "support"),
+    ("Admin", "admin"),
+    ("Operations", "operations"),
+    ("Guest", "guest"),
+    ("Lab", "lab"),
+    ("Test", "test"),
+];
+
 /// Extract department name from VLAN description
 fn extract_department_from_description<R: rand::Rng + ?Sized>(
     description: &str,
     rng: &mut R,
 ) -> String {
-    // Common department patterns in descriptions
-    let dept_patterns = [
-        "IT",
-        "Engineering",
-        "Sales",
-        "Marketing",
-        "Finance",
-        "HR",
-        "Legal",
-        "Executive",
-        "Support",
-        "Admin",
-        "Operations",
-        "Guest",
-        "Lab",
-        "Test",
-    ];
+    let desc_lower = description.to_lowercase();
 
-    for pattern in &dept_patterns {
-        if description.to_lowercase().contains(&pattern.to_lowercase()) {
-            return pattern.to_string();
+    for &(display, pattern) in DEPT_PATTERNS {
+        if desc_lower.contains(pattern) {
+            return display.to_string();
         }
     }
 
