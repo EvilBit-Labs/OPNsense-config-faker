@@ -26,7 +26,7 @@ impl XmlTemplate {
 
     /// Apply a VLAN configuration to generate an XML configuration
     pub fn apply_configuration(
-        &mut self,
+        &self,
         config: &VlanConfig,
         firewall_nr: u16,
         opt_counter: u16,
@@ -37,26 +37,27 @@ impl XmlTemplate {
 
         let mut result = self.base_content.clone();
 
-        // Replace placeholder values (simplified version)
+        // Replace placeholder values — all user-derived values are XML-escaped
+        // to prevent XML injection (CWE-91) from crafted CSV input
         result = result.replace("{{VLAN_ID}}", &config.vlan_id.to_string());
-        result = result.replace("{{IP_NETWORK}}", &config.ip_network);
-        result = result.replace("{{DESCRIPTION}}", &config.description);
+        result = result.replace("{{IP_NETWORK}}", &escape_xml_string(&config.ip_network));
+        result = result.replace("{{DESCRIPTION}}", &escape_xml_string(&config.description));
         result = result.replace("{{WAN_ASSIGNMENT}}", &config.wan_assignment.to_string());
         result = result.replace("{{FIREWALL_NR}}", &firewall_nr.to_string());
         result = result.replace("{{OPT_COUNTER}}", &opt_counter.to_string());
 
         // Add gateway IP if possible
         if let Ok(gateway) = config.gateway_ip() {
-            result = result.replace("{{GATEWAY_IP}}", &gateway);
+            result = result.replace("{{GATEWAY_IP}}", &escape_xml_string(&gateway));
         }
 
         // Add DHCP range if possible
         if let Ok(dhcp_start) = config.dhcp_range_start() {
-            result = result.replace("{{DHCP_START}}", &dhcp_start);
+            result = result.replace("{{DHCP_START}}", &escape_xml_string(&dhcp_start));
         }
 
         if let Ok(dhcp_end) = config.dhcp_range_end() {
-            result = result.replace("{{DHCP_END}}", &dhcp_end);
+            result = result.replace("{{DHCP_END}}", &escape_xml_string(&dhcp_end));
         }
 
         Ok(result)
@@ -112,7 +113,7 @@ mod tests {
     <gateway>{{GATEWAY_IP}}</gateway>
 </opnsense>"#;
 
-        let mut template = XmlTemplate::new(xml_content.to_string()).unwrap();
+        let template = XmlTemplate::new(xml_content.to_string()).unwrap();
         let config =
             VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN 100".to_string(), 1).unwrap();
 

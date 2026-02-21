@@ -11,9 +11,6 @@ use opnsense_config_faker::cli::{Cli, Commands};
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    // Set up environment with context
-    setup_environment(&cli).context("Failed to setup CLI environment")?;
-
     // Execute command with rich context
     match cli.command {
         Commands::Generate(args) => {
@@ -38,13 +35,5 @@ fn main() -> Result<()> {
         }
     }
 
-    Ok(())
-}
-
-/// Set up the CLI environment with proper configuration
-fn setup_environment(cli: &Cli) -> Result<()> {
-    // Colors are automatically disabled by checking env::var("NO_COLOR").is_ok()
-    // and env::var("TERM") == "dumb" in the progress bar and console styling code
-    let _ = cli; // Suppress unused parameter warnings
     Ok(())
 }

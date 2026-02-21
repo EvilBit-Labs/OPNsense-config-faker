@@ -129,6 +129,10 @@ backend = "npm:prettier"
 version = "3.14.2"
 backend = "core:python"
 
+[[tools.rust]]
+version = "stable"
+backend = "core:rust"
+
 [[tools.zig]]
 version = "0.15.2"
 backend = "core:zig"

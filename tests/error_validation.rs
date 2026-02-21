@@ -385,7 +385,7 @@ fn test_xml_template_valid_content() {
     assert!(result.is_ok(), "Should succeed for valid XML content");
 
     // Test applying configuration
-    let mut template = result.unwrap();
+    let template = result.unwrap();
     let config = VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
     let applied = template.apply_configuration(&config, 1, 6);
 
@@ -487,7 +487,7 @@ fn test_gateway_ip_derivation_errors() {
     match result.unwrap_err() {
         ConfigError::Validation { message } => {
             assert!(
-                message.contains("Cannot derive gateway from IP network")
+                message.contains("Cannot parse base from IP network")
                     && message.contains("invalid.network.format"),
                 "Expected specific gateway derivation error, got: {message}"
             );
@@ -514,7 +514,7 @@ fn test_dhcp_range_derivation_errors() {
     match start_result.unwrap_err() {
         ConfigError::Validation { message } => {
             assert!(
-                message.contains("Cannot derive DHCP range from IP network")
+                message.contains("Cannot parse base from IP network")
                     && message.contains("corrupted.format"),
                 "Expected specific DHCP range derivation error, got: {message}"
             );
@@ -532,7 +532,7 @@ fn test_dhcp_range_derivation_errors() {
     match end_result.unwrap_err() {
         ConfigError::Validation { message } => {
             assert!(
-                message.contains("Cannot derive DHCP range from IP network")
+                message.contains("Cannot parse base from IP network")
                     && message.contains("corrupted.format"),
                 "Expected specific DHCP range derivation error, got: {message}"
             );
