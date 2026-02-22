@@ -311,7 +311,7 @@ dist-plan:
 dist-generate-ci:
     @{{ mise_exec }} dist generate --ci github
     @echo "Generated CI workflow. Remember to fix any expression errors if they exist."
-    @echo "Run 'just lint:actions' to validate the generated workflow."
+    @echo "Run 'just lint-actions' to validate the generated workflow."
 
 install:
     @{{ mise_exec }} cargo install --path .

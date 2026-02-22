@@ -222,6 +222,9 @@ impl StreamingXmlGenerator {
     pub fn generate_parallel(&mut self, configs: &[VlanConfig]) -> Result<String> {
         use rayon::prelude::*;
 
+        if configs.is_empty() {
+            return Ok(String::new());
+        }
         let chunk_size = configs.len().div_ceil(4); // Default to 4 logical chunks
         let xml_parts: Result<Vec<String>> = configs
             .par_chunks(chunk_size)

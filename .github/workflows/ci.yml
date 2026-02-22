@@ -154,8 +154,8 @@ jobs:
           files: lcov.info
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
-          slug: EvilBit-Labs/StringyMcStringFace
+          slug: EvilBit-Labs/OPNsense-config-faker
       - uses: qltysh/qlty-action/coverage@v2
         with:
           token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
-          files: target/lcov.info
+          files: lcov.info

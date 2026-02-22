@@ -480,7 +480,11 @@ impl VpnGenerator {
                 if self.rng.random_bool(0.6) {
                     let mut choices = public_dns.clone();
                     choices.retain(|&dns| dns != servers[0]);
-                    choices[self.rng.random_range(0..choices.len())].to_string()
+                    if choices.is_empty() {
+                        public_dns[self.rng.random_range(0..public_dns.len())].to_string()
+                    } else {
+                        choices[self.rng.random_range(0..choices.len())].to_string()
+                    }
                 } else {
                     corporate_dns[self.rng.random_range(0..corporate_dns.len())].to_string()
                 }

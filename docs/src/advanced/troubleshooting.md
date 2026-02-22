@@ -40,8 +40,8 @@ ls -la target/release/opnsense-config-faker
 # Fix permissions if needed
 chmod +x target/release/opnsense-config-faker
 
-# Run with proper permissions
-sudo cargo run --release -- generate vlan --count 10
+# Run the binary directly (if elevated privileges are needed)
+sudo ./target/release/opnsense-config-faker generate vlan --count 10
 ```
 
 #### Network connectivity issues
@@ -56,16 +56,13 @@ cargo build --offline
 
 # Check network connectivity
 ping crates.io
-
-# Use alternative registry if needed
-cargo build --registry alternative-registry
 ```
 
 ### Runtime Issues
 
 #### "Invalid VLAN ID" errors
 
-**Problem**: VLAN ID is outside valid range (1-4094).
+**Problem**: VLAN ID is outside valid range (10-4094).
 
 **Solutions**:
 
@@ -370,8 +367,8 @@ top -p $(pgrep opnsense-config-faker)
 ### Community support
 
 - **GitHub Issues**: [Report bugs and request features](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues)
-- **Documentation**: Check the [User Guide](user-guide/) for detailed usage
-- **Examples**: Review [Examples](user-guide/examples.md) for common use cases
+- **Documentation**: Check the [User Guide](../user-guide/) for detailed usage
+- **Examples**: Review [Examples](../user-guide/examples.md) for common use cases
 
 ## Prevention
 
