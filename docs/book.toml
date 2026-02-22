@@ -1,7 +1,6 @@
 [book]
 authors = ["UncleSp1d3r <unclesp1d3r@evilbitlabs.io>"]
 language = "en"
-multilingual = false
 src = "src"
 title = "OPNsense Config Faker User Guide"
 description = "OPNsense Config Faker User Guide - A flexible tool for generating realistic network configuration test data for OPNsense"
