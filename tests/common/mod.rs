@@ -189,14 +189,16 @@ pub fn normalize_output(text: &str) -> String {
 
     // Normalize temporary file paths to stable placeholders
     // Handle various temp directory patterns across different OS
+    // NOTE: File patterns (with extensions) MUST be applied before directory patterns
+    // to prevent greedy dir patterns from matching file paths first.
     let temp_path_patterns = vec![
         // macOS temp paths
         r"/var/folders/[^/]+/[^/]+/T/[^\s]+\.(csv|xml|txt)",
         // Linux temp paths
         r"/tmp/[^\s]+\.(csv|xml|txt)",
-        // Windows temp paths (if running on Windows) - more comprehensive
-        r"[A-Z]:\\[^\\]*\\[Tt]emp[^\\]*\\[^\s]+\.(csv|xml|txt)",
-        r"[A-Z]:\\[^\\]*\\AppData\\Local\\Temp\\[^\s]+\.(csv|xml|txt)",
+        // Windows temp paths - allow multiple path segments before Temp
+        r"[A-Z]:[^:\s]*\\[Tt]emp[^:\s]*\.(csv|xml|txt)",
+        r"[A-Z]:[^:\s]*\\AppData\\Local\\Temp[^:\s]*\.(csv|xml|txt)",
         // Generic temp paths
         r"/(?:var/folders|tmp|temp)/[^\s]+\.(csv|xml|txt)",
     ];

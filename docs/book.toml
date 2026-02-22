@@ -47,8 +47,6 @@ enable = true
 level = 1
 
 
-[preprocessor.alerts]
-
 [preprocessor.mermaid]
 command = "mdbook-mermaid"
 
