@@ -41,6 +41,9 @@ jobs:
         with:
           tool: mdbook-admonish,mdbook-mermaid,mdbook-linkcheck,mdbook-toc,mdbook-open-on-gh,mdbook-tabs,mdbook-i18n-helpers
 
+      - name: Install mise
+        uses: jdx/mise-action@v2
+
       - name: Run just install
         run: |
           just install-tools
