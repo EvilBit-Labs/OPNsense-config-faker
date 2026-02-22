@@ -254,9 +254,13 @@ pub fn normalize_output(text: &str) -> String {
         }
     }
 
+    // Normalize Windows .exe suffix in binary names for cross-platform snapshot stability
+    let with_normalized_exe =
+        with_normalized_dirs.replace("opnsense-config-faker.exe", "opnsense-config-faker");
+
     // Normalize whitespace
     let whitespace_regex = Regex::new(r"\s+").unwrap();
-    let normalized = whitespace_regex.replace_all(&with_normalized_dirs, " ");
+    let normalized = whitespace_regex.replace_all(&with_normalized_exe, " ");
 
     // Trim and return
     normalized.trim().to_string()
