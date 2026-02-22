@@ -2,7 +2,7 @@
 mod bench_common;
 
 use bench_common::{ci_or_local, criterion_for_env};
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use opnsense_config_faker::generator::vlan::generate_vlan_configurations;
 use opnsense_config_faker::xml::template::XmlTemplate;
 use std::hint::black_box;
@@ -20,7 +20,7 @@ fn bench_xml_generation(c: &mut Criterion) {
         let config = &configs[0];
 
         b.iter(|| {
-            let mut template = XmlTemplate::new(base_xml.to_string()).unwrap();
+            let template = XmlTemplate::new(base_xml.to_string()).unwrap();
             let result = template
                 .apply_configuration(black_box(config), 1, 6)
                 .unwrap();
@@ -37,7 +37,7 @@ fn bench_xml_generation(c: &mut Criterion) {
             b.iter(|| {
                 let mut results = Vec::new();
                 for config in &configs {
-                    let mut template = XmlTemplate::new(base_xml.to_string()).unwrap();
+                    let template = XmlTemplate::new(base_xml.to_string()).unwrap();
                     let result = template
                         .apply_configuration(black_box(config), 1, 6)
                         .unwrap();

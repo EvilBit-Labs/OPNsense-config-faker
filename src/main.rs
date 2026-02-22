@@ -7,13 +7,9 @@
 use anyhow::{Context, Result};
 use clap::Parser;
 use opnsense_config_faker::cli::{Cli, Commands};
-use std::env;
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-
-    // Set up environment with context
-    setup_environment(&cli).context("Failed to setup CLI environment")?;
 
     // Execute command with rich context
     match cli.command {
@@ -37,19 +33,6 @@ fn main() -> Result<()> {
             opnsense_config_faker::cli::commands::deprecated::handle_deprecated_xml(args)
                 .context("Failed to process XML command")?
         }
-    }
-
-    Ok(())
-}
-
-/// Set up the CLI environment with proper configuration
-fn setup_environment(cli: &Cli) -> Result<()> {
-    // Handle global flags first
-    if cli.global.no_color
-        || env::var("NO_COLOR").is_ok()
-        || env::var("TERM").unwrap_or_default() == "dumb"
-    {
-        env::set_var("NO_COLOR", "1");
     }
 
     Ok(())

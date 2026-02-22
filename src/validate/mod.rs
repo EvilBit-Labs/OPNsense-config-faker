@@ -1,8 +1,8 @@
 //! Validation framework for configuration consistency
 
+use crate::Result;
 use crate::generator::VlanConfig;
 use crate::model::ConfigError;
-use crate::Result;
 use std::collections::HashSet;
 
 /// Validation engine for cross-component consistency

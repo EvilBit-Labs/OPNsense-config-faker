@@ -1,12 +1,13 @@
 //! CSV input/output operations
 
-use crate::generator::{FirewallRule, VlanConfig};
 use crate::Result;
+use crate::generator::{FirewallRule, VlanConfig};
 use csv::{Reader, Writer, WriterBuilder};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs::File;
+use std::io::{BufReader, BufWriter};
 use std::path::Path;
 
 // CSV header field name constants
@@ -121,7 +122,7 @@ impl From<CsvRecord> for VlanConfig {
 /// Write VLAN configurations to a CSV file
 pub fn write_csv<P: AsRef<Path>>(configs: &[VlanConfig], path: P) -> Result<()> {
     let file = File::create(path)?;
-    let mut writer = Writer::from_writer(file);
+    let mut writer = Writer::from_writer(BufWriter::new(file));
 
     // Write header and records
     for config in configs {
@@ -136,7 +137,7 @@ pub fn write_csv<P: AsRef<Path>>(configs: &[VlanConfig], path: P) -> Result<()> 
 /// Read VLAN configurations from a CSV file
 pub fn read_csv<P: AsRef<Path>>(path: P) -> Result<Vec<VlanConfig>> {
     let file = File::open(path)?;
-    let mut reader = Reader::from_reader(file);
+    let mut reader = Reader::from_reader(BufReader::new(file));
     let mut configs = Vec::new();
 
     for result in reader.deserialize() {
@@ -150,7 +151,7 @@ pub fn read_csv<P: AsRef<Path>>(path: P) -> Result<Vec<VlanConfig>> {
 /// Read VLAN configurations from a CSV file with enhanced validation
 pub fn read_csv_validated<P: AsRef<Path>>(path: P) -> Result<Vec<VlanConfig>> {
     let file = File::open(path)?;
-    let mut reader = Reader::from_reader(file);
+    let mut reader = Reader::from_reader(BufReader::new(file));
     let mut configs = Vec::new();
     let mut line_number = 1; // Start at 1 for header
 
@@ -276,7 +277,9 @@ impl From<FirewallRuleCsvRecord> for FirewallRule {
 /// Write firewall rules to a CSV file
 pub fn write_firewall_rules_csv<P: AsRef<Path>>(rules: &[FirewallRule], path: P) -> Result<()> {
     let file = File::create(path)?;
-    let mut writer = WriterBuilder::new().has_headers(false).from_writer(file);
+    let mut writer = WriterBuilder::new()
+        .has_headers(false)
+        .from_writer(BufWriter::new(file));
 
     // Write header row with exact column names
     writer.write_record([
@@ -307,7 +310,7 @@ pub fn write_firewall_rules_csv<P: AsRef<Path>>(rules: &[FirewallRule], path: P)
 /// Read firewall rules from a CSV file
 pub fn read_firewall_rules_csv<P: AsRef<Path>>(path: P) -> Result<Vec<FirewallRule>> {
     let file = File::open(path)?;
-    let mut reader = Reader::from_reader(file);
+    let mut reader = Reader::from_reader(BufReader::new(file));
     let mut rules = Vec::new();
 
     for result in reader.deserialize() {
@@ -321,7 +324,7 @@ pub fn read_firewall_rules_csv<P: AsRef<Path>>(path: P) -> Result<Vec<FirewallRu
 /// Read firewall rules from a CSV file with enhanced validation
 pub fn read_firewall_rules_csv_validated<P: AsRef<Path>>(path: P) -> Result<Vec<FirewallRule>> {
     let file = File::open(path)?;
-    let mut reader = Reader::from_reader(file);
+    let mut reader = Reader::from_reader(BufReader::new(file));
     let mut rules = Vec::new();
     let mut line_number = 1; // Start at 1 for header
 
@@ -344,13 +347,13 @@ pub fn read_firewall_rules_csv_validated<P: AsRef<Path>>(path: P) -> Result<Vec<
             )));
         }
 
-        if let Some(vid) = rule.vlan_id {
-            if !(10..=4094).contains(&vid) {
-                return Err(crate::model::ConfigError::validation(format!(
-                    "Invalid VLAN ID {} at line {}: must be between 10 and 4094",
-                    vid, line_number
-                )));
-            }
+        if let Some(vid) = rule.vlan_id
+            && !(10..=4094).contains(&vid)
+        {
+            return Err(crate::model::ConfigError::validation(format!(
+                "Invalid VLAN ID {} at line {}: must be between 10 and 4094",
+                vid, line_number
+            )));
         }
 
         // Pre-compute lowercase strings once per record for efficient validation
@@ -400,7 +403,7 @@ where
     F: FnMut(VlanConfig) -> Result<()>,
 {
     let file = File::open(path)?;
-    let mut reader = Reader::from_reader(file);
+    let mut reader = Reader::from_reader(BufReader::new(file));
     let mut count = 0;
 
     for result in reader.deserialize() {
@@ -420,7 +423,7 @@ where
     P: AsRef<Path>,
 {
     let file = File::create(path)?;
-    let mut writer = Writer::from_writer(file);
+    let mut writer = Writer::from_writer(BufWriter::new(file));
     let mut count = 0;
 
     for config in configs {
@@ -732,7 +735,9 @@ mod tests {
     fn test_firewall_rule_validation_performance() {
         // Test that the HashSet-based validation works correctly and efficiently
         let temp_file = NamedTempFile::new().unwrap();
-        let mut csv_content = String::from("rule_id,source,destination,protocol,ports,action,direction,description,log,vlan_id,priority,interface\n");
+        let mut csv_content = String::from(
+            "rule_id,source,destination,protocol,ports,action,direction,description,log,vlan_id,priority,interface\n",
+        );
 
         // Generate 1000 valid firewall rules to test performance
         for i in 1..=1000 {
@@ -761,9 +766,11 @@ mod tests {
         let result = read_firewall_rules_csv_validated(temp_file.path());
         assert!(result.is_err(), "Should fail with invalid action");
         let error = result.unwrap_err();
-        assert!(error
-            .to_string()
-            .contains("Invalid action 'invalid_action'"));
+        assert!(
+            error
+                .to_string()
+                .contains("Invalid action 'invalid_action'")
+        );
     }
 
     #[test]

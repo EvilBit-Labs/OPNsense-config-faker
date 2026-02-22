@@ -1,8 +1,8 @@
 # OPNsense Config Faker - Requirements Specification
 
-**Document Version**: 1.1
-**Last Modified**: 2025-08-03
-**Project**: OPNsense Config Faker
+**Document Version**: 1.1\
+**Last Modified**: 2025-08-03\
+**Project**: OPNsense Config Faker\
 **Status**: Active
 
 ## Document Metadata

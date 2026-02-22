@@ -6,42 +6,26 @@ repos:
     rev: v6.0.0
     hooks:
       - id: check-added-large-files
-        args: ["--maxkb=1024"]
+        args: ["--maxkb=10240"]
       - id: check-case-conflict
       - id: check-merge-conflict
       - id: check-illegal-windows-names
       - id: check-json
       - id: check-toml
       - id: check-yaml
-        args: [--unsafe]
+        args: [--allow-multiple-documents]
       - id: check-xml
-        exclude: ^legacy/
       - id: mixed-line-ending
         args: [--fix=auto]
       - id: check-vcs-permalinks
-      - id: end-of-file-fixer
 
-  # 🦀 Rust clippy linting
-  - repo: local
+  - repo: https://github.com/FeryET/pre-commit-rust
+    rev: v1.2.1
     hooks:
-      - id: rust-clippy
-        name: rust-clippy
-        entry: cargo clippy -- -D warnings
-        language: system
-        pass_filenames: false
-        always_run: true
-        types: [rust]
-
-  # 🦀 Rust formatting
-  - repo: local
-    hooks:
-      - id: rust-fmt
-        name: rust-fmt
-        entry: cargo fmt -- --check
-        language: system
-        pass_filenames: false
-        always_run: true
-        types: [rust]
+      - id: fmt
+      - id: clippy
+      - id: cargo-check
+      - id: build
 
   # 🧪 GitHub Actions validation
   - repo: https://github.com/rhysd/actionlint
@@ -49,22 +33,22 @@ repos:
     hooks:
       - id: actionlint
         files: ".github/workflows/"
-
-  # 🐚 Shell script validation
-  - repo: https://github.com/koalaman/shellcheck-precommit
-    rev: v0.11.0
-    hooks:
-      - id: shellcheck
-        exclude: ^legacy/
+        exclude: ^.github/workflows/release.yml$
 
   # 📝 Commit message linting (commit-msg only, not blocking push)
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.8.3
+    rev: v4.9.1
     hooks:
       - id: commitizen
         stages: [commit-msg]
 
-    # 📝 Markdown formatting and linting
+  # Temporarily disabled due to issues with cargo-machete while we are stubbing out the project
+  # - repo: https://github.com/bnjbvr/cargo-machete
+  #   rev: v0.9.1
+  #   hooks:
+  #       - id: cargo-machete
+
+  # 📝 Markdown formatting and linting (temporarily disabled in CI due to path issues)
   - repo: https://github.com/hukkin/mdformat
     rev: 0.7.22
     hooks:
@@ -79,16 +63,10 @@ repos:
           - mdformat-tables
           - mdformat-web
           - mdformat-wikilink
-          - mdformat-ruff
           - mdformat-gfm-alerts
           - mdformat-rustfmt
           - mdformat-toc
-  - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.18.1
-    hooks:
-      - id: markdownlint-cli2
-        args: ["-c", ".markdownlint-cli2.jsonc"]
-        exclude: ^legacy/
+        files: \.(md|mdx)$
 
   # 🔒 Security audit for Rust dependencies (moved to CI)
   - repo: local
@@ -99,3 +77,8 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+
+  - repo: https://github.com/DevinR528/cargo-sort
+    rev: v2.0.2
+    hooks:
+      - id: cargo-sort

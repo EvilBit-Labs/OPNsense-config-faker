@@ -189,14 +189,16 @@ pub fn normalize_output(text: &str) -> String {
 
     // Normalize temporary file paths to stable placeholders
     // Handle various temp directory patterns across different OS
+    // NOTE: File patterns (with extensions) MUST be applied before directory patterns
+    // to prevent greedy dir patterns from matching file paths first.
     let temp_path_patterns = vec![
         // macOS temp paths
         r"/var/folders/[^/]+/[^/]+/T/[^\s]+\.(csv|xml|txt)",
         // Linux temp paths
         r"/tmp/[^\s]+\.(csv|xml|txt)",
-        // Windows temp paths (if running on Windows) - more comprehensive
-        r"[A-Z]:\\[^\\]*\\[Tt]emp[^\\]*\\[^\s]+\.(csv|xml|txt)",
-        r"[A-Z]:\\[^\\]*\\AppData\\Local\\Temp\\[^\s]+\.(csv|xml|txt)",
+        // Windows temp paths - allow multiple path segments before Temp
+        r"[A-Z]:[^:\s]*\\[Tt]emp[^:\s]*\.(csv|xml|txt)",
+        r"[A-Z]:[^:\s]*\\AppData\\Local\\Temp[^:\s]*\.(csv|xml|txt)",
         // Generic temp paths
         r"/(?:var/folders|tmp|temp)/[^\s]+\.(csv|xml|txt)",
     ];
@@ -238,9 +240,9 @@ pub fn normalize_output(text: &str) -> String {
         r"/var/folders/[^/]+/[^/]+/T/[^\s]*",
         // Linux temp directories
         r"/tmp/[^\s]*",
-        // Windows temp directories
-        r"[A-Z]:\\[^\\]*\\Temp\\[^\s]*",
-        r"[A-Z]:\\[^\\]*\\AppData\\Local\\Temp\\[^\s]*",
+        // Windows temp directories (with multiple path levels)
+        r"[A-Z]:[^:\s]*\\[Tt]emp[^:\s]*",
+        r"[A-Z]:[^:\s]*\\AppData\\Local\\Temp[^:\s]*",
         // Generic temp directories
         r"/(?:var/folders|tmp|temp)/[^\s]*",
     ];
@@ -254,9 +256,13 @@ pub fn normalize_output(text: &str) -> String {
         }
     }
 
+    // Normalize Windows .exe suffix in binary names for cross-platform snapshot stability
+    let with_normalized_exe =
+        with_normalized_dirs.replace("opnsense-config-faker.exe", "opnsense-config-faker");
+
     // Normalize whitespace
     let whitespace_regex = Regex::new(r"\s+").unwrap();
-    let normalized = whitespace_regex.replace_all(&with_normalized_dirs, " ");
+    let normalized = whitespace_regex.replace_all(&with_normalized_exe, " ");
 
     // Trim and return
     normalized.trim().to_string()

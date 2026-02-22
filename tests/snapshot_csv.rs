@@ -5,7 +5,7 @@
 
 mod common;
 
-use common::{cli_command, TestOutputExt};
+use common::{TestOutputExt, cli_command};
 use insta::assert_snapshot;
 use regex::Regex;
 use std::fs;

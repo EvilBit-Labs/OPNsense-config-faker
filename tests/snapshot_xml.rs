@@ -5,7 +5,7 @@
 
 mod common;
 
-use common::{cli_command, create_temp_xml, TestOutputExt};
+use common::{TestOutputExt, cli_command, create_temp_xml};
 use insta::assert_snapshot;
 use regex::Regex;
 use std::fs;
@@ -279,16 +279,16 @@ fn extract_xml_section(xml_content: &str, section_name: &str) -> String {
     let pattern = format!(r"(?s)<{0}>(.*?)</{0}>", regex::escape(section_name));
     let regex = Regex::new(&pattern).expect("Invalid regex pattern");
 
-    if let Some(captures) = regex.captures(xml_content) {
-        if let Some(section_match) = captures.get(1) {
-            // Return the section with tags for context
-            return format!(
-                "<{}>{}</{}>",
-                section_name,
-                section_match.as_str(),
-                section_name
-            );
-        }
+    if let Some(captures) = regex.captures(xml_content)
+        && let Some(section_match) = captures.get(1)
+    {
+        // Return the section with tags for context
+        return format!(
+            "<{}>{}</{}>",
+            section_name,
+            section_match.as_str(),
+            section_name
+        );
     }
 
     format!("Section '{section_name}' not found")

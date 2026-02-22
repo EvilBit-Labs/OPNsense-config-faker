@@ -3,16 +3,16 @@
 //! This module implements performance-optimized data structures and algorithms
 //! for generating large numbers of VLAN configurations efficiently.
 
-use crate::generator::departments;
+use crate::Result;
 use crate::generator::VlanConfig;
+use crate::generator::departments;
 use crate::model::ConfigError;
 use crate::utils::rfc1918;
-use crate::Result;
 
 use bumpalo::Bump;
 use lru::LruCache;
-use rand::prelude::*;
 use rand::SeedableRng;
+use rand::prelude::*;
 use rand_chacha::ChaCha8Rng;
 use rustc_hash::{FxHashMap, FxHashSet};
 use smallvec::SmallVec;
@@ -40,12 +40,23 @@ pub struct PerformanceMetrics {
 
 impl PerformanceMetrics {
     /// Calculate throughput (configs per second)
+    ///
+    /// Returns 0.0 if generation time is zero.
     pub fn throughput(&self) -> f64 {
-        self.configs_generated as f64 / self.generation_time.as_secs_f64()
+        let secs = self.generation_time.as_secs_f64();
+        if secs == 0.0 {
+            return 0.0;
+        }
+        self.configs_generated as f64 / secs
     }
 
     /// Calculate memory efficiency (bytes per config)
+    ///
+    /// Returns 0.0 if no configs were generated.
     pub fn memory_efficiency(&self) -> f64 {
+        if self.configs_generated == 0 {
+            return 0.0;
+        }
         self.memory_used as f64 / self.configs_generated as f64
     }
 
@@ -175,7 +186,7 @@ impl PerformantConfigGenerator {
         self.metrics.configs_generated = count;
         self.metrics.memory_used = self.estimate_memory_usage();
 
-        Ok(self.batch_buffer.clone())
+        Ok(std::mem::take(&mut self.batch_buffer))
     }
 
     /// Generate a single VLAN configuration with optimized allocations
@@ -287,7 +298,7 @@ impl PerformantConfigGenerator {
     ) -> Result<Vec<VlanConfig>> {
         use rayon::prelude::*;
 
-        let chunks = (total_count + chunk_size - 1) / chunk_size;
+        let chunks = total_count.div_ceil(chunk_size);
         let mut results = Vec::with_capacity(total_count);
 
         // Generate base seed outside of closure

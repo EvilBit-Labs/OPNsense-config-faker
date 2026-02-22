@@ -1,84 +1,60 @@
-# OPNsense Config Faker - Cargo Deny Configuration
-# Supply chain security and license compliance for network configuration generation
+# cargo-deny configuration for OPNsense Config Faker
+# See: https://embarkstudios.github.io/cargo-deny/
 
 [graph]
-# Target platforms for network configuration generation
 targets = [
-    "x86_64-unknown-linux-gnu",
-    "x86_64-apple-darwin",
     "aarch64-apple-darwin",
+    "aarch64-unknown-linux-gnu",
+    "x86_64-unknown-linux-gnu",
+    "x86_64-unknown-linux-musl",
     "x86_64-pc-windows-msvc",
 ]
-all-features = false
-no-default-features = false
-
-[output]
-feature-depth = 1
-
-[advisories]
-# Ignore specific advisories if needed for network configuration generation
-ignore = [
-    # Add specific advisory IDs here if needed
-]
+all-features = true
+exclude-dev = false
 
 [licenses]
-# Allow common open source licenses for network configuration tools
+unused-allowed-license = "allow"
+# Allow common open source licenses used in the Rust ecosystem
 allow = [
-    "MIT",
     "Apache-2.0",
     "Apache-2.0 WITH LLVM-exception",
-    "BSD-2-Clause",
+    "CC0-1.0",
+    "MIT",
     "BSD-3-Clause",
     "ISC",
-    "Zlib",
-    "CC0-1.0",
-    "Unlicense",
     "Unicode-3.0",
+    "Unlicense",
+    "Zlib",
 ]
+include-dev = true
+
+# Confidence threshold for license detection
 confidence-threshold = 0.8
 
-exceptions = [
-    # Add license exceptions for specific crates if needed
-]
-
-[licenses.private]
-ignore = false
-registries = []
-
 [bans]
-# Warn about multiple versions of the same crate
-multiple-versions = "warn"
-# Allow wildcards for network configuration generation flexibility
-wildcards = "allow"
-highlight = "all"
-workspace-default-features = "allow"
-external-default-features = "allow"
-
-# Allow specific crates that are needed for network configuration
-allow = [
-    # Add specific allowed crates if needed
-]
-
-# Deny known problematic crates
+multiple-versions = "deny"
+wildcards = 'deny'
 deny = [
-    # Add specific denied crates if needed
+    { crate = "git2", use-instead = "gix" },
+    { crate = "openssl", use-instead = "rustls" },
+    { crate = "openssl-sys", use-instead = "rustls" },
+    "libssh2-sys",
+    { crate = "cmake", use-instead = "cc" },
 ]
+skip = []
+skip-tree = []
 
-# Skip certain crates during duplicate detection
-skip = [
-    # Add crates to skip if needed
-]
 
-skip-tree = [
-    # Add crates to skip with dependencies if needed
-]
+[advisories]
+yanked = "deny"
+unmaintained = "workspace"
+ignore = []
 
 [sources]
-# Only allow crates.io for security
+# Allow crates from crates.io
 unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
-allow-git = []
 
 [sources.allow-org]
 # Allow specific organizations for git sources if needed

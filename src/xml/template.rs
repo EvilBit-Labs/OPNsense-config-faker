@@ -1,8 +1,8 @@
 //! XML template processing for OPNsense configurations
 
+use crate::Result;
 use crate::generator::VlanConfig;
 use crate::model::ConfigError;
-use crate::Result;
 
 /// XML template processor for OPNsense configurations
 pub struct XmlTemplate {
@@ -26,7 +26,7 @@ impl XmlTemplate {
 
     /// Apply a VLAN configuration to generate an XML configuration
     pub fn apply_configuration(
-        &mut self,
+        &self,
         config: &VlanConfig,
         firewall_nr: u16,
         opt_counter: u16,
@@ -37,26 +37,27 @@ impl XmlTemplate {
 
         let mut result = self.base_content.clone();
 
-        // Replace placeholder values (simplified version)
+        // Replace placeholder values — all user-derived values are XML-escaped
+        // to prevent XML injection (CWE-91) from crafted CSV input
         result = result.replace("{{VLAN_ID}}", &config.vlan_id.to_string());
-        result = result.replace("{{IP_NETWORK}}", &config.ip_network);
-        result = result.replace("{{DESCRIPTION}}", &config.description);
+        result = result.replace("{{IP_NETWORK}}", &escape_xml_string(&config.ip_network));
+        result = result.replace("{{DESCRIPTION}}", &escape_xml_string(&config.description));
         result = result.replace("{{WAN_ASSIGNMENT}}", &config.wan_assignment.to_string());
         result = result.replace("{{FIREWALL_NR}}", &firewall_nr.to_string());
         result = result.replace("{{OPT_COUNTER}}", &opt_counter.to_string());
 
         // Add gateway IP if possible
         if let Ok(gateway) = config.gateway_ip() {
-            result = result.replace("{{GATEWAY_IP}}", &gateway);
+            result = result.replace("{{GATEWAY_IP}}", &escape_xml_string(&gateway));
         }
 
         // Add DHCP range if possible
         if let Ok(dhcp_start) = config.dhcp_range_start() {
-            result = result.replace("{{DHCP_START}}", &dhcp_start);
+            result = result.replace("{{DHCP_START}}", &escape_xml_string(&dhcp_start));
         }
 
         if let Ok(dhcp_end) = config.dhcp_range_end() {
-            result = result.replace("{{DHCP_END}}", &dhcp_end);
+            result = result.replace("{{DHCP_END}}", &escape_xml_string(&dhcp_end));
         }
 
         Ok(result)
@@ -64,21 +65,30 @@ impl XmlTemplate {
 }
 
 /// Escape XML special characters in a string
+///
+/// Single-pass implementation: iterates the input once, avoiding 12 intermediate
+/// String allocations from chained `.replace()` calls.
 pub fn escape_xml_string(input: &str) -> String {
-    input
-        .replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .replace('\'', "&apos;")
-        // Handle German umlauts as in Python version
-        .replace('ä', "ae")
-        .replace('ö', "oe")
-        .replace('ü', "ue")
-        .replace('Ä', "Ae")
-        .replace('Ö', "Oe")
-        .replace('Ü', "Ue")
-        .replace('ß', "ss")
+    let mut result = String::with_capacity(input.len() + 20);
+    for ch in input.chars() {
+        match ch {
+            '&' => result.push_str("&amp;"),
+            '<' => result.push_str("&lt;"),
+            '>' => result.push_str("&gt;"),
+            '"' => result.push_str("&quot;"),
+            '\'' => result.push_str("&apos;"),
+            // Handle German umlauts as in Python version
+            'ä' => result.push_str("ae"),
+            'ö' => result.push_str("oe"),
+            'ü' => result.push_str("ue"),
+            'Ä' => result.push_str("Ae"),
+            'Ö' => result.push_str("Oe"),
+            'Ü' => result.push_str("Ue"),
+            'ß' => result.push_str("ss"),
+            _ => result.push(ch),
+        }
+    }
+    result
 }
 
 #[cfg(test)]
@@ -112,7 +122,7 @@ mod tests {
     <gateway>{{GATEWAY_IP}}</gateway>
 </opnsense>"#;
 
-        let mut template = XmlTemplate::new(xml_content.to_string()).unwrap();
+        let template = XmlTemplate::new(xml_content.to_string()).unwrap();
         let config =
             VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN 100".to_string(), 1).unwrap();
 

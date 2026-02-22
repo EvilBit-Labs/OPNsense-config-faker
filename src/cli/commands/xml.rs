@@ -1,10 +1,10 @@
 //! XML generation command implementation
 
+use crate::Result;
 use crate::cli::XmlArgs;
 use crate::generator::vlan::generate_vlan_configurations;
 use crate::io::csv::read_csv;
 use crate::xml::template::XmlTemplate;
-use crate::Result;
 use console::style;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::fs;
@@ -63,7 +63,7 @@ pub fn execute(args: XmlArgs) -> Result<()> {
 
     // Load base XML template
     let base_xml = fs::read_to_string(&args.base_config)?;
-    let mut template = XmlTemplate::new(base_xml)?;
+    let template = XmlTemplate::new(base_xml)?;
 
     // Set up progress for XML generation
     let pb = ProgressBar::new(configs.len() as u64);

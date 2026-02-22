@@ -4,17 +4,17 @@
 //! of the OPNsense Config Faker application. Tests validate error conditions, ensure
 //! error messages are actionable and stable, and verify proper error propagation.
 
-use assert_fs::prelude::*;
 use assert_fs::TempDir;
-use opnsense_config_faker::generator::vlan::generate_vlan_configurations;
+use assert_fs::prelude::*;
 use opnsense_config_faker::generator::VlanConfig;
+use opnsense_config_faker::generator::vlan::generate_vlan_configurations;
 use opnsense_config_faker::model::ConfigError;
 use opnsense_config_faker::xml::template::XmlTemplate;
 use predicates::prelude::*;
 use std::fs;
 
 mod common;
-use common::{cli_command, TestOutputExt};
+use common::{TestOutputExt, cli_command};
 
 // ===== Resource Exhaustion Tests =====
 
@@ -217,7 +217,9 @@ fn test_invalid_output_directory_permissions() {
             // If it succeeded, it might be because the environment doesn't enforce read-only permissions
             // This can happen in Docker containers or certain CI environments
             // We'll log this but not fail the test
-            eprintln!("Warning: Command succeeded in read-only directory test - this may be due to environment permissions");
+            eprintln!(
+                "Warning: Command succeeded in read-only directory test - this may be due to environment permissions"
+            );
         }
     }
 
@@ -270,7 +272,8 @@ fn test_nonexistent_output_directory_created() {
         assert!(
             combined_output.contains("No such file or directory")
                 || combined_output.contains("cannot create")
-                || combined_output.contains("Path does not exist"),
+                || combined_output.contains("Path does not exist")
+                || combined_output.contains("cannot find the path"),
             "Expected directory creation error, got: {combined_output}"
         );
     }
@@ -308,7 +311,8 @@ fn test_invalid_base_xml_file_not_found() {
             || combined_output.contains("No such file")
             || combined_output.contains("not found")
             || combined_output.contains("ConfigNotFound")
-            || combined_output.contains("<TEMP_FILE>"),
+            || combined_output.contains("<TEMP_FILE>")
+            || combined_output.contains("cannot find the file"),
         "Expected clear error about missing base config file, got: {combined_output}"
     );
 }
@@ -381,7 +385,7 @@ fn test_xml_template_valid_content() {
     assert!(result.is_ok(), "Should succeed for valid XML content");
 
     // Test applying configuration
-    let mut template = result.unwrap();
+    let template = result.unwrap();
     let config = VlanConfig::new(100, "10.1.2.x".to_string(), "Test VLAN".to_string(), 1).unwrap();
     let applied = template.apply_configuration(&config, 1, 6);
 
@@ -483,7 +487,7 @@ fn test_gateway_ip_derivation_errors() {
     match result.unwrap_err() {
         ConfigError::Validation { message } => {
             assert!(
-                message.contains("Cannot derive gateway from IP network")
+                message.contains("Cannot parse base from IP network")
                     && message.contains("invalid.network.format"),
                 "Expected specific gateway derivation error, got: {message}"
             );
@@ -510,7 +514,7 @@ fn test_dhcp_range_derivation_errors() {
     match start_result.unwrap_err() {
         ConfigError::Validation { message } => {
             assert!(
-                message.contains("Cannot derive DHCP range from IP network")
+                message.contains("Cannot parse base from IP network")
                     && message.contains("corrupted.format"),
                 "Expected specific DHCP range derivation error, got: {message}"
             );
@@ -528,7 +532,7 @@ fn test_dhcp_range_derivation_errors() {
     match end_result.unwrap_err() {
         ConfigError::Validation { message } => {
             assert!(
-                message.contains("Cannot derive DHCP range from IP network")
+                message.contains("Cannot parse base from IP network")
                     && message.contains("corrupted.format"),
                 "Expected specific DHCP range derivation error, got: {message}"
             );
