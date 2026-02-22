@@ -221,7 +221,40 @@ cargo run --release -- generate --count 10 --format xml --base-config config.xml
 - **Cross-platform**: Support macOS, Windows, and Linux
 - **Airgap-ready**: All functionality must work offline
 
-## 8. AI Assistant Behavior and Rules of Engagement
+## 8. CI/CD Lessons Learned
+
+### GitHub Actions Workflow Gotchas
+
+- **mise in CI**: The `just install-tools` recipe depends on `mise`. CI runners must install it via `jdx/mise-action@v2` before calling any just recipes that use mise
+- **CodeQL setup conflict**: Repository-level CodeQL "default setup" and a `.github/workflows/codeql.yml` (advanced setup) cannot coexist. Use one or the other — if default setup is enabled in repo settings, delete the workflow file
+- **`just ci-check` exit code 255**: The `cargo dist plan` step returns 255 when `cargo-dist` version doesn't match the project config. This is a pre-existing environment issue, not a test failure
+- **mdBook preprocessor compatibility**: Unused or deprecated preprocessors in `book.toml` (e.g. `mdbook-alerts`, the `multilingual` field) cause hard build failures. Only declare preprocessors that are installed and actively used
+
+### Cross-Platform Snapshot Testing
+
+Snapshot tests must produce identical output on Linux, macOS, and Windows. Key normalization patterns in `tests/common/mod.rs`:
+
+- **Binary name normalization**: Replace `opnsense-config-faker.exe` with `opnsense-config-faker` so Windows snapshots match Unix
+- **Temp path normalization**: Windows temp paths like `C:\Users\...\AppData\Local\Temp\file.xml` must be normalized to `<TEMP_FILE>`. Use `[^:\s]*` (not `[^\\]*`) in regex patterns to match the full multi-segment Windows path including file extension
+- **Temp directory normalization**: Temp directories are normalized to `<TEMP_DIR>`. The temp file patterns must be checked *before* temp directory patterns to avoid greedy matching
+- **Environment variables**: Use `TERM=dumb`, `NO_COLOR=1`, `CARGO_TERM_COLOR=never` for deterministic output
+
+### Dependency Management
+
+- **Exact pinning for breaking deprecations**: `assert_cmd` is pinned to `=2.0.17` because `2.1.x` deprecates `Command::cargo_bin` with `#[deprecated]`, which becomes a hard error under `-D warnings`. Migration to the 2.1+ API is tracked separately
+- **Cargo.lock conflicts during rebase**: When rebasing across Cargo.lock changes, accept theirs and regenerate: `git checkout --theirs Cargo.lock && cargo generate-lockfile && git add Cargo.lock && git rebase --continue`
+- **Semver-compatible bumps can break clippy**: A dep resolving to a newer semver-compatible version may introduce new deprecation warnings. With `-D warnings`, this is a build failure. Pin with `=` when needed
+
+### Snapshot Workflow
+
+```bash
+cargo insta review                                        # Interactive review (preferred)
+INSTA_UPDATE=always cargo test --test snapshot_tests       # Force-accept all (use sparingly)
+```
+
+After accepting snapshots, delete any leftover `.snap.new` files before committing.
+
+## 9. AI Assistant Behavior and Rules of Engagement
 
 ### Core Development Rules
 
@@ -247,7 +280,7 @@ cargo run --release -- generate --count 10 --format xml --base-config config.xml
 - Single maintainer workflow (@UncleSp1d3r)
 - Never auto-commit code
 
-## 9. Commit Messages and Version Control
+## 10. Commit Messages and Version Control
 
 ### Conventional Commits
 
@@ -262,7 +295,7 @@ All commit messages must adhere to the [Conventional Commits](https://www.conven
 - Strict linting, testing, and security gates
 - Release automation via Release Please manages versioning and changelog
 
-## 10. Testing Strategy
+## 11. Testing Strategy
 
 ### Test Types
 
@@ -285,7 +318,7 @@ cargo insta review                           # Review changes
 INSTA_UPDATE=auto cargo test --test snapshot_tests    # Force accept (use sparingly)
 ```
 
-## 11. Platform Scope and Constraints
+## 12. Platform Scope and Constraints
 
 ### Platform Scope
 
@@ -304,7 +337,7 @@ INSTA_UPDATE=auto cargo test --test snapshot_tests    # Force accept (use sparin
 
 **Note**: Supporting other platforms or output formats beyond OPNsense XML is explicitly NOT a feature goal
 
-## 12. Performance and Benchmarks
+## 13. Performance and Benchmarks
 
 ### Benchmarking Framework
 
@@ -323,7 +356,7 @@ Generation performance scales linearly with count:
 
 Memory usage is approximately 500 bytes per VLAN configuration.
 
-## 13. Final Reminders
+## 14. Final Reminders
 
 ### Critical Requirements
 
