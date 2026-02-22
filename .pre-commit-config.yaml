@@ -19,14 +19,6 @@ repos:
         args: [--fix=auto]
       - id: check-vcs-permalinks
 
-  - repo: https://github.com/FeryET/pre-commit-rust
-    rev: v1.2.1
-    hooks:
-      - id: fmt
-      - id: clippy
-      - id: cargo-check
-      - id: build
-
   # 🧪 GitHub Actions validation
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.7
@@ -41,12 +33,6 @@ repos:
     hooks:
       - id: commitizen
         stages: [commit-msg]
-
-  # Temporarily disabled due to issues with cargo-machete while we are stubbing out the project
-  # - repo: https://github.com/bnjbvr/cargo-machete
-  #   rev: v0.9.1
-  #   hooks:
-  #       - id: cargo-machete
 
   # 📝 Markdown formatting and linting (temporarily disabled in CI due to path issues)
   - repo: https://github.com/hukkin/mdformat
@@ -64,21 +50,27 @@ repos:
           - mdformat-web
           - mdformat-wikilink
           - mdformat-gfm-alerts
-          - mdformat-rustfmt
           - mdformat-toc
         files: \.(md|mdx)$
 
-  # 🔒 Security audit for Rust dependencies (moved to CI)
+  # 🔧 Go tooling hooks
   - repo: local
     hooks:
-      - id: cargo-audit
-        name: cargo-audit
-        entry: cargo audit
+      - id: gofmt
+        name: gofmt
+        entry: gofmt -l .
         language: system
         pass_filenames: false
-        always_run: true
-
-  - repo: https://github.com/DevinR528/cargo-sort
-    rev: v2.0.2
-    hooks:
-      - id: cargo-sort
+        types: [go]
+      - id: go-vet
+        name: go vet
+        entry: go vet ./...
+        language: system
+        pass_filenames: false
+        types: [go]
+      - id: golangci-lint
+        name: golangci-lint
+        entry: golangci-lint run ./...
+        language: system
+        pass_filenames: false
+        types: [go]

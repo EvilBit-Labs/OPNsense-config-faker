@@ -1,5 +1,0 @@
----
-source: tests/snapshot_tests.rs
-expression: output.normalized_stderr()
----
-Error: Failed to process CSV command Caused by: Configuration error: Please use the new 'generate' command format. See migration guide above.

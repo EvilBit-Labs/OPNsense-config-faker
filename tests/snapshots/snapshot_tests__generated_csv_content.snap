@@ -1,8 +1,0 @@
----
-source: tests/snapshot_tests.rs
-expression: csv_content
----
-VLAN,IP Range,Beschreibung,WAN
-2186,10.78.237.x,Training VLAN 2186,2
-2242,10.159.72.x,Procurement VLAN 2242,2
-2636,10.220.11.x,Security VLAN 2636,2

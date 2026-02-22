@@ -1,5 +1,0 @@
----
-source: tests/snapshot_xml.rs
-expression: stdout
----
-🔧 OPNsense Config Faker - Configuration Generator 🔧 Generating OPNsense XML configuration... 🔄 Generating 1 VLAN configurations... 📝 Processing 1 configurations... Summary: 📊 Configurations: 1 📁 Output directory: <TEMP_DIR> 🏷️ VLAN IDs: 977 - 977 🔧 Firewall number: 1

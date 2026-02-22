@@ -1,5 +1,0 @@
----
-source: tests/snapshot_tests.rs
-expression: output.normalized_stderr()
----
-Error: Failed to generate configurations Caused by: Configuration error: Output file '<TEMP_FILE>' already exists. Use --force to overwrite.

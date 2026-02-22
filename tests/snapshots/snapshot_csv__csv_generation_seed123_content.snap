@@ -1,8 +1,0 @@
----
-source: tests/snapshot_csv.rs
-expression: normalized_csv
----
-VLAN,IP Range,Beschreibung,WAN
-4027,10.45.187.x,HR VLAN 4027,1
-3811,10.136.106.x,Sales VLAN 3811,2
-3297,10.252.164.x,Marketing VLAN 3297,3

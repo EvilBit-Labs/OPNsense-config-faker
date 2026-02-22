@@ -1,5 +1,0 @@
----
-source: tests/snapshot_tests.rs
-expression: output.normalized_stderr()
----
-Error: Failed to generate configurations Caused by: Invalid parameter 'base-config': Base configuration file is required for XML format. Use --base-config or -b to specify.
