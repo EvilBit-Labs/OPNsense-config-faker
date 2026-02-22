@@ -450,7 +450,6 @@ return Err(ConfigGenerationError::InvalidVlanCount {
 # Cargo.toml - Quality measurement tools
 [dev-dependencies]
 criterion = { version = "0.7", features = ["html_reports"] }
-cargo-llvm-cov = "0.6"
 rstest = "0.26"
 proptest = "1.4"
 assert_cmd = "2.0"

@@ -1,4 +1,4 @@
-# cargo-deny configuration for DaemonEye
+# cargo-deny configuration for OPNsense Config Faker
 # See: https://embarkstudios.github.io/cargo-deny/
 
 [graph]
@@ -10,7 +10,7 @@ targets = [
     "x86_64-pc-windows-msvc",
 ]
 all-features = true
-exclude-dev = true
+exclude-dev = false
 
 [licenses]
 unused-allowed-license = "allow"

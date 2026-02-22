@@ -306,4 +306,4 @@ cargo run --release -- generate vlan --count 100 --output production.xml
 
 - Explore [Output Formats](output-formats.md) for detailed format specifications
 - Check out [Examples](examples.md) for real-world scenarios
-- Review [Performance Optimization](advanced/performance.md) for large-scale usage
+- Review [Performance Optimization](../advanced/performance.md) for large-scale usage

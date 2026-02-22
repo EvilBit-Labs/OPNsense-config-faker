@@ -409,9 +409,6 @@ export RAYON_NUM_THREADS=8
 
 # Set memory allocation strategy
 export MALLOC_ARENA_MAX=2
-
-# Set garbage collection (if using GC)
-export RUST_GC_THRESHOLD=1000000
 ```
 
 ### Runtime Configuration

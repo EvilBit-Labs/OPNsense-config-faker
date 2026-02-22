@@ -15,7 +15,7 @@ A clear and concise description of what this pull request does.
 
 Fixes #(issue number)\
 Closes #(issue number)\
-Related to #(issue number)
+Related to #(issue number)\\
 
 ## Testing
 

@@ -203,10 +203,12 @@ Generate VLAN configurations:
 ```bash
 python generate_csv.py --count 100 --output vlans.csv
 python generate_xml.py --count 100 --output vlans.xml
+```
 ````
 
 **After (Rust)**:
 
+````markdown
 ## Usage
 
 Generate VLAN configurations:
@@ -215,6 +217,7 @@ Generate VLAN configurations:
 cargo run --release -- generate vlan --count 100 --output vlans.csv
 cargo run --release -- generate vlan --count 100 --output vlans.xml
 ```
+````
 
 ## Feature Mapping
 
@@ -416,15 +419,15 @@ fi
 ### Getting Help
 
 - **GitHub Issues**: [Report migration issues](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues)
-- **Documentation**: Check the [User Guide](user-guide/) for detailed usage
-- **Examples**: Review [Examples](user-guide/examples.md) for migration examples
+- **Documentation**: Check the [User Guide](../user-guide/) for detailed usage
+- **Examples**: Review [Examples](../user-guide/examples.md) for migration examples
 - **Community**: Join the discussion in GitHub discussions
 
 ### Migration Support
 
 - **Migration Guide**: This document provides comprehensive migration guidance
-- **Troubleshooting**: [Troubleshooting Guide](advanced/troubleshooting.md) for common issues
-- **Performance**: [Performance Guide](advanced/performance.md) for optimization
-- **API Reference**: [API Reference](reference/api.md) for detailed API documentation
+- **Troubleshooting**: [Troubleshooting Guide](../advanced/troubleshooting.md) for common issues
+- **Performance**: [Performance Guide](../advanced/performance.md) for optimization
+- **API Reference**: [API Reference](api.md) for detailed API documentation
 
 This migration guide ensures a smooth transition from the Python implementation to the new Rust implementation while maintaining all functionality and improving performance.

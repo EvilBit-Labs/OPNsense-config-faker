@@ -675,7 +675,7 @@ pub fn generate_vlan_configurations_from_ranges(
     // Calculate total number of VLANs for progress tracking and pre-allocation
     let total_vlans: u32 = vlan_ranges
         .iter()
-        .map(|(start, end)| (*end - *start + 1) as u32)
+        .map(|(start, end)| u32::from(*end) - u32::from(*start) + 1)
         .sum();
     let mut configs = Vec::with_capacity(total_vlans as usize);
     let mut processed = 0u64;
@@ -716,7 +716,7 @@ pub fn generate_vlan_configurations_from_ranges_with_wan(
     // Calculate total number of VLANs for progress tracking and pre-allocation
     let total_vlans: u32 = vlan_ranges
         .iter()
-        .map(|(start, end)| (*end - *start + 1) as u32)
+        .map(|(start, end)| u32::from(*end) - u32::from(*start) + 1)
         .sum();
     let mut configs = Vec::with_capacity(total_vlans as usize);
     let mut processed = 0u64;

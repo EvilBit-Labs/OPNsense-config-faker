@@ -213,7 +213,7 @@ cargo run --release -- generate vlan --count 100 --output production.xml
 **"Invalid VLAN ID" errors:**
 
 - Use `--base-id` to specify starting ID
-- Reduce `--count` if it exceeds valid range (1-4094)
+- Reduce `--count` if it exceeds valid range (10-4094)
 
 **Memory issues with large datasets:**
 

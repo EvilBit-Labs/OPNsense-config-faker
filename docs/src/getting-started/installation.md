@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Rust 1.70+**: Required for building from source
+- **Rust 1.85+**: Required for building from source (Rust 2024 edition)
 - **Git**: For cloning the repository
 - **Just**: Task runner (optional but recommended)
 
@@ -81,7 +81,7 @@ cargo run --release -- generate vlan --count 5 --output test.xml
 
 **Build fails with "no such file or directory":**
 
-- Ensure you have Rust 1.70+ installed
+- Ensure you have Rust 1.85+ installed
 - Run `rustup update` to get the latest toolchain
 
 **Permission denied errors:**
@@ -96,6 +96,6 @@ cargo run --release -- generate vlan --count 5 --output test.xml
 
 ### Getting Help
 
-- Check the [Troubleshooting Guide](advanced/troubleshooting.md)
+- Check the [Troubleshooting Guide](../advanced/troubleshooting.md)
 - Open an issue on [GitHub](https://github.com/EvilBit-Labs/OPNsense-config-faker/issues)
-- Review the [Examples](user-guide/examples.md) for usage patterns
+- Review the [Examples](../user-guide/examples.md) for usage patterns

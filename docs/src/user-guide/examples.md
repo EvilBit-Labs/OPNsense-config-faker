@@ -169,21 +169,21 @@ const data = JSON.parse(fs.readFileSync('data.json', 'utf8'));
 
 // Process VLAN data
 const vlanSummary = data.vlans.reduce((acc, vlan) => {
-    const interface = vlan.interface;
-    if (!acc[interface]) {
-        acc[interface] = {
+    const iface = vlan.interface;
+    if (!acc[iface]) {
+        acc[iface] = {
             count: 0,
             networks: new Set()
         };
     }
-    acc[interface].count++;
-    acc[interface].networks.add(vlan.network);
+    acc[iface].count++;
+    acc[iface].networks.add(vlan.network);
     return acc;
 }, {});
 
 console.log('VLAN Summary by Interface:');
-Object.entries(vlanSummary).forEach(([interface, stats]) => {
-    console.log(`${interface}: ${stats.count} VLANs, ${stats.networks.size} unique networks`);
+Object.entries(vlanSummary).forEach(([iface, stats]) => {
+    console.log(`${iface}: ${stats.count} VLANs, ${stats.networks.size} unique networks`);
 });
 ```
 

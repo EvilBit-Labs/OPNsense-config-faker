@@ -67,8 +67,8 @@ CSV format provides structured data for analysis, processing, and integration wi
 # Generate CSV data
 cargo run --release -- generate vlan --count 25 --format csv --output data.csv
 
-# CSV with custom delimiter
-cargo run --release -- generate vlan --count 25 --format csv --delimiter ";" --output data.csv
+# Generate with specific output path
+cargo run --release -- generate vlan --count 25 --format csv --output data.csv
 ```
 
 ### CSV Structure
@@ -84,7 +84,7 @@ vlan_id,name,description,interface,network,subnet_mask
 
 **VLAN Configuration:**
 
-- `vlan_id`: VLAN identifier (1-4094)
+- `vlan_id`: VLAN identifier (10-4094)
 - `name`: VLAN name
 - `description`: VLAN description
 - `interface`: Parent interface
@@ -124,8 +124,8 @@ JSON format provides structured data for API integration and web applications.
 # Generate JSON data
 cargo run --release -- generate vlan --count 25 --format json --output data.json
 
-# Pretty-printed JSON
-cargo run --release -- generate vlan --count 25 --format json --pretty --output data.json
+# Generate JSON output
+cargo run --release -- generate vlan --count 25 --format json --output data.json
 ```
 
 ### JSON Structure
@@ -216,21 +216,11 @@ cargo run --release -- generate vlan --count 25 --format csv --delimiter ";" --o
 cargo run --release -- generate vlan --count 25 --format csv --delimiter "\t" --output data.tsv
 ```
 
-### Pretty Printing (JSON)
+### JSON Output
 
 ```bash
-# Pretty-printed JSON
-cargo run --release -- generate vlan --count 25 --format json --pretty --output data.json
-
-# Compact JSON
-cargo run --release -- generate vlan --count 25 --format json --compact --output data.json
-```
-
-### Custom Headers (CSV)
-
-```bash
-# CSV with custom headers
-cargo run --release -- generate vlan --count 25 --format csv --headers "ID,Name,Description,Interface,Network" --output data.csv
+# Generate JSON data
+cargo run --release -- generate vlan --count 25 --format json --output data.json
 ```
 
 ## Format Conversion
@@ -272,8 +262,8 @@ cargo run --release -- generate vlan --count 25 --format json --output data.json
 # For large datasets, use CSV
 cargo run --release -- generate vlan --count 1000 --format csv --output large-dataset.csv
 
-# For very large datasets, consider streaming
-cargo run --release -- generate vlan --count 5000 --format csv --stream --output huge-dataset.csv
+# For very large datasets, generate in batches
+cargo run --release -- generate vlan --count 5000 --format csv --output huge-dataset.csv
 ```
 
 ## Integration Examples

@@ -52,7 +52,7 @@ CSV may be used internally for processing, but is not a public contract.
 
 | Layer             | Technology                                | Notes                                            |
 | ----------------- | ----------------------------------------- | ------------------------------------------------ |
-| **Language**      | Rust 2021 Edition                         | Modern Rust with idiomatic patterns              |
+| **Language**      | Rust 2024 Edition                         | Modern Rust with idiomatic patterns              |
 | **CLI**           | Clap v4 with derive macros                | For clean, user-friendly command-line interfaces |
 | **Serialization** | serde with CSV/XML support                | For data interchange and file I/O                |
 | **XML**           | quick-xml or roxmltree                    | For OPNsense XML configuration handling          |
@@ -315,7 +315,7 @@ All commit messages must adhere to the [Conventional Commits](https://www.conven
 
 ```bash
 cargo insta review                           # Review changes
-INSTA_UPDATE=auto cargo test --test snapshot_tests    # Force accept (use sparingly)
+INSTA_UPDATE=always cargo test --test snapshot_tests   # Force accept (use sparingly)
 ```
 
 ## 12. Platform Scope and Constraints

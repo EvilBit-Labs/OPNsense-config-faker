@@ -471,7 +471,7 @@ pub fn validate_ip_range(
 
 ```rust
 pub const MAX_VLAN_ID: u16 = 4094;
-pub const MIN_VLAN_ID: u16 = 1;
+pub const MIN_VLAN_ID: u16 = 10;
 pub const DEFAULT_SUBNET_SIZE: u8 = 24;
 pub const MAX_FIREWALL_RULES: u32 = 10000;
 ```
