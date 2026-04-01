@@ -1,8 +1,8 @@
 # OPNsense Config Faker - User Stories
 
-**Document Version**: 1.2
-**Last Modified**: 2025-01-27
-**Project**: OPNsense Config Faker
+**Document Version**: 1.2\
+**Last Modified**: 2025-01-27\
+**Project**: OPNsense Config Faker\
 **Status**: Active
 
 ## Document Metadata
@@ -395,68 +395,48 @@ This document defines user stories and use cases for the OPNsense Config Faker p
 
 ### Use Case 1: Network Automation Testing
 
-**Primary Actor**: Network Administrator
-**Goal**: Test Ansible playbooks with realistic OPNsense configurations
-**Preconditions**: Ansible playbooks exist for OPNsense configuration
-**Main Flow**:
+**Primary Actor**: Network Administrator **Goal**: Test Ansible playbooks with realistic OPNsense configurations **Preconditions**: Ansible playbooks exist for OPNsense configuration **Main Flow**:
 
 1. Generate 50 realistic OPNsense configurations
 2. Deploy configurations to test environment
 3. Run Ansible playbooks against test configurations
-4. Validate playbook behavior and results
-   **Postconditions**: Ansible playbooks tested with authentic data
+4. Validate playbook behavior and results **Postconditions**: Ansible playbooks tested with authentic data
 
 ### Use Case 2: Security Policy Validation
 
-**Primary Actor**: Security Administrator
-**Goal**: Validate security policies across diverse network topologies
-**Preconditions**: Security policies defined for different network segments
-**Main Flow**:
+**Primary Actor**: Security Administrator **Goal**: Validate security policies across diverse network topologies **Preconditions**: Security policies defined for different network segments **Main Flow**:
 
 1. Generate configurations with different security zones
 2. Apply security policies to generated configurations
 3. Test policy effectiveness across scenarios
-4. Identify policy gaps or conflicts
-   **Postconditions**: Security policies validated across multiple scenarios
+4. Identify policy gaps or conflicts **Postconditions**: Security policies validated across multiple scenarios
 
 ### Use Case 3: Infrastructure Testing at Scale
 
-**Primary Actor**: DevOps Engineer
-**Goal**: Test infrastructure deployment with large-scale configurations
-**Preconditions**: Infrastructure as code templates exist
-**Main Flow**:
+**Primary Actor**: DevOps Engineer **Goal**: Test infrastructure deployment with large-scale configurations **Preconditions**: Infrastructure as code templates exist **Main Flow**:
 
 1. Generate 500 OPNsense configurations
 2. Deploy configurations using Terraform/Pulumi
 3. Test deployment automation and rollback procedures
-4. Validate infrastructure performance and reliability
-   **Postconditions**: Infrastructure deployment tested at scale
+4. Validate infrastructure performance and reliability **Postconditions**: Infrastructure deployment tested at scale
 
 ### Use Case 4: Network Training Environment
 
-**Primary Actor**: Network Trainer
-**Goal**: Create diverse training scenarios for network administration
-**Preconditions**: Training curriculum defined
-**Main Flow**:
+**Primary Actor**: Network Trainer **Goal**: Create diverse training scenarios for network administration **Preconditions**: Training curriculum defined **Main Flow**:
 
 1. Generate configurations for different network topologies
 2. Create training scenarios with various complexity levels
 3. Deploy configurations to training lab environment
-4. Conduct hands-on training sessions
-   **Postconditions**: Comprehensive training environment available
+4. Conduct hands-on training sessions **Postconditions**: Comprehensive training environment available
 
 ### Use Case 5: Application Development Testing
 
-**Primary Actor**: Developer
-**Goal**: Test OPNsense management application with realistic data
-**Preconditions**: Application under development
-**Main Flow**:
+**Primary Actor**: Developer **Goal**: Test OPNsense management application with realistic data **Preconditions**: Application under development **Main Flow**:
 
 1. Generate diverse OPNsense configurations
 2. Test application functionality with generated data
 3. Validate application behavior and performance
-4. Identify and fix issues
-   **Postconditions**: Application tested with realistic configurations
+4. Identify and fix issues **Postconditions**: Application tested with realistic configurations
 
 ## Acceptance Criteria Framework
 
@@ -469,9 +449,7 @@ Each user story includes specific acceptance criteria that define:
 
 ## Priority Framework
 
-**High Priority**: Core functionality required for basic tool operation
-**Medium Priority**: Important features that enhance user experience
-**Low Priority**: Nice-to-have features for advanced use cases
+**High Priority**: Core functionality required for basic tool operation **Medium Priority**: Important features that enhance user experience **Low Priority**: Nice-to-have features for advanced use cases
 
 ## Success Metrics
 

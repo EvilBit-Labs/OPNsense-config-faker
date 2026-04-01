@@ -14,4 +14,4 @@ pub use engine::XMLEngine;
 pub use generator::{ComponentType, XMLGenerator};
 pub use injection::XMLInjector;
 pub use streaming::StreamingXmlGenerator;
-pub use template::{escape_xml_string, XmlTemplate};
+pub use template::{XmlTemplate, escape_xml_string};

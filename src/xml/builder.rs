@@ -385,7 +385,7 @@ mod tests {
         assert!(result.is_ok());
         let xml = result.unwrap();
         println!("Generated XML: {}", xml); // Debug output
-                                            // The current implementation generates XML events, not the full template
+        // The current implementation generates XML events, not the full template
         assert!(!xml.is_empty());
     }
 

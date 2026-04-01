@@ -8,7 +8,7 @@
 mod bench_common;
 
 use bench_common::{ci_or_local, criterion_for_env};
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use opnsense_config_faker::generator::performance::PerformantConfigGenerator;
 use opnsense_config_faker::generator::vlan::generate_vlan_configurations;
 use std::hint::black_box;

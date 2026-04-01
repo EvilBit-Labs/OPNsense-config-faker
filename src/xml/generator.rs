@@ -2,6 +2,7 @@
 
 use crate::generator::VlanConfig;
 use crate::xml::error::XMLResult;
+use crate::xml::template::escape_xml_string;
 use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -200,7 +201,7 @@ impl VlanGenerator {
 
         // Description
         events.push(Event::Start(BytesStart::new("descr")));
-        let description_text = escape_xml_text(&self.config.description);
+        let description_text = escape_xml_string(&self.config.description);
         events.push(Event::Text(BytesText::new(&description_text).into_owned()));
         events.push(Event::End(BytesEnd::new("descr")));
 
@@ -489,23 +490,6 @@ impl VlanGenerator {
     }
 }
 
-/// Escape XML text content
-fn escape_xml_text(text: &str) -> String {
-    text.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .replace('\'', "&apos;")
-        // Handle German umlauts
-        .replace('ä', "ae")
-        .replace('ö', "oe")
-        .replace('ü', "ue")
-        .replace('Ä', "Ae")
-        .replace('Ö', "Oe")
-        .replace('Ü', "Ue")
-        .replace('ß', "ss")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -592,10 +576,13 @@ mod tests {
 
     #[test]
     fn test_escape_xml_text() {
-        assert_eq!(escape_xml_text("Hello & World"), "Hello &amp; World");
-        assert_eq!(escape_xml_text("<test>"), "&lt;test&gt;");
-        assert_eq!(escape_xml_text("Größe"), "Groesse");
-        assert_eq!(escape_xml_text("Test \"quote\""), "Test &quot;quote&quot;");
+        assert_eq!(escape_xml_string("Hello & World"), "Hello &amp; World");
+        assert_eq!(escape_xml_string("<test>"), "&lt;test&gt;");
+        assert_eq!(escape_xml_string("Größe"), "Groesse");
+        assert_eq!(
+            escape_xml_string("Test \"quote\""),
+            "Test &quot;quote&quot;"
+        );
     }
 
     #[test]

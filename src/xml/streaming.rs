@@ -3,9 +3,9 @@
 //! This module provides streaming XML generation with memory efficiency
 //! and performance optimizations for large configuration sets.
 
+use crate::Result;
 use crate::generator::VlanConfig;
 use crate::model::ConfigError;
-use crate::Result;
 
 use bumpalo::Bump;
 use lru::LruCache;
@@ -222,7 +222,10 @@ impl StreamingXmlGenerator {
     pub fn generate_parallel(&mut self, configs: &[VlanConfig]) -> Result<String> {
         use rayon::prelude::*;
 
-        let chunk_size = (configs.len() + 3) / 4; // Default to 4 logical chunks
+        if configs.is_empty() {
+            return Ok(String::new());
+        }
+        let chunk_size = configs.len().div_ceil(4); // Default to 4 logical chunks
         let xml_parts: Result<Vec<String>> = configs
             .par_chunks(chunk_size)
             .enumerate()

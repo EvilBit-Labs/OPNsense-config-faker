@@ -34,6 +34,21 @@ pub const MAX_UNIQUE_VLAN_IDS: u16 = 4085;
   Generate advanced firewall rules:
     opnsense-config-faker generate --count 10 --format xml --base-config config.xml --include-firewall-rules --firewall-rule-complexity advanced
 
+  Generate from VLAN ranges:
+    opnsense-config-faker generate --format csv --vlan-range "100-150,200-250" --output vlans.csv
+
+  Generate with VPN configurations:
+    opnsense-config-faker generate --count 10 --vpn-count 3 --format csv --output configs.csv
+
+  Generate with NAT mappings:
+    opnsense-config-faker generate --count 15 --nat-mappings 5 --format csv --output network.csv
+
+  Generate with balanced WAN assignments:
+    opnsense-config-faker generate --count 12 --wan-assignments balanced --format csv --output balanced.csv
+
+  Generate comprehensive configuration:
+    opnsense-config-faker generate --vlan-range "100-120" --vpn-count 2 --nat-mappings 3 --wan-assignments multi --format csv --output complete.csv
+
   Force overwrite existing files:
     opnsense-config-faker generate --count 10 --format csv --output test.csv --force
 
@@ -99,6 +114,17 @@ pub enum OutputFormat {
     Csv,
     /// Generate complete OPNsense XML configuration
     Xml,
+}
+
+/// WAN assignment strategy for VLAN distribution
+#[derive(Clone, Debug, ValueEnum)]
+pub enum WanAssignmentStrategy {
+    /// Assign all VLANs to a single WAN connection
+    Single,
+    /// Distribute VLANs across multiple WAN connections
+    Multi,
+    /// Balance VLANs evenly across available WAN connections
+    Balanced,
 }
 
 /// Shell types for completion generation
@@ -180,6 +206,22 @@ pub struct GenerateArgs {
     /// Firewall rule complexity level (basic, intermediate, advanced)
     #[arg(long, default_value = "intermediate")]
     pub firewall_rule_complexity: String,
+
+    /// VLAN range specification (e.g., "100-150" or "10,20,30-40")
+    #[arg(long, conflicts_with = "count")]
+    pub vlan_range: Option<String>,
+
+    /// Number of VPN configurations to generate
+    #[arg(long)]
+    pub vpn_count: Option<u16>,
+
+    /// Number of NAT mappings to generate
+    #[arg(long)]
+    pub nat_mappings: Option<u16>,
+
+    /// WAN assignment strategy for VLANs
+    #[arg(long, value_enum)]
+    pub wan_assignments: Option<WanAssignmentStrategy>,
 }
 
 impl GenerateArgs {
@@ -192,6 +234,29 @@ impl GenerateArgs {
                 self.count, MAX_UNIQUE_VLAN_IDS
             ));
         }
+
+        // Validate VLAN range if provided
+        if let Some(ref vlan_range) = self.vlan_range {
+            self.validate_vlan_range(vlan_range)?;
+        }
+
+        Ok(())
+    }
+
+    /// Validate VLAN range format and values
+    fn validate_vlan_range(&self, vlan_range: &str) -> Result<(), String> {
+        let ranges = parse_vlan_range(vlan_range)
+            .map_err(|e| format!("Invalid VLAN range format '{}': {}", vlan_range, e))?;
+
+        let total_vlans: u32 = ranges.iter().map(|r| (r.1 - r.0 + 1) as u32).sum();
+
+        if matches!(self.format, OutputFormat::Xml) && total_vlans > MAX_UNIQUE_VLAN_IDS as u32 {
+            return Err(format!(
+                "VLAN range produces {} VLANs, but maximum is {} for XML format",
+                total_vlans, MAX_UNIQUE_VLAN_IDS
+            ));
+        }
+
         Ok(())
     }
 }
@@ -278,13 +343,13 @@ impl XmlArgs {
     /// Validate arguments after parsing
     pub fn validate(&self) -> Result<(), String> {
         // For XML format with count specified, check against maximum unique VLANs
-        if let Some(count) = self.count {
-            if count > MAX_UNIQUE_VLAN_IDS {
-                return Err(format!(
-                    "Cannot generate {} unique VLAN configurations. Maximum is {} for XML format due to VLAN ID range constraints (10-4094). Consider using CSV format if duplicates are acceptable, or reduce the count.",
-                    count, MAX_UNIQUE_VLAN_IDS
-                ));
-            }
+        if let Some(count) = self.count
+            && count > MAX_UNIQUE_VLAN_IDS
+        {
+            return Err(format!(
+                "Cannot generate {} unique VLAN configurations. Maximum is {} for XML format due to VLAN ID range constraints (10-4094). Consider using CSV format if duplicates are acceptable, or reduce the count.",
+                count, MAX_UNIQUE_VLAN_IDS
+            ));
         }
         Ok(())
     }
@@ -324,4 +389,90 @@ pub enum ValidationFormat {
     Csv,
     /// Validate OPNsense XML configuration
     Xml,
+}
+
+/// Parse VLAN range specification into individual ranges
+/// Supports formats like "100-150", "10,20,30-40", "100"
+pub fn parse_vlan_range(range_str: &str) -> Result<Vec<(u16, u16)>, String> {
+    let mut ranges = Vec::new();
+
+    for part in range_str.split(',') {
+        let part = part.trim();
+        if part.is_empty() {
+            continue;
+        }
+
+        if part.contains('-') {
+            let parts: Vec<&str> = part.split('-').collect();
+            if parts.len() != 2 {
+                return Err(format!("Invalid range format: '{}'", part));
+            }
+
+            let start: u16 = parts[0]
+                .trim()
+                .parse()
+                .map_err(|_| format!("Invalid start VLAN ID: '{}'", parts[0]))?;
+            let end: u16 = parts[1]
+                .trim()
+                .parse()
+                .map_err(|_| format!("Invalid end VLAN ID: '{}'", parts[1]))?;
+
+            if start > end {
+                return Err(format!(
+                    "Start VLAN ID {} must be less than or equal to end VLAN ID {}",
+                    start, end
+                ));
+            }
+
+            if !(10..=4094).contains(&start) || !(10..=4094).contains(&end) {
+                return Err(format!(
+                    "VLAN IDs must be between 10 and 4094, got range {}-{}",
+                    start, end
+                ));
+            }
+
+            ranges.push((start, end));
+        } else {
+            let vlan_id: u16 = part
+                .parse()
+                .map_err(|_| format!("Invalid VLAN ID: '{}'", part))?;
+
+            if !(10..=4094).contains(&vlan_id) {
+                return Err(format!("VLAN ID {} must be between 10 and 4094", vlan_id));
+            }
+
+            ranges.push((vlan_id, vlan_id));
+        }
+    }
+
+    if ranges.is_empty() {
+        return Err("No valid VLAN ranges found".to_string());
+    }
+
+    Ok(ranges)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_vlan_range() {
+        // Test single VLAN
+        let ranges = parse_vlan_range("100").unwrap();
+        assert_eq!(ranges, vec![(100, 100)]);
+
+        // Test simple range
+        let ranges = parse_vlan_range("100-150").unwrap();
+        assert_eq!(ranges, vec![(100, 150)]);
+
+        // Test multiple ranges
+        let ranges = parse_vlan_range("10,20-30,40").unwrap();
+        assert_eq!(ranges, vec![(10, 10), (20, 30), (40, 40)]);
+
+        // Test invalid range
+        assert!(parse_vlan_range("150-100").is_err());
+        assert!(parse_vlan_range("5-10").is_err()); // Below minimum
+        assert!(parse_vlan_range("4095-5000").is_err()); // Above maximum
+    }
 }

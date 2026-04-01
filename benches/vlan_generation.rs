@@ -2,8 +2,8 @@
 mod bench_common;
 
 use bench_common::{ci_or_local, criterion_for_env};
-use criterion::{criterion_group, criterion_main, Criterion};
-use opnsense_config_faker::generator::vlan::{generate_vlan_configurations, VlanGenerator};
+use criterion::{Criterion, criterion_group, criterion_main};
+use opnsense_config_faker::generator::vlan::{VlanGenerator, generate_vlan_configurations};
 use std::hint::black_box;
 
 fn bench_vlan_generation(c: &mut Criterion) {

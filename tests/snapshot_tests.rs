@@ -5,7 +5,7 @@
 
 mod common;
 
-use common::{cli_command, create_temp_csv, create_temp_xml, normalize_output, TestOutputExt};
+use common::{TestOutputExt, cli_command, create_temp_csv, create_temp_xml, normalize_output};
 use insta::assert_snapshot;
 use tempfile::TempDir;
 

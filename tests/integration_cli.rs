@@ -8,7 +8,7 @@
 mod common;
 
 use assert_cmd::Command;
-use common::{cli_command, create_temp_dir, create_temp_xml, TestOutputExt};
+use common::{TestOutputExt, cli_command, create_temp_dir, create_temp_xml};
 use predicates::prelude::*;
 use regex::Regex;
 use std::fs;
@@ -344,7 +344,8 @@ fn test_generate_xml_nonexistent_base_config_fails() {
         combined_output.contains("not found")
             || combined_output.contains("No such file")
             || combined_output.contains("does not exist")
-            || combined_output.contains("ConfigNotFound"),
+            || combined_output.contains("ConfigNotFound")
+            || combined_output.contains("cannot find the file"),
         "Expected file not found error, got: {combined_output}"
     );
 

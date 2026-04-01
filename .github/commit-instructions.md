@@ -1,0 +1,38 @@
+# Commit Message Style for OPNsense-config-faker
+
+- **Conventional Commits**: All commits must follow [Conventional Commits](https://www.conventionalcommits.org): `<type>(<scope>): <description>`
+- **Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`
+- **Scopes**: `(cli)`, `(generators)`, `(validators)`, `(network)`, `(xml)`, `(csv)`, `(json)`, `(vlan)`, `(firewall)`, `(interfaces)`, `(routing)`, `(io)`, `(models)`, `(deps)`, `(ci)`, `(build)`, etc. Required for all commits.
+- **Description**:
+  - Imperative mood ("add", not "added")
+  - No period at the end
+  - ≤72 characters, capitalized, clear and specific
+- **Body (optional)**:
+  - Start after a blank line
+  - Use itemized lists for multiple changes
+  - Explain what/why, not how
+- **Footer (optional)**:
+  - Start after a blank line
+  - Use for issue refs (`Closes #123`) or breaking changes (`BREAKING CHANGE:`)
+- **Breaking Changes**:
+  - Add `!` after type/scope (e.g., `feat(cli)!: ...`) or use `BREAKING CHANGE:` in footer
+- **Examples**:
+  - `feat(generators): add VLAN configuration generation with IEEE 802.1Q compliance`
+  - `fix(validators): prevent VLAN ID overflow in batch generation`
+  - `docs(readme): update CLI examples with firewall rule generation`
+  - `refactor(network): simplify IP range generation logic`
+  - `test(cli): add property-based tests for VLAN ID validation`
+  - `chore(deps): update clap to v4.5.2 for better CLI help formatting`
+  - `perf(xml): optimize XML serialization for large configurations`
+  - `feat(firewall): add realistic firewall rule generation with security patterns`
+  - `feat(cli): add --base-network option for custom IP range specification`
+  - `fix(xml): handle malformed OPNsense XML templates gracefully`
+- **CI Compatibility**:
+  - All commits must pass `just ci-check` and network validation
+  - Use `chore:` for meta or maintenance changes
+  - Use `deps:` scope for dependency updates
+- **Network Configuration Specific**:
+  - `feat(vlan): add support for IEEE 802.1Q tag generation`
+  - `fix(firewall): correct rule priority ordering in XML output`
+  - `feat(interfaces): add physical interface configuration generation`
+  - `fix(routing): ensure generated routes have valid next-hop addresses`

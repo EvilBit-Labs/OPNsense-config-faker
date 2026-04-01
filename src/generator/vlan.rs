@@ -1,9 +1,9 @@
 //! VLAN configuration generation
 
+use crate::Result;
 use crate::generator::departments;
 use crate::model::{ConfigError, VlanError, VlanResult};
 use crate::utils::rfc1918;
-use crate::Result;
 use indicatif::ProgressBar;
 use ipnetwork::Ipv4Network;
 use rand::prelude::*;
@@ -177,18 +177,17 @@ impl VlanConfig {
 
     /// Get the network as an Ipv4Network if possible
     pub fn as_ipv4_network(&self) -> VlanResult<Ipv4Network> {
-        if let Some(base) = self.ip_network.strip_suffix(".x") {
-            let network_str = format!("{base}.0/24");
-            rfc1918::validate_rfc1918_network_string(&network_str)
-        } else if let Some(base) = self.ip_network.strip_suffix(".0/24") {
-            let network_str = format!("{base}.0/24");
-            rfc1918::validate_rfc1918_network_string(&network_str)
-        } else {
-            Err(VlanError::network_parsing(format!(
-                "Cannot parse network format: {}",
-                self.ip_network
-            )))
-        }
+        let base = self
+            .ip_network
+            .strip_suffix(".x")
+            .or_else(|| self.ip_network.strip_suffix(".0/24"))
+            .ok_or_else(|| {
+                VlanError::network_parsing(format!(
+                    "Cannot parse network format: {}",
+                    self.ip_network
+                ))
+            })?;
+        rfc1918::validate_rfc1918_network_string(&format!("{base}.0/24"))
     }
 
     /// Validate that this configuration is RFC 1918 compliant
@@ -238,46 +237,34 @@ impl VlanConfig {
         "255.255.255.0"
     }
 
+    /// Extract the three-octet base prefix from the IP network string.
+    ///
+    /// Handles both "10.1.2.x" and "10.1.2.0/24" formats, returning "10.1.2".
+    fn network_base(&self) -> Result<&str> {
+        self.ip_network
+            .strip_suffix(".x")
+            .or_else(|| self.ip_network.strip_suffix(".0/24"))
+            .ok_or_else(|| {
+                ConfigError::validation(format!(
+                    "Cannot parse base from IP network: {}",
+                    self.ip_network
+                ))
+            })
+    }
+
     /// Get the gateway IP address (network + 1)
     pub fn gateway_ip(&self) -> Result<String> {
-        if let Some(base) = self.ip_network.strip_suffix(".x") {
-            Ok(format!("{base}.1"))
-        } else if let Some(base) = self.ip_network.strip_suffix(".0/24") {
-            Ok(format!("{base}.1"))
-        } else {
-            Err(ConfigError::validation(format!(
-                "Cannot derive gateway from IP network: {}",
-                self.ip_network
-            )))
-        }
+        Ok(format!("{}.1", self.network_base()?))
     }
 
     /// Get the DHCP range start IP
     pub fn dhcp_range_start(&self) -> Result<String> {
-        if let Some(base) = self.ip_network.strip_suffix(".x") {
-            Ok(format!("{base}.100"))
-        } else if let Some(base) = self.ip_network.strip_suffix(".0/24") {
-            Ok(format!("{base}.100"))
-        } else {
-            Err(ConfigError::validation(format!(
-                "Cannot derive DHCP range from IP network: {}",
-                self.ip_network
-            )))
-        }
+        Ok(format!("{}.100", self.network_base()?))
     }
 
     /// Get the DHCP range end IP
     pub fn dhcp_range_end(&self) -> Result<String> {
-        if let Some(base) = self.ip_network.strip_suffix(".x") {
-            Ok(format!("{base}.200"))
-        } else if let Some(base) = self.ip_network.strip_suffix(".0/24") {
-            Ok(format!("{base}.200"))
-        } else {
-            Err(ConfigError::validation(format!(
-                "Cannot derive DHCP range from IP network: {}",
-                self.ip_network
-            )))
-        }
+        Ok(format!("{}.200", self.network_base()?))
     }
 
     /// Get the DHCP lease time based on department type (in seconds)
@@ -317,7 +304,7 @@ impl VlanConfig {
 
     /// Get DNS servers list (gateway + reliable public DNS)
     pub fn dhcp_dns_servers(&self) -> Result<Vec<String>> {
-        let mut dns_servers = Vec::new();
+        let mut dns_servers = Vec::with_capacity(3);
 
         // Add gateway as primary DNS
         if let Ok(gateway) = self.gateway_ip() {
@@ -342,19 +329,10 @@ impl VlanConfig {
 
     /// Generate static DHCP reservations with realistic MAC-IP mappings
     pub fn static_reservations(&self) -> Result<Vec<StaticReservation>> {
-        let mut reservations = Vec::new();
+        let mut reservations = Vec::with_capacity(2);
 
         // Get base network for IP assignments
-        let base = if let Some(base) = self.ip_network.strip_suffix(".x") {
-            base
-        } else if let Some(base) = self.ip_network.strip_suffix(".0/24") {
-            base
-        } else {
-            return Err(ConfigError::validation(format!(
-                "Cannot derive static reservations from IP network: {}",
-                self.ip_network
-            )));
-        };
+        let base = self.network_base()?;
 
         // Generate department-specific static reservations
         let department = self
@@ -480,6 +458,34 @@ impl VlanGenerator {
         VlanConfig::new(vlan_id, ip_network, description, wan_assignment)
     }
 
+    /// Generate WAN assignment based on strategy
+    pub fn generate_wan_assignment(
+        &mut self,
+        strategy: Option<&crate::cli::WanAssignmentStrategy>,
+        vlan_index: Option<usize>,
+        total_vlans: Option<usize>,
+    ) -> u8 {
+        match strategy {
+            Some(crate::cli::WanAssignmentStrategy::Single) => 1, // Always assign to WAN 1
+            Some(crate::cli::WanAssignmentStrategy::Multi) => {
+                // Randomly distribute across WAN 1, 2, 3
+                self.rng.random_range(1..=3)
+            }
+            Some(crate::cli::WanAssignmentStrategy::Balanced) => {
+                // Evenly distribute across available WANs
+                if let (Some(idx), Some(_total)) = (vlan_index, total_vlans) {
+                    ((idx % 3) as u8) + 1 // Distribute evenly across 3 WANs
+                } else {
+                    self.rng.random_range(1..=3) // Fallback to random
+                }
+            }
+            None => {
+                // Default random assignment
+                self.rng.random_range(1..=3)
+            }
+        }
+    }
+
     /// Generate a single VLAN configuration with enhanced validation
     pub fn generate_single_enhanced(&mut self) -> VlanResult<VlanConfig> {
         const MAX_ATTEMPTS: usize = 1000;
@@ -547,8 +553,8 @@ impl VlanGenerator {
         Err(VlanError::VlanIdExhausted)
     }
 
-    /// Generate unique RFC 1918 private IP network
-    fn generate_unique_ip_network(&mut self, max_attempts: usize) -> Result<String> {
+    /// Generate unique IP network
+    pub fn generate_unique_ip_network(&mut self, max_attempts: usize) -> Result<String> {
         for _ in 0..max_attempts {
             // Generate Class A private network (10.0.0.0/8)
             let second_octet = self.rng.random_range(1..=254);
@@ -585,7 +591,7 @@ impl VlanGenerator {
     }
 
     /// Generate department-based description using legacy constants
-    fn generate_description(&mut self, vlan_id: u16) -> String {
+    pub fn generate_description(&mut self, vlan_id: u16) -> String {
         const DEPARTMENTS: &[&str] = &[
             "Sales",
             "IT",
@@ -648,6 +654,123 @@ pub fn generate_vlan_configurations_enhanced(
 
     for i in 0..count {
         let config = generator.generate_single_enhanced()?;
+        configs.push(config);
+
+        if let Some(pb) = progress_bar {
+            pb.set_position(i as u64 + 1);
+        }
+    }
+
+    Ok(configs)
+}
+
+/// Generate VLAN configurations from specified ranges
+pub fn generate_vlan_configurations_from_ranges(
+    vlan_ranges: &[(u16, u16)],
+    seed: Option<u64>,
+    progress_bar: Option<&ProgressBar>,
+) -> Result<Vec<VlanConfig>> {
+    let mut generator = VlanGenerator::new_with_std_rng(seed);
+
+    // Calculate total number of VLANs for progress tracking and pre-allocation
+    let total_vlans: u32 = vlan_ranges
+        .iter()
+        .map(|(start, end)| u32::from(*end) - u32::from(*start) + 1)
+        .sum();
+    let mut configs = Vec::with_capacity(total_vlans as usize);
+    let mut processed = 0u64;
+
+    for (start, end) in vlan_ranges {
+        for vlan_id in *start..=*end {
+            // Generate unique IP network
+            let ip_network = generator.generate_unique_ip_network(1000)?;
+
+            // Generate description
+            let description = generator.generate_description(vlan_id);
+
+            // Generate WAN assignment
+            let wan_assignment = generator.rng.random_range(1..=3);
+
+            let config = VlanConfig::new(vlan_id, ip_network, description, wan_assignment)?;
+            configs.push(config);
+
+            processed += 1;
+            if let Some(pb) = progress_bar {
+                pb.set_position(processed);
+            }
+        }
+    }
+
+    Ok(configs)
+}
+
+/// Generate VLAN configurations from specified ranges with WAN assignment strategy
+pub fn generate_vlan_configurations_from_ranges_with_wan(
+    vlan_ranges: &[(u16, u16)],
+    seed: Option<u64>,
+    wan_strategy: Option<&crate::cli::WanAssignmentStrategy>,
+    progress_bar: Option<&ProgressBar>,
+) -> Result<Vec<VlanConfig>> {
+    let mut generator = VlanGenerator::new_with_std_rng(seed);
+
+    // Calculate total number of VLANs for progress tracking and pre-allocation
+    let total_vlans: u32 = vlan_ranges
+        .iter()
+        .map(|(start, end)| u32::from(*end) - u32::from(*start) + 1)
+        .sum();
+    let mut configs = Vec::with_capacity(total_vlans as usize);
+    let mut processed = 0u64;
+    let mut vlan_index = 0usize;
+
+    for (start, end) in vlan_ranges {
+        for vlan_id in *start..=*end {
+            // Generate unique IP network
+            let ip_network = generator.generate_unique_ip_network(1000)?;
+
+            // Generate description
+            let description = generator.generate_description(vlan_id);
+
+            // Generate WAN assignment based on strategy
+            let wan_assignment = generator.generate_wan_assignment(
+                wan_strategy,
+                Some(vlan_index),
+                Some(total_vlans as usize),
+            );
+
+            let config = VlanConfig::new(vlan_id, ip_network, description, wan_assignment)?;
+            configs.push(config);
+
+            processed += 1;
+            vlan_index += 1;
+            if let Some(pb) = progress_bar {
+                pb.set_position(processed);
+            }
+        }
+    }
+
+    Ok(configs)
+}
+
+/// Generate VLAN configurations by count with WAN assignment strategy
+pub fn generate_vlan_configurations_with_wan(
+    count: u16,
+    seed: Option<u64>,
+    wan_strategy: Option<&crate::cli::WanAssignmentStrategy>,
+    progress_bar: Option<&ProgressBar>,
+) -> Result<Vec<VlanConfig>> {
+    let mut generator = VlanGenerator::new_with_std_rng(seed);
+    let mut configs = Vec::with_capacity(count as usize);
+
+    for i in 0..count {
+        let vlan_id = generator.generate_unique_vlan_id(1000)?;
+        let ip_network = generator.generate_unique_ip_network(1000)?;
+        let description = generator.generate_description(vlan_id);
+
+        // Generate WAN assignment based on strategy
+        let wan_assignment =
+            generator.generate_wan_assignment(wan_strategy, Some(i as usize), Some(count as usize));
+
+        let config = VlanConfig::new(vlan_id, ip_network, description, wan_assignment)?;
         configs.push(config);
 
         if let Some(pb) = progress_bar {
@@ -902,21 +1025,27 @@ mod tests {
         assert!(config.dhcp_range_start().is_err());
         assert!(config.dhcp_range_end().is_err());
 
-        // Test specific error messages
+        // All methods delegate to network_base(), which returns a unified error
         let gateway_error = config.gateway_ip().unwrap_err();
-        assert!(gateway_error
-            .to_string()
-            .contains("Cannot derive gateway from IP network: invalid.network"));
+        assert!(
+            gateway_error
+                .to_string()
+                .contains("Cannot parse base from IP network: invalid.network")
+        );
 
         let dhcp_start_error = config.dhcp_range_start().unwrap_err();
-        assert!(dhcp_start_error
-            .to_string()
-            .contains("Cannot derive DHCP range from IP network: invalid.network"));
+        assert!(
+            dhcp_start_error
+                .to_string()
+                .contains("Cannot parse base from IP network: invalid.network")
+        );
 
         let dhcp_end_error = config.dhcp_range_end().unwrap_err();
-        assert!(dhcp_end_error
-            .to_string()
-            .contains("Cannot derive DHCP range from IP network: invalid.network"));
+        assert!(
+            dhcp_end_error
+                .to_string()
+                .contains("Cannot parse base from IP network: invalid.network")
+        );
     }
 
     // ===== VlanGenerator Tests =====
@@ -1497,9 +1626,11 @@ mod tests {
         let finance_reservations = finance_config.static_reservations().unwrap();
 
         assert!(!finance_reservations.is_empty());
-        assert!(finance_reservations
-            .iter()
-            .any(|r| r.hostname.contains("workstation")));
+        assert!(
+            finance_reservations
+                .iter()
+                .any(|r| r.hostname.contains("workstation"))
+        );
     }
 
     #[test]

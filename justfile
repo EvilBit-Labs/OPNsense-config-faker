@@ -1,334 +1,403 @@
-# 🔧 justfile — OPNsense Config Faker Developer Tasks
+# Cross-platform justfile using OS annotations
+# Windows uses PowerShell, Unix uses bash
+
+set shell := ["bash", "-cu"]
+set windows-shell := ["powershell", "-NoProfile", "-Command"]
 set dotenv-load := true
 set ignore-comments := true
 
-# Default recipe - shows available commands
+# Use mise to manage all dev tools (cargo, node, pre-commit, etc.)
+# See mise.toml for tool versions
+
+mise_exec := "mise exec --"
+root := justfile_dir()
+
+# =============================================================================
+# GENERAL COMMANDS
+# =============================================================================
+
 default:
-    just --list
+    @just --choose
 
-# Show help
 help:
-    just --list
+    @just --list
 
-# -----------------------------
-# 🔧 Setup & Installation
-# -----------------------------
+# =============================================================================
+# CROSS-PLATFORM HELPERS
+# =============================================================================
+# Cross-platform helpers using OS annotations
+# Each helper has Windows and Unix variants
 
-# Install cargo-llvm-cov for coverage
-install-cov:
-    cargo install cargo-llvm-cov
+[windows]
+cd-root:
+    Set-Location "{{ root }}"
 
-# Setup development environment
+[unix]
+cd-root:
+    cd "{{ root }}"
+
+[windows]
+ensure-dir dir:
+    New-Item -ItemType Directory -Force -Path "{{ dir }}" | Out-Null
+
+[unix]
+ensure-dir dir:
+    /bin/mkdir -p "{{ dir }}"
+
+[windows]
+rmrf path:
+    if (Test-Path "{{ path }}") { Remove-Item "{{ path }}" -Recurse -Force }
+
+[unix]
+rmrf path:
+    /bin/rm -rf "{{ path }}"
+
+# =============================================================================
+# SETUP AND INITIALIZATION
+# =============================================================================
+
+# Development setup
+[windows]
 setup:
-    @echo "🚀 Setting up development environment..."
-    rustup component add clippy rustfmt
-    just install-cov
-    @echo "✅ Setup complete!"
+    @just mise-install
+    rustup component add rustfmt clippy llvm-tools-preview
+    @just mdformat-install
+    Write-Host "Note: You may need to restart your shell for pipx PATH changes to take effect"
 
-# -----------------------------
-# 🧹 Linting, Formatting & Checking
-# -----------------------------
+[unix]
+setup:
+    @just mise-install
+    rustup component add rustfmt clippy llvm-tools-preview
+    @just mdformat-install
+    echo "Note: You may need to restart your shell for pipx PATH changes to take effect"
 
-# Format code with rustfmt
-format:
-    cargo fmt
+# Install tool versions defined in mise.toml
+[windows]
+mise-install:
+    mise trust
+    mise install
 
-# Check code formatting
-format-check:
-    cargo fmt --check
+[unix]
+mise-install:
+    mise trust
+    mise install
 
-# Lint code with clippy (strict warnings as errors)
-lint:
-    cargo clippy --all-targets --all-features --benches -- -D warnings
+# Install development tools not managed by mise
+[windows]
+install-tools:
+    @just mise-install
+    @{{ mise_exec }} cargo binstall --disable-telemetry cargo-llvm-cov cargo-audit cargo-deny cargo-dist cargo-release cargo-cyclonedx cargo-auditable cargo-nextest --locked
 
-# Run all linting and formatting checks
-check: format-check lint pre-commit
-    @echo "✅ All checks passed!"
+[unix]
+install-tools:
+    @just mise-install
+    @{{ mise_exec }} cargo binstall --disable-telemetry cargo-llvm-cov cargo-audit cargo-deny cargo-dist cargo-release cargo-cyclonedx cargo-auditable cargo-nextest --locked
 
-# Fix linting and formatting issues
-fix: format
-    cargo clippy --fix --allow-dirty
+# Install mdBook plugins for documentation
+[windows]
+docs-install:
+    @just mise-install
+    @{{ mise_exec }} cargo binstall mdbook-admonish mdbook-mermaid mdbook-linkcheck mdbook-toc mdbook-open-on-gh mdbook-tabs mdbook-i18n-helpers
 
-# Run pre-commit hooks on all files
-pre-commit:
-    pre-commit run --all-files
+[unix]
+docs-install:
+    @just mise-install
+    @{{ mise_exec }} cargo binstall mdbook-admonish mdbook-mermaid mdbook-linkcheck mdbook-toc mdbook-open-on-gh mdbook-tabs mdbook-i18n-helpers
 
-# -----------------------------
-# 🦀 Standardized Rust Tasks
-# -----------------------------
+# Install pipx for Python tool management
+[windows]
+pipx-install:
+    python -m pip install --user pipx
+    python -m pipx ensurepath
 
-# Format all Rust code
-rust-fmt:
-    cargo fmt --all
+[unix]
+pipx-install:
+    #!/bin/bash
+    set -e
+    set -u
+    set -o pipefail
 
-# Check Rust code formatting
-rust-fmt-check:
-    cargo fmt --all -- --check
+    if command -v pipx >/dev/null 2>&1; then
+        echo "pipx already installed"
+    else
+        echo "Installing pipx..."
+        python3 -m pip install --user pipx
+        python3 -m pipx ensurepath
+    fi
 
-# Lint Rust code with clippy (strict mode)
-rust-clippy:
-    cargo clippy --all-targets --all-features --benches -- -D warnings
+# Install mdformat and extensions for markdown formatting
+[windows]
+mdformat-install: pipx-install
+    pipx install mdformat
+    pipx inject mdformat mdformat-gfm mdformat-frontmatter mdformat-footnote mdformat-simple-breaks mdformat-gfm-alerts mdformat-toc mdformat-wikilink mdformat-tables
 
-# Run all Rust tests
-rust-test:
-    cargo test --all-features --workspace
+[unix]
+mdformat-install:
+    @just pipx-install
+    pipx install mdformat
+    pipx inject mdformat mdformat-gfm mdformat-frontmatter mdformat-footnote mdformat-simple-breaks mdformat-gfm-alerts mdformat-toc mdformat-wikilink mdformat-tables
 
-# Run Rust test coverage with HTML report
-rust-cov:
-    cargo llvm-cov --all-features --workspace --open
+# =============================================================================
+# FORMATTING AND LINTING
+# =============================================================================
 
-# Run Rust benchmarks
-rust-bench:
-    cargo bench
+alias format-rust := fmt
+alias format-md := format-docs
+alias format-just := fmt-justfile
 
-# Quality assurance: format check, clippy, and tests
-qa: rust-fmt-check rust-clippy rust-test
-    @echo "✅ All QA checks passed!"
+# Main format recipe - calls all formatters
+format: fmt format-json-yaml format-docs fmt-justfile
 
-# Quality assurance with coverage
-qa-cov: rust-fmt-check rust-clippy rust-test rust-cov
-    @echo "✅ All QA checks with coverage completed!"
+# Individual format recipes
 
-# -----------------------------
-# 🧪 Testing & Coverage
-# -----------------------------
+format-json-yaml:
+    @{{ mise_exec }} prettier --write "**/*.{json,yaml,yml}"
 
-# Run all tests
-test:
-    cargo test --all-features
+[windows]
+format-docs:
+    @if (Get-Command mdformat -ErrorAction SilentlyContinue) { Get-ChildItem -Recurse -Filter "*.md" | Where-Object { $_.FullName -notmatch "\\target\\" -and $_.FullName -notmatch "\\node_modules\\" } | ForEach-Object { mdformat $_.FullName } } else { Write-Host "mdformat not found. Run 'just mdformat-install' first." }
 
-# Run tests excluding benchmarks
-test-no-bench:
-    cargo test --all-features --lib --bins --tests
+[unix]
+format-docs:
+    @if command -v mdformat >/dev/null 2>&1; then find . -type f -name "*.md" -not -path "./target/*" -not -path "./node_modules/*" -exec mdformat {} + ; else echo "mdformat not found. Run 'just mdformat-install' first."; fi
 
-# Run integration tests only
-test-integration:
-    cargo test --test '*' --all-features
+fmt:
+    @{{ mise_exec }} cargo fmt --all
 
-# Run unit tests only
-test-unit:
-    cargo test --lib --all-features
+fmt-check:
+    @{{ mise_exec }} cargo fmt --all --check
 
-# Run doctests only
-test-doc:
-    cargo test --doc --all-features
+lint-rust: fmt-check
+    @{{ mise_exec }} cargo clippy --workspace --all-targets --all-features -- -D warnings
 
-# Run coverage with cargo-llvm-cov and enforce 79% threshold
-coverage:
-    @echo "🔍 Running coverage with >79% threshold..."
-    cargo llvm-cov --all-features --workspace --lcov --fail-under-lines 79 --output-path lcov.info
-    @echo "✅ Coverage passed 79% threshold!"
+lint-rust-min:
+    @{{ mise_exec }} cargo clippy --workspace --all-targets --no-default-features -- -D warnings
 
-# Run coverage for CI - generates report even if some tests fail
-coverage-ci:
-    @echo "🔍 Running coverage for CI (generating lcov report)..."
-    cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info --ignore-run-fail
-    @echo "ℹ️ This CI step does not enforce coverage thresholds. Run \`just coverage\` locally to gate on 79%."
-    @echo "✅ Coverage report generated!"
+# Format justfile
+fmt-justfile:
+    @just --fmt --unstable
 
-# Run coverage report in HTML format for local viewing
-coverage-html:
-    @echo "🔍 Generating HTML coverage report..."
-    cargo llvm-cov --all-features --workspace --html --output-dir target/llvm-cov/html
-    @echo "📊 HTML report available at target/llvm-cov/html/index.html"
+# Lint justfile formatting
+lint-justfile:
+    @just --fmt --check --unstable
 
-# Run coverage report in HTML format ignoring test failures
-coverage-html-ci:
-    @echo "🔍 Generating HTML coverage report (ignoring test failures)..."
-    cargo llvm-cov --all-features --workspace --html --output-dir target/llvm-cov/html --ignore-run-fail
-    @echo "📊 HTML report available at target/llvm-cov/html/index.html"
+# Main lint recipe - calls all sub-linters
+lint: lint-rust lint-actions lint-docs lint-justfile
 
-# Run coverage report to terminal
-coverage-report:
-    cargo llvm-cov --all-features --workspace
+# Individual lint recipes
+lint-actions:
+    @{{ mise_exec }} actionlint .github/workflows/*.yml
 
-# Clean coverage artifacts
-coverage-clean:
-    cargo llvm-cov clean --workspace
+lint-docs:
+    @{{ mise_exec }} markdownlint-cli2 docs/**/*.md README.md
+    @{{ mise_exec }} lychee docs/**/*.md README.md
 
-# -----------------------------
-# 🔍 Fuzzing & Property Testing
-# -----------------------------
+alias lint-just := lint-justfile
 
-# Install cargo-fuzz for fuzzing
-install-fuzz:
-    cargo install cargo-fuzz
+# Run clippy with fixes
+fix:
+    @{{ mise_exec }} cargo clippy --fix --allow-dirty --allow-staged
 
-# Initialize fuzzing project
-fuzz-init:
-    cargo fuzz init
+# Quick development check
+check: pre-commit-run lint
 
-# Run fuzzing for XML parsing
-fuzz-xml:
-    cargo fuzz run xml_parsing -- -max_total_time=300
+pre-commit-run:
+    @{{ mise_exec }} pre-commit run -a
 
-# Run fuzzing for CSV parsing
-fuzz-csv:
-    cargo fuzz run csv_parsing -- -max_total_time=300
+# Format a single file (for pre-commit hooks)
+format-files +FILES:
+    @{{ mise_exec }} prettier --write --config .prettierrc.json {{ FILES }}
 
-# Run fuzzing for VLAN generation
-fuzz-vlan:
-    cargo fuzz run vlan_generation -- -max_total_time=300
+# =============================================================================
+# BUILDING AND TESTING
+# =============================================================================
 
-# Run all fuzzing targets
-fuzz-all: fuzz-xml fuzz-csv fuzz-vlan
-    @echo "✅ All fuzzing targets completed!"
-
-# Run property-based tests with proptest
-test-property:
-    cargo test --test proptest_* --all-features
-
-# Run comprehensive testing including fuzzing and property tests
-test-comprehensive: test test-property
-    @echo "✅ Comprehensive testing completed!"
-
-# -----------------------------
-# 🔧 Building & Running
-# -----------------------------
-
-# Build the project in debug mode
 build:
-    cargo build --all-features
+    @{{ mise_exec }} cargo build --workspace
 
-# Build the project in release mode
 build-release:
-    cargo build --release --all-features
+    @{{ mise_exec }} cargo build --workspace --release --all-features
 
-# Build documentation
-doc:
-    cargo doc --all-features --no-deps
+test:
+    @{{ mise_exec }} cargo nextest run --workspace --no-capture
 
-# Build and open documentation
-doc-open:
-    cargo doc --all-features --no-deps --open
+# Test justfile cross-platform functionality
+[windows]
+test-justfile:
+    $p = (Get-Location).Path; Write-Host "Current directory: $p"; Write-Host "Expected directory: {{ root }}"
 
-# Run the CLI tool with sample arguments
-run *args:
-    cargo run --all-features -- {{args}}
+[unix]
+test-justfile:
+    /bin/echo "Current directory: $(pwd -P)"
+    /bin/echo "Expected directory: {{ root }}"
 
-# Run benchmarks (exclude from coverage)
+# Test cross-platform file system helpers
+[windows]
+test-fs:
+    @just rmrf tmp/xfstest
+    @just ensure-dir tmp/xfstest/sub
+    @just rmrf tmp/xfstest
+
+[unix]
+test-fs:
+    @just rmrf tmp/xfstest
+    @just ensure-dir tmp/xfstest/sub
+    @just rmrf tmp/xfstest
+
+test-ci:
+    @{{ mise_exec }} cargo nextest run --workspace --all-features --no-capture
+
+# Run all tests including ignored/slow tests across workspace
+test-all:
+    @{{ mise_exec }} cargo nextest run --workspace --no-capture -- --ignored
+
+# =============================================================================
+# BENCHMARKING
+# =============================================================================
+
+# Run all benchmarks
 bench:
-    cargo bench --all-features
+    @{{ mise_exec }} cargo bench --workspace
 
-# -----------------------------
-# 🧹 Clean & Maintenance
-# -----------------------------
+# =============================================================================
+# SECURITY AND AUDITING
+# =============================================================================
 
-# Clean build artifacts
-clean:
-    cargo clean
-    rm -f lcov.info
-
-# Update dependencies
-update:
-    cargo update
-
-# Update all project dependencies (Rust + Python + Node.js)
-update-deps:
-    @echo "🔄 Updating Rust dependencies..."
-    cargo update
-    @echo "🔄 Updating Python dependencies..."
-    uv sync --upgrade
-    @echo "🔄 Updating Node.js dependencies..."
-    pnpm update
-    @echo "✅ All dependencies updated!"
-
-# Check for security advisories
 audit:
-    cargo audit
+    @{{ mise_exec }} cargo audit
 
-# -----------------------------
-# 🤖 CI Workflow
-# -----------------------------
+deny:
+    @{{ mise_exec }} cargo deny check
 
-# CI-friendly check that runs all validation
-ci-check: format-check lint test coverage-ci
-    @echo "✅ All CI checks passed!"
+outdated:
+    @{{ mise_exec }} cargo outdated --depth=1 --exit-code=1
 
-# Fast CI check without coverage (for quick feedback)
-ci-check-fast: format-check lint test-no-bench
-    @echo "✅ Fast CI checks passed!"
+# =============================================================================
+# CI AND QUALITY ASSURANCE
+# =============================================================================
 
-# Full comprehensive checks - runs all non-interactive verifications
-full-checks: format-check lint pre-commit test coverage audit build-release bench act-ci-list act-ci-dry-run
-    @echo "✅ All full checks passed!"
+# Generate coverage report
+coverage:
+    @{{ mise_exec }} cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
 
-# CI-friendly QA check (respects TERM=dumb, see TESTING.md)
-ci-qa: rust-fmt-check rust-clippy rust-test
-    @echo "✅ CI QA checks passed!"
+# Check coverage thresholds
+coverage-check:
+    @{{ mise_exec }} cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info --fail-under-lines 9.7
 
-# -----------------------------
-# 🚀 Development Workflow
-# -----------------------------
+# Full local CI parity check
+ci-check: pre-commit-run fmt-check lint-rust lint-rust-min test-ci build-release audit coverage-check dist-plan
 
-# Development workflow: format, lint, test, coverage
-dev: format lint test coverage
-    @echo "✅ Development checks complete!"
+# =============================================================================
+# DEVELOPMENT AND EXECUTION
+# =============================================================================
 
-# Watch for changes and run tests
-watch:
-    cargo watch -x "test --all-features"
+run *args:
+    @{{ mise_exec }} cargo run -p stringy -- {{ args }}
 
-# Watch for changes and run checks
-watch-check:
-    cargo watch -x "check --all-features" -x "clippy -- -D warnings"
+# =============================================================================
+# DISTRIBUTION AND PACKAGING
+# =============================================================================
 
-# -----------------------------
-# 🧪 GitHub Actions Testing (act)
-# -----------------------------
+dist:
+    @{{ mise_exec }} dist build
 
-# Test CI workflow locally with act
-act-ci:
-    @echo "🧪 Testing CI workflow locally..."
-    act pull_request --workflows .github/workflows/ci.yml
+dist-check:
+    @{{ mise_exec }} dist plan
 
-# Test CI workflow with verbose output
-act-ci-verbose:
-    @echo "🧪 Testing CI workflow locally (verbose)..."
-    act pull_request --workflows .github/workflows/ci.yml --verbose
+dist-plan:
+    @{{ mise_exec }} dist plan
 
-# Test CI workflow with specific job
-act-ci-job job:
-    @echo "🧪 Testing CI workflow job: {{job}}..."
-    act pull_request --workflows .github/workflows/ci.yml --job {{job}}
+# Regenerate cargo-dist CI workflow safely
+dist-generate-ci:
+    @{{ mise_exec }} dist generate --ci github
+    @echo "Generated CI workflow. Remember to fix any expression errors if they exist."
+    @echo "Run 'just lint-actions' to validate the generated workflow."
 
-# Test CI workflow with list of available jobs
-act-ci-list:
-    @echo "📋 Available CI workflow jobs:"
-    act pull_request --workflows .github/workflows/ci.yml --list
+install:
+    @{{ mise_exec }} cargo install --path .
 
-# Test CI workflow with dry run (no actual execution)
-act-ci-dry-run:
-    @echo "🧪 Dry run of CI workflow..."
-    act pull_request --workflows .github/workflows/ci.yml --dryrun
+# =============================================================================
+# DOCUMENTATION
+# =============================================================================
 
-# Test push workflow (simulates push to main/develop)
-act-push:
-    @echo "🧪 Testing push workflow locally..."
-    act push --workflows .github/workflows/ci.yml
+# Build complete documentation (mdBook + rustdoc)
+[unix]
+docs-build:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Build rustdoc
+    {{ mise_exec }} cargo doc --no-deps --document-private-items --target-dir docs/book/api-temp
+    # Move rustdoc output to final location
+    mkdir -p docs/book/api
+    cp -r docs/book/api-temp/doc/* docs/book/api/
+    rm -rf docs/book/api-temp
+    # Build mdBook
+    cd docs && {{ mise_exec }} mdbook build
 
-# -----------------------------
-# 📊 Project Information
-# -----------------------------
+# Serve documentation locally with live reload
+[unix]
+docs-serve:
+    cd docs && {{ mise_exec }} mdbook serve --open
 
-# Show project information
-info:
-    @echo "🔧 OPNsense Config Faker"
-    @echo "======================="
-    @echo "Rust version: $(rustc --version)"
-    @echo "Cargo version: $(cargo --version)"
-    @echo "Project features:"
-    @cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].features | keys[]' 2>/dev/null || echo "  - slow-tests"
+# Clean documentation artifacts
+[unix]
+docs-clean:
+    rm -rf docs/book target/doc
 
-# -----------------------------
-# 🐍 Python Removal Safety Checks
-# -----------------------------
+# Check documentation (build + link validation + formatting)
+[unix]
+docs-check:
+    cd docs && {{ mise_exec }} mdbook build
+    @just fmt-check
 
-# Run Python removal safety checks
-python-safety-check:
-    @echo "🔍 Running Python removal safety checks..."
-    ./scripts/verify_removals.sh
+# Generate and serve documentation
+[unix]
+docs: docs-build docs-serve
 
-# Verify Python removal readiness (CI-friendly)
-python-removal-ready: python-safety-check
-    @echo "✅ Python removal safety checks passed!"
+[windows]
+docs:
+    @echo "mdbook requires a Unix-like environment to serve"
+
+# =============================================================================
+# GORELEASER TESTING
+# =============================================================================
+
+# Test GoReleaser configuration
+goreleaser-check:
+    @{{ mise_exec }} goreleaser check
+
+# Build binaries locally with GoReleaser (test build process)
+goreleaser-build:
+    @{{ mise_exec }} goreleaser build --clean
+
+# Run snapshot release (test full pipeline without publishing)
+goreleaser-snapshot:
+    @{{ mise_exec }} goreleaser release --snapshot --clean
+
+# Test GoReleaser with specific target
+[arg("target", help="Target triple to build for (e.g., x86_64-unknown-linux-gnu)")]
+goreleaser-build-target target:
+    @{{ mise_exec }} goreleaser build --clean --single-target {{ target }}
+
+# Clean GoReleaser artifacts
+goreleaser-clean:
+    @just rmrf dist
+
+# =============================================================================
+# RELEASE MANAGEMENT
+# =============================================================================
+
+release:
+    @{{ mise_exec }} cargo release
+
+release-dry-run:
+    @{{ mise_exec }} cargo release --dry-run
+
+release-patch:
+    @{{ mise_exec }} cargo release patch
+
+release-minor:
+    @{{ mise_exec }} cargo release minor
+
+release-major:
+    @{{ mise_exec }} cargo release major

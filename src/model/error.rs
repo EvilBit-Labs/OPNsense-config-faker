@@ -21,10 +21,6 @@ pub enum ConfigError {
     #[error("JSON operation failed: {0}")]
     Json(#[from] serde_json::Error),
 
-    /// Network address parsing failed
-    #[error("Network address parsing failed: {0}")]
-    Network(#[from] ipnet::AddrParseError),
-
     /// VLAN configuration generation failed
     #[error("VLAN generation failed: {message}")]
     VlanGeneration { message: String },
